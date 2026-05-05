@@ -482,6 +482,12 @@
   let contextLost = false;
 
   window.addEventListener("keydown", (event) => {
+    if (isAccountModalOpen() || isTypingTarget(event.target)) {
+      if (event.key === "Escape" && isAccountModalOpen()) {
+        closeAccountModal();
+      }
+      return;
+    }
     const key = event.key.toLowerCase();
     if (blockingKeys.has(key)) {
       event.preventDefault();
@@ -503,6 +509,9 @@
   });
 
   window.addEventListener("keyup", (event) => {
+    if (isAccountModalOpen() || isTypingTarget(event.target)) {
+      return;
+    }
     keys.delete(event.key.toLowerCase());
   });
 
@@ -524,7 +533,16 @@
     }
   });
   hud.callsignInput.addEventListener("keydown", (event) => {
+    event.stopPropagation();
     if (event.key === "Enter") {
+      event.preventDefault();
+      signInPilot();
+    }
+  });
+  hud.accessCodeInput.addEventListener("keydown", (event) => {
+    event.stopPropagation();
+    if (event.key === "Enter") {
+      event.preventDefault();
       signInPilot();
     }
   });
@@ -692,6 +710,18 @@
     hud.eventToast.classList.add("is-visible");
   }
 
+  function isAccountModalOpen() {
+    return !hud.accountModal.classList.contains("is-hidden");
+  }
+
+  function isTypingTarget(target) {
+    if (!target || !(target instanceof HTMLElement)) {
+      return false;
+    }
+    const tag = target.tagName.toLowerCase();
+    return tag === "input" || tag === "textarea" || target.isContentEditable;
+  }
+
   function defaultPilotProfile() {
     return {
       id: "guest",
@@ -765,6 +795,11 @@
   }
 
   function openAccountModal() {
+    if (state.mode === "playing") {
+      state.mode = "paused";
+      hud.pauseButton.textContent = "Resume";
+      setStatus("Pilot Access", "Mission paused while pilot credentials are entered.", false);
+    }
     hud.callsignInput.value = pilotProfile.mode === "guest" ? "" : pilotProfile.callsign;
     hud.accessCodeInput.value = "";
     hud.accountStatus.textContent = pilotProfile.mode === "backend"

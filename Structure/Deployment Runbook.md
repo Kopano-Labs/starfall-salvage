@@ -42,7 +42,14 @@ Health check:
 http://127.0.0.1:8765/api/health
 ```
 
+Local data is stored in:
+
+```text
+C:\Users\rkhol\Starfall Salvage\.data\starfall.db
+```
+
+This is suitable for coursework and local demo proof. Public hosting should use a hosted database/API if the leaderboard must be shared across users.
+
 ## DNS Notes
 
 Point `starfallsavage.kopanolabs.com` to the selected host only after the host is ready. Do not mark the public launch complete until HTTPS loads the actual game and the canvas renders.
-

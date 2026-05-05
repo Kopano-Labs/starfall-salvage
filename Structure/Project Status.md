@@ -29,7 +29,8 @@ Active development.
 
 - `node --check src\game.js` passed.
 - `python -m py_compile backend\starfall_server.py tools\kc_starfall_watch.py` passed.
-- Backend `/api/health`, `/api/signin`, `/api/score`, and `/api/leaderboard` passed locally.
+- Backend `/api/health`, `/api/signin`, `/api/score`, and `/api/leaderboard` passed locally against SQLite.
 - Headless Edge smoke passed: sign-in, start, dash, pause, FPS, HUD, and screenshot.
+- Headless Edge login smoke passed: pressing Enter in the login modal signs in without launching the game.
 - KC hard-QA watcher passed and seeded `kc-3`, then final rerun seeded `kc-4`.
 - GitHub push complete: profile/backend/KC lane, HUD logo fix, and KC verification log are pushed to `origin/main`.

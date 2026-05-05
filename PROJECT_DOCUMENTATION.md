@@ -10,7 +10,7 @@ Starfall Salvage is a 3D arcade runner built with raw WebGL. The player pilots a
 
 The upgraded version also includes diffuse fragment lighting, additive particle blending, a live FPS counter, matrix-based camera shake, and dynamic field-of-view changes during dash.
 
-The current build also includes Kopano Labs branding and a demo-safe pilot profile flow. The game works offline with browser storage and can sync pilot scores to the optional local Python backend.
+The current build also includes Kopano Labs branding and a demo-safe pilot profile flow. The game works offline with browser storage and can sync pilot scores to the optional local Python/SQLite backend.
 
 ## Aim of the Game
 
@@ -60,7 +60,7 @@ python backend\starfall_server.py --port 8765
 
 Then open `http://127.0.0.1:8765`.
 
-The Python backend is optional for demonstration. If it is not running, the game falls back to browser `localStorage` for pilot profiles and local scores.
+The Python backend is optional for demonstration. If it is running, pilot profiles and scores persist in `.data/starfall.db` through SQLite. If it is not running, the game falls back to browser `localStorage` for pilot profiles and local scores.
 
 ## Design Overview
 
@@ -76,7 +76,7 @@ The main JavaScript file contains:
 - A real-time `requestAnimationFrame` game loop.
 - Simulation state for player movement, spawning, collision, score, hull, and difficulty.
 - A separate additive glow pass for trail particles, sparks, and energy core glow.
-- A local-first pilot profile flow that attempts `/api/signin` and `/api/score`, then falls back to browser storage.
+- A local-first pilot profile flow that attempts `/api/signin` and `/api/score`, stores data in SQLite through the backend, then falls back to browser storage if the backend is unavailable.
 
 ## Key OpenGL/WebGL Concepts Used
 

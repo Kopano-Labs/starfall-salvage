@@ -14,7 +14,7 @@ python -m http.server 8765
 
 Then browse to `http://localhost:8765`.
 
-Local backend demo with pilot profiles and score sync:
+Local backend demo with pilot profiles and score sync stored in SQLite:
 
 ```powershell
 python backend\starfall_server.py --port 8765
@@ -34,14 +34,14 @@ No compilation is required because this project uses browser-native WebGL and Ja
 
 ## Profile Mode
 
-The pilot sign-in is demo-safe. If the Python backend is running, the game stores a local backend profile and leaderboard entry. If the backend is unavailable, it falls back to browser `localStorage` so the game still works offline.
+The pilot sign-in is demo-safe. If the Python backend is running, the game stores pilot profiles and leaderboard entries in `.data/starfall.db` using SQLite. If the backend is unavailable, it falls back to browser `localStorage` so the game still works offline.
 
 ## Files
 
 - `index.html`: game canvas and HUD markup
 - `styles.css`: responsive full-screen game layout
 - `src/game.js`: raw WebGL renderer, matrix transforms, game loop, collision, input, procedural textures
-- `backend/starfall_server.py`: optional local demo backend for pilot profiles and scores
+- `backend/starfall_server.py`: optional local SQLite backend for pilot profiles and scores
 - `tools/kc_starfall_watch.py`: KC hard-QA watcher for pass/fail/retry logs
 - `DEPLOYMENT.md`: subdomain and hosting runbook
 - `PROJECT_DOCUMENTATION.md`: assignment-style documentation

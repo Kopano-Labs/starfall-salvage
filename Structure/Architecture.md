@@ -17,14 +17,15 @@ The game is dependency-free HTML, CSS, and JavaScript.
 
 ## Backend
 
-`backend/starfall_server.py` is a local Python stdlib server.
+`backend/starfall_server.py` is a local Python stdlib server backed by SQLite.
 
 - Serves the static game from the project root.
 - `POST /api/signin` creates or updates a demo pilot profile.
 - `POST /api/score` stores a local leaderboard entry.
 - `GET /api/leaderboard` returns top scores.
 - `GET /api/health` proves the backend is running.
-- Data writes to `.data/starfall-state.json`, which is intentionally ignored by git.
+- Data writes to `.data/starfall.db`, which is intentionally ignored by git.
+- Legacy `.data/starfall-state.json` rows are migrated into SQLite when the database is first initialized.
 
 ## KC Lane
 
@@ -33,4 +34,3 @@ The game is dependency-free HTML, CSS, and JavaScript.
 - Checks required files, git state, JavaScript syntax, Python backend syntax, and backend health.
 - Appends JSONL reports to `Structure/KC Review Log.jsonl`.
 - Can seed a reviewed KC context into the existing KC store with `--seed-kc`.
-

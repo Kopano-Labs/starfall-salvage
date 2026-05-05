@@ -13,3 +13,5 @@
 - KC watcher initially failed to seed the KC store because of a dynamic import/dataclass issue; the watcher was patched and passed on retry.
 - KC contexts `kc-3` and `kc-4` created for passing Starfall hard-QA passes.
 - Profile/backend/KC lane, HUD logo fix, and KC verification log pushed to `origin/main`.
+- Login modal input isolation fixed so Enter submits the pilot profile without launching the game.
+- Backend storage upgraded from JSON to SQLite at `.data/starfall.db`.
