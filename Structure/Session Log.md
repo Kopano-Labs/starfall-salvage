@@ -12,4 +12,4 @@
 - `tools/kc_starfall_watch.py` added to record methodical pass/fail/retry logs.
 - KC watcher initially failed to seed the KC store because of a dynamic import/dataclass issue; the watcher was patched and passed on retry.
 - KC contexts `kc-3` and `kc-4` created for passing Starfall hard-QA passes.
-- Commit `54dcdc7 feat: add Starfall profiles backend and KC lane` pushed to `origin/main`.
+- Profile/backend/KC lane, HUD logo fix, and KC verification log pushed to `origin/main`.

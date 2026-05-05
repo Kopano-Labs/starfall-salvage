@@ -32,4 +32,4 @@ Active development.
 - Backend `/api/health`, `/api/signin`, `/api/score`, and `/api/leaderboard` passed locally.
 - Headless Edge smoke passed: sign-in, start, dash, pause, FPS, HUD, and screenshot.
 - KC hard-QA watcher passed and seeded `kc-3`, then final rerun seeded `kc-4`.
-- GitHub push complete: `main` at `54dcdc7 feat: add Starfall profiles backend and KC lane`.
+- GitHub push complete: profile/backend/KC lane, HUD logo fix, and KC verification log are pushed to `origin/main`.
