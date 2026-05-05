@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Starfall Salvage - WebGL Edition</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="styles.css">
-  <script src="src/game.js" defer></script>
+  <link rel="stylesheet" href="styles.css?v=20260505-hudfix">
+  <script src="src/game.js?v=20260505-hudfix" defer></script>
 </head>
 <body>
   <main class="shell">
@@ -14,7 +14,7 @@
 
     <section class="hud" aria-live="polite">
       <div class="brand">
-        <img class="brand-logo" src="assets/kopano-labs-logo.png" alt="Kopano Labs logo">
+        <div class="brand-logo" role="img" aria-label="Kopano Labs logo"></div>
         <div>
           <p class="eyebrow">WebGL Edition</p>
           <h1>Starfall Salvage</h1>
@@ -50,7 +50,7 @@
 
     <section class="account-modal is-hidden" id="accountModal" aria-label="Pilot sign in">
       <div class="account-card">
-        <img class="account-logo" src="assets/kopano-labs-logo.png" alt="Kopano Labs">
+        <div class="account-logo" role="img" aria-label="Kopano Labs"></div>
         <p class="eyebrow">Pilot Access</p>
         <h2>Kopano Labs Flight Deck</h2>
         <p class="account-copy">Create a local pilot profile for best scores and leaderboard practice. It works offline and upgrades to the local backend when the optional server is running.</p>
