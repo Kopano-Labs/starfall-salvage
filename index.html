@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Starfall Salvage - WebGL Edition</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="styles.css">
+  <script src="src/game.js" defer></script>
+</head>
+<body>
+  <main class="shell">
+    <canvas id="glCanvas" tabindex="0" aria-label="Starfall Salvage WebGL game canvas"></canvas>
+
+    <section class="hud" aria-live="polite">
+      <div class="brand">
+        <span class="brand-mark"></span>
+        <div>
+          <p class="eyebrow">WebGL Edition</p>
+          <h1>Starfall Salvage</h1>
+        </div>
+      </div>
+
+      <div class="stats">
+        <div><span>Score</span><strong id="scoreValue">0</strong></div>
+        <div><span>Hull</span><strong id="hullValue">3</strong></div>
+        <div><span>Cores</span><strong id="coreValue">0</strong></div>
+        <div><span>Dash</span><strong id="dashValue">Ready</strong></div>
+        <div><span>Speed</span><strong id="speedValue">1.0x</strong></div>
+        <div><span>FPS</span><strong id="fpsValue">--</strong></div>
+      </div>
+
+      <div class="hud-actions">
+        <button id="startButton" type="button">Start</button>
+        <button id="pauseButton" type="button">Pause</button>
+        <button id="resetButton" type="button">Reset</button>
+      </div>
+    </section>
+
+    <section class="status-panel" id="statusPanel">
+      <p class="eyebrow">Mission</p>
+      <h2 id="statusTitle">Ready</h2>
+      <p id="statusText">Collect blue energy cores and avoid red debris inside the moving salvage lane.</p>
+      <p class="control-line">WASD or Arrow Keys move. Space activates a short phase dash.</p>
+    </section>
+
+    <div class="event-toast" id="eventToast" aria-live="polite"></div>
+  </main>
+</body>
+</html>

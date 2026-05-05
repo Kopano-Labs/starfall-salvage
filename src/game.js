@@ -1,0 +1,1084 @@
+(() => {
+  "use strict";
+
+  const canvas = document.getElementById("glCanvas");
+  const gl = canvas.getContext("webgl", { antialias: true });
+
+  const hud = {
+    shell: document.querySelector(".shell"),
+    score: document.getElementById("scoreValue"),
+    hull: document.getElementById("hullValue"),
+    cores: document.getElementById("coreValue"),
+    dash: document.getElementById("dashValue"),
+    speed: document.getElementById("speedValue"),
+    fps: document.getElementById("fpsValue"),
+    eventToast: document.getElementById("eventToast"),
+    statusPanel: document.getElementById("statusPanel"),
+    statusTitle: document.getElementById("statusTitle"),
+    statusText: document.getElementById("statusText"),
+    startButton: document.getElementById("startButton"),
+    pauseButton: document.getElementById("pauseButton"),
+    resetButton: document.getElementById("resetButton")
+  };
+
+  if (!gl) {
+    hud.statusTitle.textContent = "WebGL unavailable";
+    hud.statusText.textContent = "Open this game in a browser with WebGL support enabled.";
+    return;
+  }
+
+  canvas.focus();
+  window.addEventListener("pointerdown", () => canvas.focus());
+
+  const vertexShaderSource = `
+    attribute vec3 aPosition;
+    attribute vec3 aNormal;
+    attribute vec2 aTexCoord;
+
+    uniform mat4 uModel;
+    uniform mat4 uView;
+    uniform mat4 uProjection;
+    uniform vec2 uUvScale;
+
+    varying vec3 vNormal;
+    varying vec2 vTexCoord;
+    varying float vDepth;
+
+    void main() {
+      vec4 worldPosition = uModel * vec4(aPosition, 1.0);
+      gl_Position = uProjection * uView * worldPosition;
+      vNormal = mat3(uModel) * aNormal;
+      vTexCoord = aTexCoord * uUvScale;
+      vDepth = clamp((-worldPosition.z - 4.0) / 70.0, 0.0, 1.0);
+    }
+  `;
+
+  const fragmentShaderSource = `
+    precision mediump float;
+
+    uniform sampler2D uTexture;
+    uniform vec4 uColor;
+    uniform float uTextureMix;
+    uniform float uPulse;
+    uniform vec3 uLightDirection;
+    uniform float uAmbientLight;
+    uniform float uDiffuseStrength;
+
+    varying vec3 vNormal;
+    varying vec2 vTexCoord;
+    varying float vDepth;
+
+    void main() {
+      vec3 normal = normalize(vNormal);
+      vec3 lightDirection = normalize(uLightDirection);
+      float diffuse = max(dot(normal, lightDirection), 0.0);
+      float light = clamp(uAmbientLight + diffuse * uDiffuseStrength, 0.0, 1.35);
+      vec4 textureColor = texture2D(uTexture, vTexCoord);
+      vec4 base = mix(uColor, uColor * textureColor, uTextureMix);
+      vec3 fog = vec3(0.012, 0.016, 0.036);
+      vec3 lit = mix(base.rgb * light, fog, vDepth * 0.62);
+      gl_FragColor = vec4(lit + base.rgb * uPulse * 0.24, base.a);
+    }
+  `;
+
+  function compileShader(type, source) {
+    const shader = gl.createShader(type);
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+      const log = gl.getShaderInfoLog(shader);
+      gl.deleteShader(shader);
+      throw new Error(log);
+    }
+    return shader;
+  }
+
+  function createProgram(vertexSource, fragmentSource) {
+    const program = gl.createProgram();
+    gl.attachShader(program, compileShader(gl.VERTEX_SHADER, vertexSource));
+    gl.attachShader(program, compileShader(gl.FRAGMENT_SHADER, fragmentSource));
+    gl.linkProgram(program);
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+      const log = gl.getProgramInfoLog(program);
+      gl.deleteProgram(program);
+      throw new Error(log);
+    }
+    return program;
+  }
+
+  const program = createProgram(vertexShaderSource, fragmentShaderSource);
+  gl.useProgram(program);
+
+  const locations = {
+    position: gl.getAttribLocation(program, "aPosition"),
+    normal: gl.getAttribLocation(program, "aNormal"),
+    texCoord: gl.getAttribLocation(program, "aTexCoord"),
+    model: gl.getUniformLocation(program, "uModel"),
+    view: gl.getUniformLocation(program, "uView"),
+    projection: gl.getUniformLocation(program, "uProjection"),
+    color: gl.getUniformLocation(program, "uColor"),
+    texture: gl.getUniformLocation(program, "uTexture"),
+    textureMix: gl.getUniformLocation(program, "uTextureMix"),
+    uvScale: gl.getUniformLocation(program, "uUvScale"),
+    pulse: gl.getUniformLocation(program, "uPulse"),
+    lightDirection: gl.getUniformLocation(program, "uLightDirection"),
+    ambientLight: gl.getUniformLocation(program, "uAmbientLight"),
+    diffuseStrength: gl.getUniformLocation(program, "uDiffuseStrength")
+  };
+
+  const BASE_FOV = Math.PI / 3.1;
+  const DASH_FOV = Math.PI / 2.55;
+  const DASH_DURATION = 0.34;
+  const DASH_COOLDOWN = 1.45;
+  const LIGHT_DIRECTION = new Float32Array([0.35, 0.9, 0.55]);
+
+  const Mat4 = {
+    create() {
+      const out = new Float32Array(16);
+      out[0] = 1;
+      out[5] = 1;
+      out[10] = 1;
+      out[15] = 1;
+      return out;
+    },
+    identity(out) {
+      out[0] = 1; out[1] = 0; out[2] = 0; out[3] = 0;
+      out[4] = 0; out[5] = 1; out[6] = 0; out[7] = 0;
+      out[8] = 0; out[9] = 0; out[10] = 1; out[11] = 0;
+      out[12] = 0; out[13] = 0; out[14] = 0; out[15] = 1;
+      return out;
+    },
+    perspective(out, fovy, aspect, near, far) {
+      const f = 1 / Math.tan(fovy / 2);
+      out[0] = f / aspect;
+      out[1] = 0;
+      out[2] = 0;
+      out[3] = 0;
+      out[4] = 0;
+      out[5] = f;
+      out[6] = 0;
+      out[7] = 0;
+      out[8] = 0;
+      out[9] = 0;
+      out[10] = (far + near) / (near - far);
+      out[11] = -1;
+      out[12] = 0;
+      out[13] = 0;
+      out[14] = (2 * far * near) / (near - far);
+      out[15] = 0;
+      return out;
+    },
+    translate(out, a, v) {
+      const x = v[0], y = v[1], z = v[2];
+      if (a !== out) {
+        out[0] = a[0]; out[1] = a[1]; out[2] = a[2]; out[3] = a[3];
+        out[4] = a[4]; out[5] = a[5]; out[6] = a[6]; out[7] = a[7];
+        out[8] = a[8]; out[9] = a[9]; out[10] = a[10]; out[11] = a[11];
+      }
+      out[12] = a[0] * x + a[4] * y + a[8] * z + a[12];
+      out[13] = a[1] * x + a[5] * y + a[9] * z + a[13];
+      out[14] = a[2] * x + a[6] * y + a[10] * z + a[14];
+      out[15] = a[3] * x + a[7] * y + a[11] * z + a[15];
+      return out;
+    },
+    scale(out, a, v) {
+      const x = v[0], y = v[1], z = v[2];
+      out[0] = a[0] * x; out[1] = a[1] * x; out[2] = a[2] * x; out[3] = a[3] * x;
+      out[4] = a[4] * y; out[5] = a[5] * y; out[6] = a[6] * y; out[7] = a[7] * y;
+      out[8] = a[8] * z; out[9] = a[9] * z; out[10] = a[10] * z; out[11] = a[11] * z;
+      out[12] = a[12]; out[13] = a[13]; out[14] = a[14]; out[15] = a[15];
+      return out;
+    },
+    rotateX(out, a, rad) {
+      const s = Math.sin(rad);
+      const c = Math.cos(rad);
+      const a10 = a[4], a11 = a[5], a12 = a[6], a13 = a[7];
+      const a20 = a[8], a21 = a[9], a22 = a[10], a23 = a[11];
+      if (a !== out) {
+        out[0] = a[0]; out[1] = a[1]; out[2] = a[2]; out[3] = a[3];
+        out[12] = a[12]; out[13] = a[13]; out[14] = a[14]; out[15] = a[15];
+      }
+      out[4] = a10 * c + a20 * s;
+      out[5] = a11 * c + a21 * s;
+      out[6] = a12 * c + a22 * s;
+      out[7] = a13 * c + a23 * s;
+      out[8] = a20 * c - a10 * s;
+      out[9] = a21 * c - a11 * s;
+      out[10] = a22 * c - a12 * s;
+      out[11] = a23 * c - a13 * s;
+      return out;
+    },
+    rotateY(out, a, rad) {
+      const s = Math.sin(rad);
+      const c = Math.cos(rad);
+      const a00 = a[0], a01 = a[1], a02 = a[2], a03 = a[3];
+      const a20 = a[8], a21 = a[9], a22 = a[10], a23 = a[11];
+      if (a !== out) {
+        out[4] = a[4]; out[5] = a[5]; out[6] = a[6]; out[7] = a[7];
+        out[12] = a[12]; out[13] = a[13]; out[14] = a[14]; out[15] = a[15];
+      }
+      out[0] = a00 * c - a20 * s;
+      out[1] = a01 * c - a21 * s;
+      out[2] = a02 * c - a22 * s;
+      out[3] = a03 * c - a23 * s;
+      out[8] = a00 * s + a20 * c;
+      out[9] = a01 * s + a21 * c;
+      out[10] = a02 * s + a22 * c;
+      out[11] = a03 * s + a23 * c;
+      return out;
+    },
+    rotateZ(out, a, rad) {
+      const s = Math.sin(rad);
+      const c = Math.cos(rad);
+      const a00 = a[0], a01 = a[1], a02 = a[2], a03 = a[3];
+      const a10 = a[4], a11 = a[5], a12 = a[6], a13 = a[7];
+      if (a !== out) {
+        out[8] = a[8]; out[9] = a[9]; out[10] = a[10]; out[11] = a[11];
+        out[12] = a[12]; out[13] = a[13]; out[14] = a[14]; out[15] = a[15];
+      }
+      out[0] = a00 * c + a10 * s;
+      out[1] = a01 * c + a11 * s;
+      out[2] = a02 * c + a12 * s;
+      out[3] = a03 * c + a13 * s;
+      out[4] = a10 * c - a00 * s;
+      out[5] = a11 * c - a01 * s;
+      out[6] = a12 * c - a02 * s;
+      out[7] = a13 * c - a03 * s;
+      return out;
+    }
+  };
+
+  const modelMatrix = Mat4.create();
+  const viewMatrix = Mat4.create();
+  const projectionMatrix = Mat4.create();
+  const colorTexture = createTexture("plates");
+  const crystalTexture = createTexture("crystal");
+  const warningTexture = createTexture("warning");
+  const starTexture = createTexture("star");
+
+  function makeModel(position, rotation, scale) {
+    Mat4.identity(modelMatrix);
+    Mat4.translate(modelMatrix, modelMatrix, position);
+    Mat4.rotateX(modelMatrix, modelMatrix, rotation[0]);
+    Mat4.rotateY(modelMatrix, modelMatrix, rotation[1]);
+    Mat4.rotateZ(modelMatrix, modelMatrix, rotation[2]);
+    Mat4.scale(modelMatrix, modelMatrix, scale);
+    return modelMatrix;
+  }
+
+  function createTexture(kind) {
+    const textureSize = 128;
+    const textureCanvas = document.createElement("canvas");
+    textureCanvas.width = textureSize;
+    textureCanvas.height = textureSize;
+    const ctx = textureCanvas.getContext("2d");
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, textureSize, textureSize);
+
+    if (kind === "plates") {
+      ctx.fillStyle = "#c9f2ff";
+      ctx.fillRect(0, 0, textureSize, textureSize);
+      ctx.strokeStyle = "#4b6a88";
+      ctx.lineWidth = 3;
+      for (let i = 0; i <= textureSize; i += 32) {
+        ctx.beginPath();
+        ctx.moveTo(i, 0);
+        ctx.lineTo(i, textureSize);
+        ctx.moveTo(0, i);
+        ctx.lineTo(textureSize, i);
+        ctx.stroke();
+      }
+      ctx.fillStyle = "rgba(255,255,255,0.45)";
+      ctx.fillRect(8, 8, 28, 10);
+    }
+
+    if (kind === "crystal") {
+      const half = textureSize / 2;
+      const gradient = ctx.createRadialGradient(half, half, 4, half, half, 78);
+      gradient.addColorStop(0, "#ffffff");
+      gradient.addColorStop(0.28, "#79f7ff");
+      gradient.addColorStop(1, "#0f4b82");
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, textureSize, textureSize);
+      ctx.strokeStyle = "rgba(255,255,255,0.75)";
+      ctx.lineWidth = 2;
+      for (let i = -textureSize; i < textureSize * 2; i += 24) {
+        ctx.beginPath();
+        ctx.moveTo(i, 0);
+        ctx.lineTo(i + textureSize, textureSize);
+        ctx.stroke();
+      }
+    }
+
+    if (kind === "warning") {
+      ctx.fillStyle = "#3b1118";
+      ctx.fillRect(0, 0, textureSize, textureSize);
+      ctx.fillStyle = "#ffda5c";
+      for (let i = -textureSize; i < textureSize * 2; i += 32) {
+        ctx.beginPath();
+        ctx.moveTo(i, 0);
+        ctx.lineTo(i + 14, 0);
+        ctx.lineTo(i + textureSize + 14, textureSize);
+        ctx.lineTo(i + textureSize, textureSize);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+
+    if (kind === "star") {
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, textureSize, textureSize);
+      const half = textureSize / 2;
+      const gradient = ctx.createRadialGradient(half, half, 1, half, half, 56);
+      gradient.addColorStop(0, "#ffffff");
+      gradient.addColorStop(0.2, "#bff7ff");
+      gradient.addColorStop(1, "#334155");
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, textureSize, textureSize);
+    }
+
+    const texture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, textureCanvas);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.generateMipmap(gl.TEXTURE_2D);
+    return texture;
+  }
+
+  function createMesh(vertices, indices) {
+    const vertexBuffer = gl.createBuffer();
+    const indexBuffer = gl.createBuffer();
+    const stride = 8 * Float32Array.BYTES_PER_ELEMENT;
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
+
+    return {
+      vertexBuffer,
+      indexBuffer,
+      indexCount: indices.length,
+      stride
+    };
+  }
+
+  function createCubeMesh() {
+    const vertices = [];
+    const indices = [];
+    const faces = [
+      { normal: [0, 0, 1], points: [[-0.5, -0.5, 0.5], [0.5, -0.5, 0.5], [0.5, 0.5, 0.5], [-0.5, 0.5, 0.5]] },
+      { normal: [0, 0, -1], points: [[0.5, -0.5, -0.5], [-0.5, -0.5, -0.5], [-0.5, 0.5, -0.5], [0.5, 0.5, -0.5]] },
+      { normal: [1, 0, 0], points: [[0.5, -0.5, 0.5], [0.5, -0.5, -0.5], [0.5, 0.5, -0.5], [0.5, 0.5, 0.5]] },
+      { normal: [-1, 0, 0], points: [[-0.5, -0.5, -0.5], [-0.5, -0.5, 0.5], [-0.5, 0.5, 0.5], [-0.5, 0.5, -0.5]] },
+      { normal: [0, 1, 0], points: [[-0.5, 0.5, 0.5], [0.5, 0.5, 0.5], [0.5, 0.5, -0.5], [-0.5, 0.5, -0.5]] },
+      { normal: [0, -1, 0], points: [[-0.5, -0.5, -0.5], [0.5, -0.5, -0.5], [0.5, -0.5, 0.5], [-0.5, -0.5, 0.5]] }
+    ];
+    const uvs = [[0, 0], [1, 0], [1, 1], [0, 1]];
+
+    faces.forEach((face) => {
+      const offset = vertices.length / 8;
+      face.points.forEach((point, index) => {
+        vertices.push(...point, ...face.normal, ...uvs[index]);
+      });
+      indices.push(offset, offset + 1, offset + 2, offset, offset + 2, offset + 3);
+    });
+
+    return createMesh(vertices, indices);
+  }
+
+  function normalFor(a, b, c) {
+    const ux = b[0] - a[0];
+    const uy = b[1] - a[1];
+    const uz = b[2] - a[2];
+    const vx = c[0] - a[0];
+    const vy = c[1] - a[1];
+    const vz = c[2] - a[2];
+    const nx = uy * vz - uz * vy;
+    const ny = uz * vx - ux * vz;
+    const nz = ux * vy - uy * vx;
+    const len = Math.hypot(nx, ny, nz) || 1;
+    return [nx / len, ny / len, nz / len];
+  }
+
+  function createFaceMesh(faces) {
+    const vertices = [];
+    const indices = [];
+    const uvTri = [[0.5, 1], [0, 0], [1, 0]];
+
+    faces.forEach((face) => {
+      const offset = vertices.length / 8;
+      const normal = normalFor(face[0], face[1], face[2]);
+      face.forEach((point, index) => {
+        vertices.push(...point, ...normal, ...uvTri[index % 3]);
+      });
+      indices.push(offset, offset + 1, offset + 2);
+    });
+
+    return createMesh(vertices, indices);
+  }
+
+  function createOctahedronMesh() {
+    const top = [0, 0.65, 0];
+    const bottom = [0, -0.65, 0];
+    const left = [-0.48, 0, 0];
+    const right = [0.48, 0, 0];
+    const front = [0, 0, 0.48];
+    const back = [0, 0, -0.48];
+    return createFaceMesh([
+      [top, front, right],
+      [top, right, back],
+      [top, back, left],
+      [top, left, front],
+      [bottom, right, front],
+      [bottom, back, right],
+      [bottom, left, back],
+      [bottom, front, left]
+    ]);
+  }
+
+  function createShipMesh() {
+    const nose = [0, 0, -0.9];
+    const rearTop = [0, 0.42, 0.62];
+    const rearBottom = [0, -0.32, 0.66];
+    const rearLeft = [-0.72, -0.08, 0.48];
+    const rearRight = [0.72, -0.08, 0.48];
+    return createFaceMesh([
+      [nose, rearTop, rearRight],
+      [nose, rearLeft, rearTop],
+      [nose, rearBottom, rearLeft],
+      [nose, rearRight, rearBottom],
+      [rearTop, rearLeft, rearRight],
+      [rearLeft, rearBottom, rearRight]
+    ]);
+  }
+
+  const meshes = {
+    cube: createCubeMesh(),
+    crystal: createOctahedronMesh(),
+    ship: createShipMesh()
+  };
+
+  const keys = new Set();
+  const blockingKeys = new Set(["arrowup", "arrowdown", "arrowleft", "arrowright", " ", "w", "a", "s", "d"]);
+  let dashRequested = false;
+
+  window.addEventListener("keydown", (event) => {
+    const key = event.key.toLowerCase();
+    if (blockingKeys.has(key)) {
+      event.preventDefault();
+    }
+    keys.add(key);
+    if (key === " ") {
+      dashRequested = true;
+    }
+    if (key === "enter" && state.mode !== "playing") {
+      startGame();
+    }
+    if (key === "p") {
+      togglePause();
+    }
+    if (key === "r") {
+      resetGame();
+      startGame();
+    }
+  });
+
+  window.addEventListener("keyup", (event) => {
+    keys.delete(event.key.toLowerCase());
+  });
+
+  hud.startButton.addEventListener("click", startGame);
+  hud.pauseButton.addEventListener("click", togglePause);
+  hud.resetButton.addEventListener("click", () => {
+    resetGame();
+    startGame();
+  });
+
+  const state = {
+    mode: "ready",
+    time: 0,
+    score: 0,
+    hull: 3,
+    cores: 0,
+    speed: 18,
+    spawnTimer: 0,
+    lastTime: 0,
+    fps: 0,
+    frameCounter: 0,
+    fpsTimer: 0,
+    hitShakeTime: 0,
+    hitShakeStrength: 0,
+    currentFov: BASE_FOV,
+    targetFov: BASE_FOV,
+    eventMessage: "",
+    eventTimer: 0,
+    hitFlashTimer: 0
+  };
+
+  const player = {
+    x: 0,
+    y: -0.45,
+    z: -7.8,
+    vx: 0,
+    vy: 0,
+    radius: 0.62,
+    dash: 0,
+    dashCooldown: 0,
+    trailTimer: 0
+  };
+
+  const objects = [];
+  const sparks = [];
+  const trailParticles = [];
+  const stars = Array.from({ length: 80 }, () => ({
+    x: randomRange(-9, 9),
+    y: randomRange(-5, 5),
+    z: randomRange(-12, -80),
+    size: randomRange(0.025, 0.09),
+    phase: Math.random() * Math.PI * 2
+  }));
+
+  function randomRange(min, max) {
+    return min + Math.random() * (max - min);
+  }
+
+  function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+  }
+
+  function resizeCanvas() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const width = Math.floor(canvas.clientWidth * dpr);
+    const height = Math.floor(canvas.clientHeight * dpr);
+    if (canvas.width !== width || canvas.height !== height) {
+      canvas.width = width;
+      canvas.height = height;
+    }
+    gl.viewport(0, 0, canvas.width, canvas.height);
+  }
+
+  window.addEventListener("resize", resizeCanvas);
+
+  function resetGame() {
+    state.mode = "ready";
+    state.time = 0;
+    state.score = 0;
+    state.hull = 3;
+    state.cores = 0;
+    state.speed = 18;
+    state.spawnTimer = 0;
+    state.fps = 0;
+    state.frameCounter = 0;
+    state.fpsTimer = 0;
+    state.hitShakeTime = 0;
+    state.hitShakeStrength = 0;
+    state.currentFov = BASE_FOV;
+    state.targetFov = BASE_FOV;
+    state.eventMessage = "";
+    state.eventTimer = 0;
+    state.hitFlashTimer = 0;
+    player.x = 0;
+    player.y = -0.45;
+    player.vx = 0;
+    player.vy = 0;
+    player.dash = 0;
+    player.dashCooldown = 0;
+    player.trailTimer = 0;
+    objects.length = 0;
+    sparks.length = 0;
+    trailParticles.length = 0;
+    dashRequested = false;
+    hud.shell.classList.remove("is-hit");
+    hud.eventToast.classList.remove("is-visible");
+    hud.eventToast.textContent = "";
+    updateHud();
+    setStatus("Ready", "Collect blue energy cores, dodge red debris, and use Space to phase dash through danger.", false);
+  }
+
+  function startGame() {
+    if (state.mode === "gameover") {
+      resetGame();
+    }
+    state.mode = "playing";
+    hud.pauseButton.textContent = "Pause";
+    setStatus("", "", true);
+    canvas.focus();
+  }
+
+  function togglePause() {
+    if (state.mode === "playing") {
+      state.mode = "paused";
+      hud.pauseButton.textContent = "Resume";
+      setStatus("Paused", "The salvage drone is holding position.", false);
+    } else if (state.mode === "paused") {
+      state.mode = "playing";
+      hud.pauseButton.textContent = "Pause";
+      setStatus("", "", true);
+      canvas.focus();
+    }
+  }
+
+  function setStatus(title, text, hidden) {
+    hud.statusTitle.textContent = title;
+    hud.statusText.textContent = text;
+    hud.statusPanel.classList.toggle("is-hidden", hidden);
+  }
+
+  function setEventMessage(text, duration = 0.9) {
+    state.eventMessage = text;
+    state.eventTimer = duration;
+    hud.eventToast.textContent = text;
+    hud.eventToast.classList.add("is-visible");
+  }
+
+  function updateHud() {
+    hud.score.textContent = Math.floor(state.score).toString();
+    hud.hull.textContent = state.hull.toString();
+    hud.cores.textContent = state.cores.toString();
+    hud.dash.textContent = player.dashCooldown <= 0 ? "Ready" : `${player.dashCooldown.toFixed(1)}s`;
+    hud.speed.textContent = `${(state.speed / 18).toFixed(1)}x`;
+    hud.fps.textContent = state.fps ? Math.round(state.fps).toString() : "--";
+  }
+
+  function spawnObject() {
+    const roll = Math.random();
+    const isCrystal = roll > 0.66;
+    const size = isCrystal ? randomRange(0.55, 0.85) : randomRange(0.85, 1.35);
+    objects.push({
+      type: isCrystal ? "crystal" : "debris",
+      x: randomRange(-3.8, 3.8),
+      y: randomRange(-2.0, 1.6),
+      z: -72,
+      size,
+      radius: isCrystal ? size * 0.68 : size * 0.82,
+      rotX: randomRange(0, Math.PI * 2),
+      rotY: randomRange(0, Math.PI * 2),
+      rotZ: randomRange(0, Math.PI * 2),
+      spinX: randomRange(-1.4, 1.4),
+      spinY: randomRange(-1.6, 1.6),
+      spinZ: randomRange(-1.2, 1.2)
+    });
+  }
+
+  function spawnSparks(x, y, z, color, count = 14) {
+    for (let i = 0; i < count; i++) {
+      sparks.push({
+        x,
+        y,
+        z,
+        vx: randomRange(-2.8, 2.8),
+        vy: randomRange(-2.1, 2.1),
+        vz: randomRange(-3, 4),
+        life: randomRange(0.28, 0.52),
+        maxLife: 0.52,
+        size: randomRange(0.06, 0.14),
+        color
+      });
+    }
+  }
+
+  function spawnTrailParticle(force = false) {
+    const moving = Math.hypot(player.vx, player.vy) > 0.1;
+    if (!force && state.mode !== "playing") {
+      return;
+    }
+    if (!force && !moving && player.dash <= 0) {
+      return;
+    }
+    const dashBoost = player.dash > 0 ? 1.8 : 1;
+    trailParticles.push({
+      x: player.x + randomRange(-0.16, 0.16),
+      y: player.y + randomRange(-0.12, 0.12),
+      z: player.z + 0.72,
+      vx: -player.vx * 0.055 + randomRange(-0.35, 0.35),
+      vy: -player.vy * 0.055 + randomRange(-0.25, 0.25),
+      vz: randomRange(1.8, 3.8) * dashBoost,
+      life: player.dash > 0 ? 0.46 : 0.32,
+      maxLife: player.dash > 0 ? 0.46 : 0.32,
+      size: player.dash > 0 ? randomRange(0.14, 0.24) : randomRange(0.08, 0.16),
+      color: player.dash > 0 ? [0.25, 0.95, 1, 0.78] : [0.42, 1, 0.72, 0.52]
+    });
+  }
+
+  function updateGame(dt) {
+    if (state.mode !== "playing") {
+      return;
+    }
+
+    state.time += dt;
+    state.speed = Math.min(34, 14 + state.time * 0.34);
+    state.score += dt * 14 * (1 + state.cores * 0.015);
+    state.spawnTimer -= dt;
+
+    if (state.spawnTimer <= 0) {
+      spawnObject();
+      const difficulty = clamp(state.time / 85, 0, 0.5);
+      state.spawnTimer = randomRange(0.46, 0.92 - difficulty);
+    }
+
+    let moveX = 0;
+    let moveY = 0;
+    if (keys.has("a") || keys.has("arrowleft")) moveX -= 1;
+    if (keys.has("d") || keys.has("arrowright")) moveX += 1;
+    if (keys.has("w") || keys.has("arrowup")) moveY += 1;
+    if (keys.has("s") || keys.has("arrowdown")) moveY -= 1;
+
+    const length = Math.hypot(moveX, moveY) || 1;
+    moveX /= length;
+    moveY /= length;
+
+    const controlSpeed = player.dash > 0 ? 11 : 7.2;
+    player.vx = moveX * controlSpeed;
+    player.vy = moveY * controlSpeed;
+    player.x = clamp(player.x + player.vx * dt, -3.8, 3.8);
+    player.y = clamp(player.y + player.vy * dt, -2.15, 1.55);
+
+    player.dash = Math.max(0, player.dash - dt);
+    player.dashCooldown = Math.max(0, player.dashCooldown - dt);
+    if (dashRequested && player.dashCooldown <= 0) {
+      player.dash = DASH_DURATION;
+      player.dashCooldown = DASH_COOLDOWN;
+      setEventMessage("Phase dash");
+      spawnSparks(player.x, player.y, player.z + 0.4, [0.25, 0.95, 1, 0.9], 18);
+      for (let i = 0; i < 8; i++) {
+        spawnTrailParticle(true);
+      }
+    }
+    dashRequested = false;
+
+    player.trailTimer -= dt;
+    if (player.trailTimer <= 0) {
+      spawnTrailParticle();
+      player.trailTimer = player.dash > 0 ? 0.026 : 0.055;
+    }
+
+    for (let i = objects.length - 1; i >= 0; i--) {
+      const object = objects[i];
+      object.z += state.speed * dt;
+      object.rotX += object.spinX * dt;
+      object.rotY += object.spinY * dt;
+      object.rotZ += object.spinZ * dt;
+
+      const dz = Math.abs(object.z - player.z);
+      if (dz < 1.1) {
+        const distance = Math.hypot(object.x - player.x, object.y - player.y);
+        if (distance < object.radius + player.radius) {
+          if (object.type === "crystal") {
+            state.cores += 1;
+            state.score += 140;
+            if (state.cores % 7 === 0) {
+              state.hull = Math.min(5, state.hull + 1);
+              setEventMessage("Hull restored");
+            } else {
+              setEventMessage("+ Core");
+            }
+            spawnSparks(object.x, object.y, object.z, [0.45, 0.95, 1, 0.9], 18);
+          } else if (player.dash > 0) {
+            state.score += 90;
+            setEventMessage("Debris phased");
+            spawnSparks(object.x, object.y, object.z, [1, 0.82, 0.28, 0.86], 20);
+          } else {
+            state.hull -= 1;
+            state.hitShakeTime = 0.42;
+            state.hitShakeStrength = 1;
+            state.hitFlashTimer = 0.42;
+            hud.shell.classList.add("is-hit");
+            setEventMessage("Hull damaged");
+            spawnSparks(object.x, object.y, object.z, [1, 0.25, 0.34, 0.94], 26);
+            if (state.hull <= 0) {
+              state.mode = "gameover";
+              hud.pauseButton.textContent = "Pause";
+              setStatus("Mission Failed", `Final score: ${Math.floor(state.score)} | Cores: ${state.cores} | Time: ${state.time.toFixed(1)}s. Reset to fly again.`, false);
+            }
+          }
+          objects.splice(i, 1);
+          continue;
+        }
+      }
+
+      if (object.z > 8) {
+        objects.splice(i, 1);
+      }
+    }
+
+    for (let i = trailParticles.length - 1; i >= 0; i--) {
+      const trail = trailParticles[i];
+      trail.life -= dt;
+      trail.x += trail.vx * dt;
+      trail.y += trail.vy * dt;
+      trail.z += trail.vz * dt;
+      if (trail.life <= 0) {
+        trailParticles.splice(i, 1);
+      }
+    }
+
+    for (let i = sparks.length - 1; i >= 0; i--) {
+      const spark = sparks[i];
+      spark.life -= dt;
+      spark.x += spark.vx * dt;
+      spark.y += spark.vy * dt;
+      spark.z += spark.vz * dt;
+      if (spark.life <= 0) {
+        sparks.splice(i, 1);
+      }
+    }
+
+    updateHud();
+  }
+
+  function updatePresentation(dt) {
+    state.frameCounter += 1;
+    state.fpsTimer += dt;
+    if (state.fpsTimer >= 1) {
+      state.fps = state.frameCounter / state.fpsTimer;
+      state.frameCounter = 0;
+      state.fpsTimer = 0;
+      updateHud();
+    }
+
+    state.hitShakeTime = Math.max(0, state.hitShakeTime - dt);
+    state.hitFlashTimer = Math.max(0, state.hitFlashTimer - dt);
+    if (state.hitFlashTimer <= 0) {
+      hud.shell.classList.remove("is-hit");
+    }
+
+    state.eventTimer = Math.max(0, state.eventTimer - dt);
+    if (state.eventTimer <= 0 && state.eventMessage) {
+      state.eventMessage = "";
+      hud.eventToast.classList.remove("is-visible");
+    }
+
+    state.targetFov = player.dash > 0 ? DASH_FOV : BASE_FOV;
+    const fovEase = Math.min(1, dt * 10);
+    state.currentFov += (state.targetFov - state.currentFov) * fovEase;
+  }
+
+  function bindMesh(mesh) {
+    gl.bindBuffer(gl.ARRAY_BUFFER, mesh.vertexBuffer);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mesh.indexBuffer);
+    gl.vertexAttribPointer(locations.position, 3, gl.FLOAT, false, mesh.stride, 0);
+    gl.enableVertexAttribArray(locations.position);
+    gl.vertexAttribPointer(locations.normal, 3, gl.FLOAT, false, mesh.stride, 3 * Float32Array.BYTES_PER_ELEMENT);
+    gl.enableVertexAttribArray(locations.normal);
+    gl.vertexAttribPointer(locations.texCoord, 2, gl.FLOAT, false, mesh.stride, 6 * Float32Array.BYTES_PER_ELEMENT);
+    gl.enableVertexAttribArray(locations.texCoord);
+  }
+
+  function drawMesh(mesh, options) {
+    bindMesh(mesh);
+    const matrix = makeModel(options.position, options.rotation, options.scale);
+    gl.uniformMatrix4fv(locations.model, false, matrix);
+    gl.uniform4fv(locations.color, options.color);
+    gl.uniform1f(locations.textureMix, options.textureMix ?? 0.65);
+    gl.uniform2fv(locations.uvScale, options.uvScale ?? [1, 1]);
+    gl.uniform1f(locations.pulse, options.pulse ?? 0);
+    gl.bindTexture(gl.TEXTURE_2D, options.texture);
+    gl.drawElements(gl.TRIANGLES, mesh.indexCount, gl.UNSIGNED_SHORT, 0);
+  }
+
+  function renderScene(alphaTime) {
+    resizeCanvas();
+    Mat4.perspective(projectionMatrix, state.currentFov, canvas.width / canvas.height, 0.1, 120);
+
+    const shakeLife = state.hitShakeTime > 0 ? state.hitShakeTime / 0.42 : 0;
+    const shakeAmount = shakeLife * shakeLife * state.hitShakeStrength * 0.085;
+    const shakeX = Math.sin(alphaTime * 82) * shakeAmount;
+    const shakeY = Math.cos(alphaTime * 67) * shakeAmount * 0.72;
+    Mat4.identity(viewMatrix);
+    Mat4.translate(viewMatrix, viewMatrix, [shakeX - player.x * 0.018, shakeY - player.y * 0.016, 0]);
+
+    gl.clearColor(0.005, 0.007, 0.016, 1);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    gl.uniformMatrix4fv(locations.view, false, viewMatrix);
+    gl.uniformMatrix4fv(locations.projection, false, projectionMatrix);
+    gl.uniform1i(locations.texture, 0);
+    gl.uniform3fv(locations.lightDirection, LIGHT_DIRECTION);
+    gl.uniform1f(locations.ambientLight, 0.28);
+    gl.uniform1f(locations.diffuseStrength, 0.86);
+
+    gl.disable(gl.BLEND);
+    gl.depthMask(true);
+
+    renderStars(alphaTime);
+    renderTunnel(alphaTime);
+    renderPlayer(alphaTime);
+    renderObjects(alphaTime);
+    renderGlowPass(alphaTime);
+  }
+
+  function renderGlowPass(alphaTime) {
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
+    gl.depthMask(false);
+    renderCoreGlows(alphaTime);
+    renderTrail(alphaTime);
+    renderSparks(alphaTime);
+    gl.depthMask(true);
+    gl.disable(gl.BLEND);
+  }
+
+  function renderStars(alphaTime) {
+    stars.forEach((star) => {
+      const wrappedZ = -10 - (((-star.z + state.time * state.speed * 0.72) % 72 + 72) % 72);
+      const twinkle = 0.15 + Math.sin(alphaTime * 3 + star.phase) * 0.08;
+      drawMesh(meshes.cube, {
+        position: [star.x, star.y, wrappedZ],
+        rotation: [0, 0, 0],
+        scale: [star.size, star.size, star.size],
+        color: [0.78, 0.94, 1, 1],
+        texture: starTexture,
+        textureMix: 0.85,
+        pulse: twinkle
+      });
+    });
+  }
+
+  function renderTunnel(alphaTime) {
+    const spacing = 6;
+    const offset = (state.time * state.speed) % spacing;
+    for (let z = -10 + offset; z > -82; z -= spacing) {
+      const pulse = 0.05 + Math.sin(alphaTime * 2 + z * 0.2) * 0.04;
+      drawMesh(meshes.cube, {
+        position: [0, -3.75, z],
+        rotation: [0, 0, 0],
+        scale: [11.4, 0.08, 0.85],
+        color: [0.12, 0.35, 0.52, 1],
+        texture: colorTexture,
+        textureMix: 0.72,
+        uvScale: [10, 1],
+        pulse
+      });
+      drawMesh(meshes.cube, {
+        position: [-5.85, 0, z],
+        rotation: [0, 0, 0],
+        scale: [0.08, 7.4, 0.85],
+        color: [0.12, 0.27, 0.48, 1],
+        texture: colorTexture,
+        textureMix: 0.65,
+        uvScale: [1, 7],
+        pulse
+      });
+      drawMesh(meshes.cube, {
+        position: [5.85, 0, z],
+        rotation: [0, 0, 0],
+        scale: [0.08, 7.4, 0.85],
+        color: [0.12, 0.27, 0.48, 1],
+        texture: colorTexture,
+        textureMix: 0.65,
+        uvScale: [1, 7],
+        pulse
+      });
+    }
+  }
+
+  function renderPlayer(alphaTime) {
+    const dashPulse = player.dash > 0 ? 0.75 : 0.12 + Math.sin(alphaTime * 7) * 0.04;
+    drawMesh(meshes.ship, {
+      position: [player.x, player.y, player.z],
+      rotation: [player.vy * -0.035, player.vx * 0.04, player.vx * -0.09],
+      scale: [0.72, 0.66, 0.88],
+      color: player.dash > 0 ? [0.35, 0.95, 1, 1] : [0.42, 1, 0.72, 1],
+      texture: crystalTexture,
+      textureMix: 0.42,
+      pulse: dashPulse
+    });
+  }
+
+  function renderObjects(alphaTime) {
+    objects.forEach((object) => {
+      if (object.type === "crystal") {
+        drawMesh(meshes.crystal, {
+          position: [object.x, object.y, object.z],
+          rotation: [object.rotX, object.rotY + alphaTime * 0.8, object.rotZ],
+          scale: [object.size, object.size, object.size],
+          color: [0.48, 1, 1, 1],
+          texture: crystalTexture,
+          textureMix: 0.78,
+          pulse: 0.48 + Math.sin(alphaTime * 5 + object.x) * 0.16
+        });
+      } else {
+        drawMesh(meshes.cube, {
+          position: [object.x, object.y, object.z],
+          rotation: [object.rotX, object.rotY, object.rotZ],
+          scale: [object.size * 1.15, object.size * 0.9, object.size],
+          color: [1, 0.24, 0.08, 1],
+          texture: warningTexture,
+          textureMix: 0.82,
+          uvScale: [1.5, 1.5],
+          pulse: 0.18
+        });
+      }
+    });
+  }
+
+  function renderCoreGlows(alphaTime) {
+    objects.forEach((object) => {
+      if (object.type !== "crystal") {
+        return;
+      }
+      const pulse = 0.45 + Math.sin(alphaTime * 5 + object.x) * 0.18;
+      drawMesh(meshes.crystal, {
+        position: [object.x, object.y, object.z],
+        rotation: [object.rotX * 0.6, object.rotY + alphaTime, object.rotZ],
+        scale: [object.size * 1.75, object.size * 1.75, object.size * 1.75],
+        color: [0.25, 0.95, 1, 0.22],
+        texture: crystalTexture,
+        textureMix: 0.45,
+        pulse
+      });
+    });
+  }
+
+  function renderTrail(alphaTime) {
+    trailParticles.forEach((trail) => {
+      const lifeRatio = Math.max(0, trail.life / trail.maxLife);
+      drawMesh(meshes.cube, {
+        position: [trail.x, trail.y, trail.z],
+        rotation: [alphaTime * 2.4, alphaTime * 3.2, alphaTime * 1.7],
+        scale: [trail.size * lifeRatio, trail.size * lifeRatio, trail.size * 1.8 * lifeRatio],
+        color: [trail.color[0], trail.color[1], trail.color[2], trail.color[3] * lifeRatio],
+        texture: starTexture,
+        textureMix: 0.7,
+        pulse: 0.9 * lifeRatio
+      });
+    });
+  }
+
+  function renderSparks(alphaTime) {
+    sparks.forEach((spark) => {
+      const lifeRatio = Math.max(0, spark.life / spark.maxLife);
+      drawMesh(meshes.cube, {
+        position: [spark.x, spark.y, spark.z],
+        rotation: [alphaTime * 3, alphaTime * 4, alphaTime * 2],
+        scale: [spark.size * lifeRatio, spark.size * lifeRatio, spark.size * lifeRatio],
+        color: [spark.color[0], spark.color[1], spark.color[2], spark.color[3] * lifeRatio],
+        texture: starTexture,
+        textureMix: 0.55,
+        pulse: 0.95 * lifeRatio
+      });
+    });
+  }
+
+  function frame(time) {
+    const seconds = time * 0.001;
+    const dt = Math.min(0.033, seconds - (state.lastTime || seconds));
+    state.lastTime = seconds;
+    updateGame(dt);
+    updatePresentation(dt);
+    renderScene(seconds);
+    requestAnimationFrame(frame);
+  }
+
+  gl.enable(gl.DEPTH_TEST);
+  gl.enable(gl.CULL_FACE);
+  gl.cullFace(gl.BACK);
+  gl.activeTexture(gl.TEXTURE0);
+  resizeCanvas();
+  resetGame();
+  requestAnimationFrame(frame);
+})();

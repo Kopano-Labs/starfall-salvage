@@ -1,0 +1,12 @@
+# Local runtime and OS noise
+.DS_Store
+Thumbs.db
+*.log
+
+# Dependency folders if the project is extended later
+node_modules/
+
+# Temporary browser/test output
+tmp/
+temp/
+.cache/
