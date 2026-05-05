@@ -10,3 +10,8 @@ node_modules/
 tmp/
 temp/
 .cache/
+
+# Local profile/backend state
+.data/
+__pycache__/
+*.pyc

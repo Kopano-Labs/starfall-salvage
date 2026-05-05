@@ -18,7 +18,16 @@
     statusText: document.getElementById("statusText"),
     startButton: document.getElementById("startButton"),
     pauseButton: document.getElementById("pauseButton"),
-    resetButton: document.getElementById("resetButton")
+    resetButton: document.getElementById("resetButton"),
+    pilotBadge: document.getElementById("pilotBadge"),
+    signInButton: document.getElementById("signInButton"),
+    accountModal: document.getElementById("accountModal"),
+    callsignInput: document.getElementById("callsignInput"),
+    accessCodeInput: document.getElementById("accessCodeInput"),
+    savePilotButton: document.getElementById("savePilotButton"),
+    guestPilotButton: document.getElementById("guestPilotButton"),
+    closeAccountButton: document.getElementById("closeAccountButton"),
+    accountStatus: document.getElementById("accountStatus")
   };
 
   if (!gl) {
@@ -131,6 +140,8 @@
   const DASH_DURATION = 0.34;
   const DASH_COOLDOWN = 1.45;
   const LIGHT_DIRECTION = new Float32Array([0.35, 0.9, 0.55]);
+  const PROFILE_STORAGE_KEY = "starfallSalvagePilotProfile";
+  const SCORES_STORAGE_KEY = "starfallSalvageLocalScores";
 
   const Mat4 = {
     create() {
@@ -466,6 +477,9 @@
   const keys = new Set();
   const blockingKeys = new Set(["arrowup", "arrowdown", "arrowleft", "arrowright", " ", "w", "a", "s", "d"]);
   let dashRequested = false;
+  let pilotProfile = loadPilotProfile();
+  let wasPlayingBeforeHidden = false;
+  let contextLost = false;
 
   window.addEventListener("keydown", (event) => {
     const key = event.key.toLowerCase();
@@ -498,6 +512,46 @@
     resetGame();
     startGame();
   });
+  hud.signInButton.addEventListener("click", openAccountModal);
+  hud.closeAccountButton.addEventListener("click", closeAccountModal);
+  hud.guestPilotButton.addEventListener("click", useGuestPilot);
+  hud.savePilotButton.addEventListener("click", () => {
+    signInPilot();
+  });
+  hud.accountModal.addEventListener("click", (event) => {
+    if (event.target === hud.accountModal) {
+      closeAccountModal();
+    }
+  });
+  hud.callsignInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      signInPilot();
+    }
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      wasPlayingBeforeHidden = state.mode === "playing";
+      if (wasPlayingBeforeHidden) {
+        state.mode = "paused";
+        hud.pauseButton.textContent = "Resume";
+        setStatus("Paused", "Mission paused while the tab is hidden.", false);
+      }
+      return;
+    }
+    state.lastTime = 0;
+    if (wasPlayingBeforeHidden && state.mode === "paused") {
+      setStatus("Paused", "Resume when ready. Timing stayed delta-time safe while hidden.", false);
+    }
+  });
+  canvas.addEventListener("webglcontextlost", (event) => {
+    event.preventDefault();
+    contextLost = true;
+    state.mode = "paused";
+    setStatus("Graphics Context Lost", "The browser paused WebGL. The game will rebuild the scene when the context returns.", false);
+  });
+  canvas.addEventListener("webglcontextrestored", () => {
+    window.location.reload();
+  });
 
   const state = {
     mode: "ready",
@@ -517,7 +571,8 @@
     targetFov: BASE_FOV,
     eventMessage: "",
     eventTimer: 0,
-    hitFlashTimer: 0
+    hitFlashTimer: 0,
+    scoreSubmitted: false
   };
 
   const player = {
@@ -582,6 +637,7 @@
     state.eventMessage = "";
     state.eventTimer = 0;
     state.hitFlashTimer = 0;
+    state.scoreSubmitted = false;
     player.x = 0;
     player.y = -0.45;
     player.vx = 0;
@@ -634,6 +690,232 @@
     state.eventTimer = duration;
     hud.eventToast.textContent = text;
     hud.eventToast.classList.add("is-visible");
+  }
+
+  function defaultPilotProfile() {
+    return {
+      id: "guest",
+      callsign: "Guest Pilot",
+      mode: "guest",
+      bestScore: 0,
+      lastSeen: new Date().toISOString()
+    };
+  }
+
+  function readJsonStorage(key, fallback) {
+    try {
+      const raw = window.localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : fallback;
+    } catch {
+      return fallback;
+    }
+  }
+
+  function writeJsonStorage(key, value) {
+    try {
+      window.localStorage.setItem(key, JSON.stringify(value));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  function normalizeCallsign(value) {
+    return (value || "")
+      .replace(/[^a-z0-9 _-]/gi, "")
+      .trim()
+      .slice(0, 24);
+  }
+
+  function localPilotId(callsign) {
+    const slug = callsign.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "pilot";
+    const suffix = Math.random().toString(36).slice(2, 8);
+    return `local-${slug}-${suffix}`;
+  }
+
+  function loadPilotProfile() {
+    const saved = readJsonStorage(PROFILE_STORAGE_KEY, null);
+    if (!saved || typeof saved !== "object" || !saved.callsign) {
+      return defaultPilotProfile();
+    }
+    return {
+      id: saved.id || localPilotId(saved.callsign),
+      callsign: normalizeCallsign(saved.callsign) || "Guest Pilot",
+      mode: saved.mode || "local",
+      bestScore: Number(saved.bestScore) || 0,
+      lastSeen: saved.lastSeen || new Date().toISOString()
+    };
+  }
+
+  function persistPilotProfile(profile) {
+    pilotProfile = {
+      ...profile,
+      callsign: normalizeCallsign(profile.callsign) || "Guest Pilot",
+      bestScore: Number(profile.bestScore) || 0,
+      lastSeen: new Date().toISOString()
+    };
+    writeJsonStorage(PROFILE_STORAGE_KEY, pilotProfile);
+    updatePilotBadge();
+  }
+
+  function updatePilotBadge() {
+    hud.pilotBadge.textContent = pilotProfile.callsign;
+    hud.pilotBadge.title = `${pilotProfile.callsign} (${pilotProfile.mode})`;
+    hud.signInButton.textContent = pilotProfile.mode === "guest" ? "Sign in" : "Pilot";
+  }
+
+  function openAccountModal() {
+    hud.callsignInput.value = pilotProfile.mode === "guest" ? "" : pilotProfile.callsign;
+    hud.accessCodeInput.value = "";
+    hud.accountStatus.textContent = pilotProfile.mode === "backend"
+      ? "Backend profile active. Scores will sync when the local server is running."
+      : "Offline profile mode is available with no network account.";
+    hud.accountModal.classList.remove("is-hidden");
+    hud.callsignInput.focus();
+  }
+
+  function closeAccountModal() {
+    hud.accountModal.classList.add("is-hidden");
+    canvas.focus();
+  }
+
+  function useGuestPilot() {
+    pilotProfile = defaultPilotProfile();
+    try {
+      window.localStorage.removeItem(PROFILE_STORAGE_KEY);
+    } catch {
+      // Local storage may be unavailable in locked-down browsers.
+    }
+    updatePilotBadge();
+    hud.accountStatus.textContent = "Guest pilot active. Scores stay in this browser session.";
+    closeAccountModal();
+  }
+
+  async function requestJson(url, options = {}) {
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 1200);
+    try {
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal,
+        headers: {
+          "Content-Type": "application/json",
+          ...(options.headers || {})
+        }
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      return response.json();
+    } finally {
+      window.clearTimeout(timeoutId);
+    }
+  }
+
+  async function signInPilot() {
+    const callsign = normalizeCallsign(hud.callsignInput.value) || "Salvage Pilot";
+    const fallbackProfile = {
+      id: pilotProfile.id !== "guest" ? pilotProfile.id : localPilotId(callsign),
+      callsign,
+      mode: "local",
+      bestScore: pilotProfile.bestScore || 0
+    };
+    hud.accountStatus.textContent = "Checking local backend...";
+    hud.savePilotButton.disabled = true;
+
+    try {
+      const data = await requestJson("/api/signin", {
+        method: "POST",
+        body: JSON.stringify({
+          callsign,
+          squadCode: hud.accessCodeInput.value.trim()
+        })
+      });
+      if (!data.ok || !data.pilot) {
+        throw new Error("Invalid backend response");
+      }
+      persistPilotProfile({
+        id: data.pilot.id,
+        callsign: data.pilot.callsign,
+        mode: "backend",
+        bestScore: Number(data.pilot.bestScore) || 0,
+        lastSeen: data.pilot.lastSeen
+      });
+      hud.accountStatus.textContent = "Backend profile linked.";
+      setEventMessage(`Pilot linked: ${pilotProfile.callsign}`);
+      closeAccountModal();
+    } catch {
+      persistPilotProfile(fallbackProfile);
+      hud.accountStatus.textContent = "Backend unavailable. Local pilot saved for offline demo mode.";
+      setEventMessage(`Local pilot: ${pilotProfile.callsign}`);
+      closeAccountModal();
+    } finally {
+      hud.savePilotButton.disabled = false;
+    }
+  }
+
+  function saveLocalScore(payload) {
+    const scores = readJsonStorage(SCORES_STORAGE_KEY, []);
+    const cleanScores = Array.isArray(scores) ? scores : [];
+    cleanScores.push({
+      ...payload,
+      savedAt: new Date().toISOString()
+    });
+    cleanScores.sort((a, b) => Number(b.score) - Number(a.score));
+    writeJsonStorage(SCORES_STORAGE_KEY, cleanScores.slice(0, 12));
+
+    const bestScore = Math.max(pilotProfile.bestScore || 0, Math.floor(payload.score));
+    if (bestScore !== pilotProfile.bestScore && pilotProfile.mode !== "guest") {
+      persistPilotProfile({ ...pilotProfile, bestScore });
+    }
+    return bestScore;
+  }
+
+  async function submitScore() {
+    if (state.scoreSubmitted) {
+      return;
+    }
+    state.scoreSubmitted = true;
+
+    const payload = {
+      pilotId: pilotProfile.id,
+      callsign: pilotProfile.callsign,
+      mode: pilotProfile.mode,
+      score: Math.floor(state.score),
+      cores: state.cores,
+      time: Number(state.time.toFixed(2))
+    };
+    const bestScore = saveLocalScore(payload);
+
+    if (pilotProfile.mode !== "backend") {
+      setEventMessage(`Local best: ${bestScore}`);
+      return;
+    }
+
+    try {
+      const data = await requestJson("/api/score", {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+      if (data.ok && data.pilot) {
+        persistPilotProfile({
+          ...pilotProfile,
+          bestScore: Number(data.pilot.bestScore) || bestScore
+        });
+        setEventMessage("Score synced");
+      }
+    } catch {
+      setEventMessage("Score saved offline");
+    }
+  }
+
+  function handleGameOver() {
+    state.mode = "gameover";
+    hud.pauseButton.textContent = "Pause";
+    const finalScore = Math.floor(state.score);
+    const bestScore = Math.max(pilotProfile.bestScore || 0, finalScore);
+    setStatus("Mission Failed", `Pilot: ${pilotProfile.callsign} | Final score: ${finalScore} | Best: ${bestScore} | Cores: ${state.cores} | Time: ${state.time.toFixed(1)}s. Reset to fly again.`, false);
+    submitScore();
   }
 
   function updateHud() {
@@ -791,9 +1073,7 @@
             setEventMessage("Hull damaged");
             spawnSparks(object.x, object.y, object.z, [1, 0.25, 0.34, 0.94], 26);
             if (state.hull <= 0) {
-              state.mode = "gameover";
-              hud.pauseButton.textContent = "Pause";
-              setStatus("Mission Failed", `Final score: ${Math.floor(state.score)} | Cores: ${state.cores} | Time: ${state.time.toFixed(1)}s. Reset to fly again.`, false);
+              handleGameOver();
             }
           }
           objects.splice(i, 1);
@@ -1068,6 +1348,10 @@
     const seconds = time * 0.001;
     const dt = Math.min(0.033, seconds - (state.lastTime || seconds));
     state.lastTime = seconds;
+    if (contextLost || document.hidden) {
+      requestAnimationFrame(frame);
+      return;
+    }
     updateGame(dt);
     updatePresentation(dt);
     renderScene(seconds);
@@ -1079,6 +1363,7 @@
   gl.cullFace(gl.BACK);
   gl.activeTexture(gl.TEXTURE0);
   resizeCanvas();
+  updatePilotBadge();
   resetGame();
   requestAnimationFrame(frame);
 })();

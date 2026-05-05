@@ -14,7 +14,7 @@
 
     <section class="hud" aria-live="polite">
       <div class="brand">
-        <span class="brand-mark"></span>
+        <img class="brand-logo" src="assets/kopano-labs-logo.png" alt="Kopano Labs logo">
         <div>
           <p class="eyebrow">WebGL Edition</p>
           <h1>Starfall Salvage</h1>
@@ -31,6 +31,8 @@
       </div>
 
       <div class="hud-actions">
+        <span class="pilot-badge" id="pilotBadge">Guest Pilot</span>
+        <button id="signInButton" type="button">Sign in</button>
         <button id="startButton" type="button">Start</button>
         <button id="pauseButton" type="button">Pause</button>
         <button id="resetButton" type="button">Reset</button>
@@ -45,6 +47,25 @@
     </section>
 
     <div class="event-toast" id="eventToast" aria-live="polite"></div>
+
+    <section class="account-modal is-hidden" id="accountModal" aria-label="Pilot sign in">
+      <div class="account-card">
+        <img class="account-logo" src="assets/kopano-labs-logo.png" alt="Kopano Labs">
+        <p class="eyebrow">Pilot Access</p>
+        <h2>Kopano Labs Flight Deck</h2>
+        <p class="account-copy">Create a local pilot profile for best scores and leaderboard practice. It works offline and upgrades to the local backend when the optional server is running.</p>
+        <label for="callsignInput">Callsign</label>
+        <input id="callsignInput" type="text" maxlength="24" autocomplete="nickname" placeholder="e.g. RobynAce">
+        <label for="accessCodeInput">Squad code</label>
+        <input id="accessCodeInput" type="password" maxlength="32" autocomplete="off" placeholder="Optional for demo">
+        <div class="account-actions">
+          <button id="savePilotButton" type="button">Save Pilot</button>
+          <button id="guestPilotButton" type="button">Guest</button>
+          <button id="closeAccountButton" type="button">Close</button>
+        </div>
+        <p class="account-status" id="accountStatus">No network account required.</p>
+      </div>
+    </section>
   </main>
 </body>
 </html>

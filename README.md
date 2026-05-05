@@ -4,13 +4,23 @@ Starfall Salvage is a fresh raw-WebGL browser game inspired by the supplied Pong
 
 ## Run
 
-Open `index.html` in a WebGL-capable browser, or serve the folder locally:
+Open `index.html` in a WebGL-capable browser, or serve the folder locally.
+
+Static frontend only:
 
 ```powershell
 python -m http.server 8765
 ```
 
 Then browse to `http://localhost:8765`.
+
+Local backend demo with pilot profiles and score sync:
+
+```powershell
+python backend\starfall_server.py --port 8765
+```
+
+Then browse to `http://127.0.0.1:8765`.
 
 No compilation is required because this project uses browser-native WebGL and JavaScript.
 
@@ -20,11 +30,18 @@ No compilation is required because this project uses browser-native WebGL and Ja
 - `Space`: phase dash through one dangerous object
 - `P`: pause or resume
 - `R`: restart
-- Buttons on screen: start, pause, reset
+- Buttons on screen: sign in, start, pause, reset
+
+## Profile Mode
+
+The pilot sign-in is demo-safe. If the Python backend is running, the game stores a local backend profile and leaderboard entry. If the backend is unavailable, it falls back to browser `localStorage` so the game still works offline.
 
 ## Files
 
 - `index.html`: game canvas and HUD markup
 - `styles.css`: responsive full-screen game layout
 - `src/game.js`: raw WebGL renderer, matrix transforms, game loop, collision, input, procedural textures
+- `backend/starfall_server.py`: optional local demo backend for pilot profiles and scores
+- `tools/kc_starfall_watch.py`: KC hard-QA watcher for pass/fail/retry logs
+- `DEPLOYMENT.md`: subdomain and hosting runbook
 - `PROJECT_DOCUMENTATION.md`: assignment-style documentation

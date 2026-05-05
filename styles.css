@@ -49,6 +49,23 @@ button:focus-visible {
   outline: none;
 }
 
+input {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 6px;
+  background: rgba(3, 7, 14, 0.78);
+  color: var(--text);
+  font: inherit;
+  letter-spacing: 0;
+  padding: 9px 10px;
+}
+
+input:focus {
+  border-color: rgba(59, 227, 255, 0.78);
+  outline: none;
+}
+
 .shell {
   position: relative;
   width: 100vw;
@@ -107,13 +124,15 @@ button:focus-visible {
   border-radius: 8px;
 }
 
-.brand-mark {
-  width: 34px;
-  height: 34px;
+.brand-logo {
+  width: 118px;
+  height: 48px;
   flex: 0 0 auto;
-  clip-path: polygon(50% 0, 94% 30%, 78% 100%, 50% 84%, 22% 100%, 6% 30%);
-  background: linear-gradient(160deg, var(--cyan), var(--green));
-  box-shadow: 0 0 22px rgba(59, 227, 255, 0.45);
+  object-fit: cover;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.92);
+  padding: 4px;
+  box-shadow: 0 0 22px rgba(59, 227, 255, 0.28);
 }
 
 .eyebrow {
@@ -173,6 +192,24 @@ h1 {
   padding: 12px;
   border-radius: 8px;
   pointer-events: auto;
+}
+
+.pilot-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  max-width: 142px;
+  padding: 0 10px;
+  overflow: hidden;
+  border: 1px solid rgba(143, 253, 143, 0.22);
+  border-radius: 6px;
+  background: rgba(21, 73, 56, 0.35);
+  color: #dfffe5;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .status-panel {
@@ -235,6 +272,79 @@ h1 {
   transform: translateX(-50%);
 }
 
+.account-modal {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(0, 0, 0, 0.58);
+  pointer-events: auto;
+}
+
+.account-modal.is-hidden {
+  display: none;
+}
+
+.account-card {
+  width: min(430px, calc(100vw - 36px));
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  background: rgba(8, 16, 28, 0.96);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.5);
+  padding: 20px;
+}
+
+.account-logo {
+  display: block;
+  width: 168px;
+  height: 72px;
+  object-fit: cover;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.94);
+  padding: 6px;
+  margin-bottom: 14px;
+}
+
+.account-card h2 {
+  margin-bottom: 8px;
+  font-size: 1.45rem;
+}
+
+.account-copy,
+.account-status {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.account-card label {
+  display: block;
+  margin: 12px 0 6px;
+  color: #d9e7ff;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.account-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.account-actions button {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.account-status {
+  min-height: 20px;
+  margin: 12px 0 0;
+  font-size: 0.86rem;
+}
+
 @media (max-width: 760px) {
   .hud {
     top: 10px;
@@ -254,6 +364,11 @@ h1 {
     padding: 9px 10px;
   }
 
+  .brand-logo {
+    width: 84px;
+    height: 42px;
+  }
+
   .stats {
     grid-template-columns: repeat(3, minmax(72px, 1fr));
   }
@@ -267,13 +382,19 @@ h1 {
   }
 
   .hud-actions {
+    flex-wrap: wrap;
     justify-content: stretch;
     padding: 8px;
   }
 
+  .pilot-badge,
   .hud-actions button {
     flex: 1 1 0;
     min-width: 0;
+  }
+
+  .pilot-badge {
+    max-width: none;
   }
 
   .status-panel {

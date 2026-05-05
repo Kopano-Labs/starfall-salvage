@@ -10,6 +10,8 @@ Starfall Salvage is a 3D arcade runner built with raw WebGL. The player pilots a
 
 The upgraded version also includes diffuse fragment lighting, additive particle blending, a live FPS counter, matrix-based camera shake, and dynamic field-of-view changes during dash.
 
+The current build also includes Kopano Labs branding and a demo-safe pilot profile flow. The game works offline with browser storage and can sync pilot scores to the optional local Python backend.
+
 ## Aim of the Game
 
 The aim is to survive as long as possible, collect energy cores, and build the highest score before the drone hull reaches zero.
@@ -31,7 +33,7 @@ The aim is to survive as long as possible, collect energy cores, and build the h
 - `Space` activates phase dash.
 - `P` pauses or resumes the game.
 - `R` restarts the game.
-- The Start, Pause, and Reset buttons can also control the game.
+- The Sign in, Start, Pause, and Reset buttons can also control the game.
 - The HUD displays score, hull, cores, dash cooldown, speed, and FPS.
 
 ## How to Run or Compile
@@ -50,6 +52,16 @@ python -m http.server 8765
 
 Then open `http://localhost:8765`.
 
+To run with the local profile and score backend:
+
+```powershell
+python backend\starfall_server.py --port 8765
+```
+
+Then open `http://127.0.0.1:8765`.
+
+The Python backend is optional for demonstration. If it is not running, the game falls back to browser `localStorage` for pilot profiles and local scores.
+
 ## Design Overview
 
 The game separates browser UI from WebGL rendering. HTML and CSS handle the score, hull, core counter, buttons, and mission status. The WebGL canvas handles the playfield, ship, debris, crystals, tunnel segments, stars, and particles.
@@ -64,6 +76,7 @@ The main JavaScript file contains:
 - A real-time `requestAnimationFrame` game loop.
 - Simulation state for player movement, spawning, collision, score, hull, and difficulty.
 - A separate additive glow pass for trail particles, sparks, and energy core glow.
+- A local-first pilot profile flow that attempts `/api/signin` and `/api/score`, then falls back to browser storage.
 
 ## Key OpenGL/WebGL Concepts Used
 
@@ -81,25 +94,32 @@ The main JavaScript file contains:
 - FPS telemetry for performance monitoring.
 - Real-time rendering through `requestAnimationFrame`.
 - Event listening for keyboard and button input.
+- Local JSON API integration for demo sign-in and score persistence.
 
 ## Math Map for Marking
 
 The core OpenGL/WebGL concepts are intentionally easy to locate in `src/game.js`:
 
-- Vertex shader source starts at line 33.
-- Fragment shader source starts at line 56.
-- Shader compilation is handled by `compileShader` at line 84.
-- Shader program linking is handled by `createProgram` at line 96.
-- Attribute and uniform locations are collected at line 112.
-- Perspective matrix math is implemented in `Mat4.perspective` at line 151.
-- Per-object translate, rotate, and scale are combined in `makeModel` at line 259.
-- Canvas viewport resizing is handled by `resizeCanvas` at line 554.
-- Delta-time gameplay simulation starts in `updateGame(dt)` at line 708.
-- FPS, camera shake decay, event timers, and FOV easing are updated in `updatePresentation(dt)` at line 834.
-- The active projection matrix is rebuilt with `state.currentFov` at line 886.
-- The view matrix receives deterministic hit shake in `renderScene` at line 884.
-- Additive blending is isolated in `renderGlowPass` at line 914, with `gl.blendFunc(gl.SRC_ALPHA, gl.ONE)` at line 916.
-- The `requestAnimationFrame` loop and delta-time calculation start at line 1067.
+- Vertex shader source starts at line 42.
+- Fragment shader source starts at line 65.
+- Shader compilation is handled by `compileShader` at line 93.
+- Shader program linking is handled by `createProgram` at line 105.
+- Attribute and uniform locations are collected at line 121.
+- Perspective matrix math is implemented in `Mat4.perspective` at line 162.
+- Per-object translate, rotate, and scale are combined in `makeModel` at line 270.
+- Profile storage keys are declared at lines 143-144.
+- Browser visibility pause logic starts at line 531.
+- WebGL context-loss handling starts at line 546.
+- Canvas viewport resizing is handled by `resizeCanvas` at line 609.
+- Pilot sign-in starts in `signInPilot()` at line 815.
+- Score submission starts in `submitScore()` at line 874.
+- Game-over profile scoring is handled by `handleGameOver()` at line 912.
+- Delta-time gameplay simulation starts in `updateGame(dt)` at line 990.
+- FPS, camera shake decay, event timers, and FOV easing are updated in `updatePresentation(dt)` at line 1114.
+- The active projection matrix is rebuilt with `state.currentFov` at line 1166.
+- The view matrix receives deterministic hit shake at lines 1168-1173.
+- Additive blending is isolated in `renderGlowPass` at line 1194, with `gl.blendFunc(gl.SRC_ALPHA, gl.ONE)` at line 1196.
+- The `requestAnimationFrame` loop and delta-time calculation start at line 1347.
 
 ## Source Code Included
 
@@ -108,6 +128,9 @@ The source code is included in:
 - `index.html`
 - `styles.css`
 - `src/game.js`
+- `backend/starfall_server.py`
+- `assets/kopano-labs-logo.png`
+- `tools/kc_starfall_watch.py`
 
 ## Conclusion
 
