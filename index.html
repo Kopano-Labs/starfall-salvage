@@ -18,8 +18,8 @@
   <link rel="icon" href="data:,">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="assets/kopano-labs-logo.png">
-  <link rel="stylesheet" href="styles.css?v=20260506-mobile">
-  <script src="src/game.js?v=20260506-mobile" defer></script>
+  <link rel="stylesheet" href="styles.css?v=20260506-bosses">
+  <script src="src/game.js?v=20260506-bosses" defer></script>
 </head>
 <body>
   <main class="shell">
@@ -86,6 +86,8 @@
 
     <div class="event-toast" id="eventToast" aria-live="polite"></div>
 
+    <button id="mobileFireButton" type="button" class="mobile-fire-button is-hidden" aria-label="Fire weapon">FIRE</button>
+
     <aside class="kasi-comm is-collapsed" id="kasiComm" aria-label="Kasi-Comm in-game chat">
       <button id="kasiCommToggle" type="button" class="kasi-comm-toggle" aria-expanded="false" aria-controls="kasiCommBody">
         <span class="kasi-comm-toggle-icon" aria-hidden="true">&#x1F4AC;</span>
@@ -113,6 +115,28 @@
         </div>
       </div>
     </aside>
+
+    <section class="onboarding-modal is-hidden" id="onboardingModal" aria-label="How to play">
+      <div class="onboarding-card" role="dialog" aria-modal="true" aria-labelledby="onboardingTitle">
+        <p class="eyebrow">Mission Briefing</p>
+        <h2 id="onboardingTitle">How to Pilot Starfall Salvage</h2>
+        <ul class="onboarding-controls">
+          <li><strong>Desktop:</strong> WASD or Arrow Keys to fly. Space to phase-dash through danger.</li>
+          <li><strong>Mobile:</strong> Drag the canvas to fly. Tap to start. Tap mid-flight to phase-dash.</li>
+          <li><strong>Score:</strong> Collect blue energy cores. Avoid red debris. Hull starts at 3 hits.</li>
+          <li><strong>Danger zone:</strong> At 2.0x speed the lane glows red and bosses appear. They fire back &mdash; shoot first.</li>
+          <li><strong>Shoot:</strong> Press F (desktop) or tap the FIRE button (mobile).</li>
+        </ul>
+        <label class="onboarding-acknowledge">
+          <input id="onboardingAck" type="checkbox">
+          <span>I understand the controls and the 2.0x danger threshold.</span>
+        </label>
+        <div class="onboarding-actions">
+          <button id="onboardingContinueButton" type="button" disabled>Continue</button>
+        </div>
+        <p class="onboarding-footnote">This briefing only shows once. Got an upgrade idea? Email <a href="mailto:rkholofelo@kopanolabs.com">rkholofelo@kopanolabs.com</a> &mdash; strong ideas earn a Sovereign Tech bounty.</p>
+      </div>
+    </section>
 
     <section class="account-modal is-hidden" id="accountModal" aria-label="Pilot sign in">
       <div class="account-card">

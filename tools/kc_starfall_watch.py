@@ -158,6 +158,35 @@ def check_kopano_upgrade_features() -> dict[str, Any]:
         "touch_axis_in_movement": "moveX += touchAxis.x" in game_js,
         "touch_action_none_css": "touch-action: none" in _read_text("styles.css"),
         "mobile_control_hint_html": "Mobile:" in index_html and "tap to start" in index_html,
+        # Lesson 008 — Onboarding Pop-up
+        "onboarding_modal_markup": 'id="onboardingModal"' in index_html
+        and 'id="onboardingAck"' in index_html
+        and 'id="onboardingContinueButton"' in index_html,
+        "onboarding_storage_key": "ONBOARDING_STORAGE_KEY" in game_js,
+        "onboarding_acknowledge_required": "isOnboardingDone" in game_js
+        and "markOnboardingDone" in game_js,
+        "onboarding_css_modal": ".onboarding-modal" in _read_text("styles.css")
+        and ".onboarding-card" in _read_text("styles.css"),
+        # Lesson 009 — Speed-Triggered Background Shift
+        "danger_zone_threshold": "speedMultiplier >= 2" in game_js,
+        "danger_color_lerp": "dangerLerp" in game_js,
+        "danger_event_logged": '"danger_zone_entered"' in game_js,
+        # Lesson 010 — Player Shooting
+        "player_bullet_spawn": "spawnPlayerBullet" in game_js,
+        "player_bullet_cooldown": "state.bulletCooldown" in game_js,
+        "f_key_fire": '"f"' in game_js and "spawnPlayerBullet()" in game_js,
+        "bullet_collides_debris": '"debris_destroyed"' in game_js,
+        # Lesson 011 — Boss Spawn + Boss Shoot-Back
+        "boss_type_spawn": '"type": "boss"' in game_js or 'type: "boss"' in game_js,
+        "boss_hp_state": "object.hp" in game_js and "maxHp" in game_js,
+        "boss_shoot_function": "spawnBossBullet" in game_js,
+        "boss_renderer": 'object.type === "boss"' in game_js,
+        "boss_destroyed_event": '"boss_destroyed"' in game_js,
+        # Lesson 012 — Mobile FIRE Button
+        "mobile_fire_button_markup": 'id="mobileFireButton"' in index_html,
+        "mobile_fire_button_css": ".mobile-fire-button" in _read_text("styles.css"),
+        "mobile_fire_button_handler": "mobileFireButton" in game_js
+        and "spawnPlayerBullet()" in game_js,
     }
     missing = [name for name, ok in proofs.items() if not ok]
     return {

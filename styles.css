@@ -437,6 +437,120 @@ h1 {
   transform: translateX(-50%);
 }
 
+.onboarding-modal {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(0, 0, 0, 0.72);
+  pointer-events: auto;
+}
+
+.onboarding-modal.is-hidden {
+  display: none;
+}
+
+.onboarding-card {
+  width: min(480px, calc(100vw - 36px));
+  max-height: calc(100vh - 36px);
+  overflow-y: auto;
+  border: 1px solid rgba(59, 227, 255, 0.45);
+  border-radius: 10px;
+  background: rgba(8, 16, 28, 0.97);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6), 0 0 32px rgba(59, 227, 255, 0.18);
+  padding: 22px 24px 20px;
+  color: var(--text);
+}
+
+.onboarding-card h2 {
+  margin: 0 0 12px;
+  font-size: 1.4rem;
+  line-height: 1.15;
+}
+
+.onboarding-controls {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.onboarding-controls li {
+  padding: 8px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #d9e7ff;
+  font-size: 0.86rem;
+  line-height: 1.4;
+}
+
+.onboarding-controls li strong {
+  color: var(--cyan);
+  font-weight: 800;
+  margin-right: 4px;
+}
+
+.onboarding-acknowledge {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 8px 0 14px;
+  padding: 10px 12px;
+  border: 1px solid rgba(143, 253, 143, 0.22);
+  border-radius: 6px;
+  background: rgba(21, 73, 56, 0.22);
+  color: #d9e7ff;
+  font-size: 0.86rem;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.onboarding-acknowledge input {
+  margin-top: 3px;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  accent-color: #8ffd8f;
+}
+
+.onboarding-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.onboarding-actions button {
+  min-width: 140px;
+  min-height: 40px;
+  padding: 0 18px;
+  border-color: rgba(143, 253, 143, 0.55);
+  background: linear-gradient(135deg, rgba(143, 253, 143, 0.92), rgba(63, 168, 88, 0.92));
+  color: #03130a;
+  font-size: 0.92rem;
+}
+
+.onboarding-actions button:disabled {
+  background: rgba(40, 50, 60, 0.6);
+  color: rgba(255, 255, 255, 0.5);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.onboarding-footnote {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 0.74rem;
+  line-height: 1.45;
+}
+
+.onboarding-footnote a {
+  color: var(--cyan);
+  font-weight: 800;
+}
+
 .account-modal {
   position: absolute;
   inset: 0;
@@ -560,6 +674,38 @@ h1 {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
+}
+
+.mobile-fire-button {
+  position: absolute;
+  right: 24px;
+  bottom: 28px;
+  z-index: 4;
+  width: 84px;
+  height: 84px;
+  padding: 0;
+  border: 2px solid rgba(255, 82, 107, 0.8);
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, rgba(255, 82, 107, 0.95), rgba(155, 24, 38, 0.95));
+  color: #fff;
+  font-size: 0.92rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(255, 82, 107, 0.45);
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+.mobile-fire-button:active {
+  transform: scale(0.94);
+  background: radial-gradient(circle at 30% 30%, rgba(255, 120, 140, 0.95), rgba(180, 40, 60, 0.95));
+}
+
+.mobile-fire-button.is-hidden {
+  display: none;
 }
 
 .kasi-comm {

@@ -214,6 +214,92 @@ The teacher reads this, fixes the source, and triggers the next pass. No back-an
 
 ---
 
+## Lesson 008: Onboarding Pop-up (2026-05-06)
+
+**Why:** Players were dropped into the salvage lane with no instructions on screen. Master directed: instructions to the middle of the screen as a pop-up, tick-to-continue, persisted so it only shows once.
+
+**Spec:** Center-screen modal lists desktop + mobile + scoring + danger-zone + shoot rules. Continue button stays disabled until the "I understand" checkbox is ticked. Persisted to localStorage so returning visitors are not interrupted.
+
+**Files in scope:** `index.html`, `styles.css`, `src/game.js`.
+
+### Required Proofs (Lesson 008)
+
+| # | Proof Key | File | Search String |
+|---|-----------|------|---------------|
+| 41 | `onboarding_modal_markup` | `index.html` | `id="onboardingModal"` AND `id="onboardingAck"` AND `id="onboardingContinueButton"` |
+| 42 | `onboarding_storage_key` | `src/game.js` | `ONBOARDING_STORAGE_KEY` |
+| 43 | `onboarding_acknowledge_required` | `src/game.js` | `isOnboardingDone` AND `markOnboardingDone` |
+| 44 | `onboarding_css_modal` | `styles.css` | `.onboarding-modal` AND `.onboarding-card` |
+
+---
+
+## Lesson 009: Speed-Triggered Background Shift (2026-05-06)
+
+**Why:** Visual signal that the run has escalated. Master tied this to the boss-spawn threshold.
+
+**Spec:** When `speedMultiplier` crosses `2.0`, fire `danger_zone_entered` event and lerp WebGL clearColor from calm `(0.005, 0.007, 0.016)` to danger `(0.16, 0.02, 0.04)` proportional to multiplier in `[2.0, 3.0]`. Speed cap raised from 34 to 50 so 2.0x is reachable.
+
+### Required Proofs (Lesson 009)
+
+| # | Proof Key | File | Search String |
+|---|-----------|------|---------------|
+| 45 | `danger_zone_threshold` | `src/game.js` | `speedMultiplier >= 2` |
+| 46 | `danger_color_lerp` | `src/game.js` | `dangerLerp` |
+| 47 | `danger_event_logged` | `src/game.js` | `"danger_zone_entered"` |
+
+---
+
+## Lesson 010: Player Shooting (2026-05-06)
+
+**Why:** Master directive — give the pilot a way to destroy debris and bosses, not just dodge them.
+
+**Spec:** F key (desktop) and `#mobileFireButton` (mobile) call `spawnPlayerBullet()`. Bullets are stored in the existing sparks array with `kind: "bullet"` and `team: "player"`, vz=-64, lifespan 1.6s. Cooldown `state.bulletCooldown = 0.18s`. Collision against `objects[]` destroys debris (+60 score) and damages bosses.
+
+### Required Proofs (Lesson 010)
+
+| # | Proof Key | File | Search String |
+|---|-----------|------|---------------|
+| 48 | `player_bullet_spawn` | `src/game.js` | `spawnPlayerBullet` |
+| 49 | `player_bullet_cooldown` | `src/game.js` | `state.bulletCooldown` |
+| 50 | `f_key_fire` | `src/game.js` | `"f"` AND `spawnPlayerBullet()` |
+| 51 | `bullet_collides_debris` | `src/game.js` | `"debris_destroyed"` |
+
+---
+
+## Lesson 011: Boss Spawn + Shoot-Back (2026-05-06)
+
+**Why:** Master directive — color shift introduces bosses; bosses can shoot back; same trigger as color shift (2.0x).
+
+**Spec:** `spawnObject()` checks `state.dangerZoneActive`; if true, ~7% of spawns become bosses (size 1.7-2.1, hp 4, slower z velocity, magenta color, pulsing). Boss AI runs a `bossShootTimer`; on fire, `spawnBossBullet()` aims at the player's current position with speed 26. Boss bullets collide with player (-1 hull unless dashing). Boss takes -1 hp per player bullet hit; on hp <= 0, boss is destroyed (+320 score).
+
+### Required Proofs (Lesson 011)
+
+| # | Proof Key | File | Search String |
+|---|-----------|------|---------------|
+| 52 | `boss_type_spawn` | `src/game.js` | `type: "boss"` (in spawn) |
+| 53 | `boss_hp_state` | `src/game.js` | `object.hp` AND `maxHp` |
+| 54 | `boss_shoot_function` | `src/game.js` | `spawnBossBullet` |
+| 55 | `boss_renderer` | `src/game.js` | `object.type === "boss"` |
+| 56 | `boss_destroyed_event` | `src/game.js` | `"boss_destroyed"` |
+
+---
+
+## Lesson 012: Mobile FIRE Button (2026-05-06)
+
+**Why:** Mobile pilots can't press F. Tap-to-dash already uses canvas tap, so a dedicated FIRE button is needed.
+
+**Spec:** Circular `#mobileFireButton` bottom-right, 84x84px, red glow, hidden by default. Revealed when `isTouchCapable` is true. `touchstart` (passive: false) and `click` both call `spawnPlayerBullet()`. CSS `touch-action: manipulation` to suppress double-tap zoom delay.
+
+### Required Proofs (Lesson 012)
+
+| # | Proof Key | File | Search String |
+|---|-----------|------|---------------|
+| 57 | `mobile_fire_button_markup` | `index.html` | `id="mobileFireButton"` |
+| 58 | `mobile_fire_button_css` | `styles.css` | `.mobile-fire-button` |
+| 59 | `mobile_fire_button_handler` | `src/game.js` | `mobileFireButton` AND `spawnPlayerBullet()` |
+
+---
+
 ## Maintenance
 
 - Every shipped feature spec adds a new lesson and at least one new proof key.
