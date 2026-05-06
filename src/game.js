@@ -40,7 +40,10 @@
     kasiCommStatus: document.getElementById("kasiCommStatus"),
     kasiCommForm: document.getElementById("kasiCommForm"),
     kasiCommInput: document.getElementById("kasiCommInput"),
-    kasiCommSend: document.getElementById("kasiCommSend")
+    kasiCommSend: document.getElementById("kasiCommSend"),
+    submitIdeaButton: document.getElementById("submitIdeaButton"),
+    exportDiagnosticsButton: document.getElementById("exportDiagnosticsButton"),
+    shareRow: document.getElementById("shareRow")
   };
 
   if (!gl) {
@@ -155,9 +158,14 @@
   const LIGHT_DIRECTION = new Float32Array([0.35, 0.9, 0.55]);
   const PROFILE_STORAGE_KEY = "starfallSalvagePilotProfile";
   const SCORES_STORAGE_KEY = "starfallSalvageLocalScores";
+  const EVENTS_STORAGE_KEY = "starfallSalvageEventLog";
+  const EVENTS_MAX = 200;
   const LEADERBOARD_LIMIT = 12;
   const CHAT_LIMIT = 20;
   const CHAT_POLL_INTERVAL_MS = 3000;
+  const KOPANO_BOUNTY_EMAIL = "rkholofelo@kopanolabs.com";
+  const PUBLIC_LIVE_URL = "https://starfallsalvage.kopanolabs.com";
+  const PUBLIC_REPO_URL = "https://github.com/Kopano-Labs/starfall-salvage";
 
   const Mat4 = {
     create() {
@@ -558,6 +566,19 @@
   hud.kasiCommInput.addEventListener("keyup", (event) => {
     event.stopPropagation();
   });
+  if (hud.submitIdeaButton) {
+    hud.submitIdeaButton.addEventListener("click", openIdeaMailto);
+  }
+  if (hud.exportDiagnosticsButton) {
+    hud.exportDiagnosticsButton.addEventListener("click", exportDiagnostics);
+  }
+  if (hud.shareRow) {
+    hud.shareRow.querySelectorAll("button[data-share]").forEach((button) => {
+      button.addEventListener("click", () => {
+        shareToChannel(button.dataset.share || "whatsapp");
+      });
+    });
+  }
   hud.savePilotButton.addEventListener("click", () => {
     signInPilot();
   });
@@ -1082,6 +1103,135 @@
   let lastChatId = 0;
   let chatBackendOnline = false;
 
+  function loadEventLog() {
+    try {
+      const raw = window.localStorage.getItem(EVENTS_STORAGE_KEY);
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function saveEventLog(log) {
+    try {
+      window.localStorage.setItem(EVENTS_STORAGE_KEY, JSON.stringify(log.slice(-EVENTS_MAX)));
+    } catch {
+      /* storage full or unavailable - silently drop */
+    }
+  }
+
+  function logEvent(type, payload) {
+    const log = loadEventLog();
+    log.push({
+      type,
+      payload: payload || {},
+      pilotId: pilotProfile.id || null,
+      callsign: pilotProfile.callsign || null,
+      score: Math.floor(state.score || 0),
+      mode: state.mode || "init",
+      ts: new Date().toISOString()
+    });
+    saveEventLog(log);
+  }
+
+  function shareScoreText() {
+    const score = Math.floor(Number(hud.shareWhatsappButton && hud.shareWhatsappButton.dataset.score) || state.score || pilotProfile.bestScore || 0);
+    return `I just survived ${score} parsecs in Starfall Salvage. Beat my score at ${PUBLIC_LIVE_URL}! 🚀`;
+  }
+
+  function shareToChannel(channel) {
+    const text = shareScoreText();
+    const encoded = encodeURIComponent(text);
+    const encodedUrl = encodeURIComponent(PUBLIC_LIVE_URL);
+    let url = "";
+    switch (channel) {
+      case "twitter":
+        url = `https://twitter.com/intent/tweet?text=${encoded}`;
+        break;
+      case "facebook":
+        url = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}&quote=${encoded}`;
+        break;
+      case "linkedin":
+        url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`;
+        break;
+      case "copy":
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(() => setEventMessage("Link copied"));
+        } else {
+          window.prompt("Copy this:", text);
+        }
+        logEvent("share_copy", { channel });
+        return;
+      case "whatsapp":
+      default:
+        url = `https://api.whatsapp.com/send?text=${encoded}`;
+        break;
+    }
+    logEvent("share_click", { channel });
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
+
+  function openIdeaMailto() {
+    const log = loadEventLog();
+    const recent = log.slice(-15).map((e) => `${e.ts} ${e.type} ${JSON.stringify(e.payload)}`).join("\n");
+    const subject = `Starfall Salvage idea — ${pilotProfile.callsign || "Guest Pilot"}`;
+    const body = [
+      "Drop your idea below. Strong upgrade ideas can earn a Sovereign Tech bounty",
+      "(R150–R5000+ ZAR, paid Yoco / PayFast / EFT, see CONTRIBUTING.md).",
+      "",
+      "--- IDEA ---",
+      "(write here)",
+      "",
+      "--- WHY IT MATTERS ---",
+      "(one or two lines)",
+      "",
+      "--- CONTACT FOR PAYOUT ---",
+      "Name:",
+      "Bank / EFT details:",
+      "",
+      "--- AUTOMATIC DIAGNOSTIC SNAPSHOT ---",
+      `Pilot: ${pilotProfile.callsign || "Guest"} (${pilotProfile.id || "anon"})`,
+      `Best score: ${pilotProfile.bestScore || 0}`,
+      `Mode at submit: ${state.mode}`,
+      `Game version: 20260506-comms`,
+      `URL: ${PUBLIC_LIVE_URL}`,
+      `Repo: ${PUBLIC_REPO_URL}`,
+      "Recent events:",
+      recent || "(no events captured yet)"
+    ].join("\n");
+    const url = `mailto:${KOPANO_BOUNTY_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    logEvent("idea_submit_click", {});
+    window.location.href = url;
+  }
+
+  function exportDiagnostics() {
+    const payload = {
+      generatedAt: new Date().toISOString(),
+      gameVersion: "20260506-comms",
+      liveUrl: PUBLIC_LIVE_URL,
+      pilot: pilotProfile,
+      currentMode: state.mode,
+      currentScore: Math.floor(state.score || 0),
+      events: loadEventLog()
+    };
+    const text = JSON.stringify(payload, null, 2);
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => setEventMessage("Diagnostics copied to clipboard"));
+    } else {
+      const blob = new Blob([text], { type: "application/json" });
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = `starfall-diagnostics-${Date.now()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(blobUrl);
+    }
+    logEvent("diagnostics_export", {});
+  }
+
   function toggleKasiComm() {
     const collapsed = hud.kasiComm.classList.toggle("is-collapsed");
     hud.kasiCommToggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
@@ -1149,7 +1299,7 @@
       renderChatMessages(data.messages);
     } catch {
       chatBackendOnline = false;
-      hud.kasiCommStatus.textContent = "Lobby offline. Start the local backend to chat.";
+      hud.kasiCommStatus.textContent = "Lobby offline on this build — drop your upgrade idea below for a Sovereign Tech bounty.";
       hud.kasiCommSend.disabled = true;
     }
   }
@@ -1257,10 +1407,7 @@
   }
 
   function shareScoreToWhatsapp() {
-    const score = Math.floor(Number(hud.shareWhatsappButton.dataset.score) || state.score || pilotProfile.bestScore || 0);
-    const message = `I just survived ${score} parsecs in Starfall Salvage. Beat my score at starfallsalvage.kopanolabs.com! 🚀`;
-    const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
-    window.open(url, "_blank", "noopener,noreferrer");
+    shareToChannel("whatsapp");
   }
 
   function handleGameOver() {
@@ -1274,6 +1421,7 @@
     setStatus("Mission Failed", `Pilot: ${pilotProfile.callsign} | Final score: ${finalScore} | Best: ${bestScore} | Cores: ${state.cores} | Time: ${state.time.toFixed(1)}s. Reset to fly again.`, false);
     submitScore();
     revealShareButton(finalScore);
+    logEvent("game_over", { score: finalScore, cores: state.cores, time: Number(state.time.toFixed(2)) });
   }
 
   function updateHud() {

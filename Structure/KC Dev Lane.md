@@ -43,6 +43,27 @@ Correction:
 Proof:
 `Structure/KC Review Log.jsonl` contains the failed seed attempt, the passing retry with `kc_context_id: kc-3`, and the final clean rerun with `kc_context_id: kc-4`.
 
+## Production Activation (2026-05-06)
+
+KC graduated from local-only QA lane to **production-aware reviewer**. New scope:
+
+- Audits live URL `https://starfallsalvage.kopanolabs.com` (HTTP 200, Server: Vercel, OG meta resolved).
+- Audits public GitHub repo `Kopano-Labs/starfall-salvage` (visibility, latest commit hash matches main).
+- Reads end-to-end across the Main Brain Schematics directory via `tools/kc_main_brain_scan.py` to verify cross-references between sub-brain (Starfall Salvage) and main brain (`Schematics/`).
+
+## End-to-End Main Brain Scan
+
+Run a one-shot scan that walks key Schematics folders and reports counts, last-modified dates, and Starfall cross-references:
+
+```powershell
+python tools\kc_main_brain_scan.py --once --seed-kc
+```
+
+Adds proofs:
+- `comms_log_has_starfall_entries` — confirms Main Brain knows about Starfall.
+- `protocols_referenced` — counts doctrine docs (Lovable-Primary, Refusal Authority, KC Memory-Renter, Sovereign Tech).
+- `kc_context_store_present` — confirms `Schematics/06-Reference/kopano-code-implementation/.kc/context_store.json` exists and has KC records.
+
 ## Watchdog Commands
 
 Run one strict pass:

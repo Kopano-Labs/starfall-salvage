@@ -153,6 +153,36 @@ The teacher reads this, fixes the source, and triggers the next pass. No back-an
 
 ---
 
+## Lesson 006: Comms, Social, Data Capture, Bounty Incentive (2026-05-06)
+
+**Why:** Production deploy is live but the chat backend is not — frontend must still capture user value. The Sovereign Tech doctrine says "we pay our engineers"; this lesson makes that visible inside the game and gives anonymous users a low-friction path to submit upgrade ideas with a real bounty incentive.
+
+**Spec:** Add Submit Idea (mailto), multi-platform social share row, localStorage event capture with diagnostic export, and reframe Kasi-Comm offline state as a bounty CTA.
+
+**Files in scope:** `index.html`, `styles.css`, `src/game.js`.
+
+### Required Proofs (Lesson 006)
+
+| # | Proof Key | File | Search String |
+|---|-----------|------|---------------|
+| 23 | `idea_button_markup` | `index.html` | `id="submitIdeaButton"` |
+| 24 | `diagnostics_button_markup` | `index.html` | `id="exportDiagnosticsButton"` |
+| 25 | `social_share_row_markup` | `index.html` | `id="shareRow"` AND all 4 `data-share` channels (twitter, facebook, linkedin, copy) |
+| 26 | `bounty_email_constant` | `src/game.js` | `rkholofelo@kopanolabs.com` |
+| 27 | `event_log_storage` | `src/game.js` | `EVENTS_STORAGE_KEY` AND `logEvent` |
+| 28 | `diagnostics_exporter` | `src/game.js` | `exportDiagnostics` |
+| 29 | `kasi_comm_offline_bounty_cta` | `src/game.js` | `Sovereign Tech bounty` |
+| 30 | `incentive_panel_markup` | `index.html` | `kasi-comm-incentive` |
+| 31 | `bounty_email_in_html` | `index.html` | `rkholofelo@kopanolabs.com` |
+
+### Acceptance Criteria
+
+- All 9 new proofs `true` (total: 31 proofs across 3 lessons).
+- `node --check src/game.js` and `python -m py_compile backend/starfall_server.py` both green.
+- Vercel auto-deploys the new build; production URL serves `?v=20260506-comms` cache-bust.
+
+---
+
 ## Maintenance
 
 - Every shipped feature spec adds a new lesson and at least one new proof key.

@@ -133,6 +133,21 @@ def check_kopano_upgrade_features() -> dict[str, Any]:
         "pwa_manifest_theme_color": '"theme_color": "#07080e"' in manifest_json,
         "pwa_manifest_display_standalone": '"display": "standalone"' in manifest_json,
         "pwa_manifest_lang_za": '"lang": "en-ZA"' in manifest_json,
+        # Lesson 006 — Comms, Social, Capture, Bounty Incentive (2026-05-06)
+        "idea_button_markup": 'id="submitIdeaButton"' in index_html,
+        "diagnostics_button_markup": 'id="exportDiagnosticsButton"' in index_html,
+        "social_share_row_markup": 'id="shareRow"' in index_html
+        and 'data-share="twitter"' in index_html
+        and 'data-share="facebook"' in index_html
+        and 'data-share="linkedin"' in index_html
+        and 'data-share="copy"' in index_html,
+        "bounty_email_constant": "rkholofelo@kopanolabs.com" in game_js,
+        "event_log_storage": "EVENTS_STORAGE_KEY" in game_js
+        and "logEvent" in game_js,
+        "diagnostics_exporter": "exportDiagnostics" in game_js,
+        "kasi_comm_offline_bounty_cta": "Sovereign Tech bounty" in game_js,
+        "incentive_panel_markup": "kasi-comm-incentive" in index_html,
+        "bounty_email_in_html": "rkholofelo@kopanolabs.com" in index_html,
     }
     missing = [name for name, ok in proofs.items() if not ok]
     return {

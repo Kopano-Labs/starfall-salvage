@@ -2,11 +2,11 @@
 
 ## Status
 
-Active development.
+**Live on production** at `https://starfallsalvage.kopanolabs.com`. Active development continues.
 
 ## Last Updated
 
-2026-05-05
+2026-05-06
 
 ## Completed
 
@@ -22,13 +22,24 @@ Active development.
 - Open Graph + Twitter Card meta tags added for WhatsApp/social link previews.
 - Chat backend rate-limited to one transmission per pilot every 1.5s.
 
+## Production State (2026-05-06)
+
+- **Live URL:** `https://starfallsalvage.kopanolabs.com` (Vercel Hobby + IONOS CNAME, served from `cpt1` Cape Town edge).
+- **GitHub repo:** `https://github.com/Kopano-Labs/starfall-salvage` (public — Sovereign Tech CONTRIBUTING.md visible to CPUT community).
+- **Vercel project:** `robynawesomes-projects/starfall-salvage`, Hobby plan, auto-deploy on push to main.
+- **DNS:** `CNAME starfallsalvage  3600  IN  CNAME  4af9f515c8f66fb7.vercel-dns-017.com.`
+- **OG/Twitter Card meta tags** resolving against absolute URLs — WhatsApp link previews work.
+- **PWA installable** via `manifest.webmanifest` (Android Add-to-Home-Screen).
+
 ## Not Yet Proven
 
-- `https://starfallsalvage.kopanolabs.com` is registered on IONOS but not yet pointed at a deployed origin (subdomain in "not currently in use" state as of 2026-05-05).
-- Production backend hosting is not configured. Current backend is local-demo only.
+- Kasi-Comm chat backend is **not deployed** on production — frontend gracefully shows "Lobby offline." Phase C of 2026-05-06 session adds mailto-based idea capture with bounty incentive.
+- SQLite leaderboard backend not deployed on production — frontend gracefully degrades to local browser scores.
+- Production backend hosting (the Python `starfall_server.py`) is not configured. Current backend is local-demo only.
 - Full WebGL context rebuild after GPU context loss is not implemented; current behavior reloads on context restore.
 - Kasi-Comm has no WebSocket/realtime layer; polling cadence is 3s and may show send-receive lag during heavy traffic.
 - Bounty payout rails (Yoco/PayFast/EFT) are documented in CONTRIBUTING.md but not yet wired to a payout automation.
+- Kopano-Labs org has "Payment unsuccessful" banners on GitHub + IONOS billing — non-blocking for the deploy, but card on file needs clearing for future renewals.
 
 ## Verification
 

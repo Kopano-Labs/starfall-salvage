@@ -18,8 +18,8 @@
   <link rel="icon" href="data:,">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="assets/kopano-labs-logo.png">
-  <link rel="stylesheet" href="styles.css?v=20260505-kasi-comm">
-  <script src="src/game.js?v=20260505-kasi-comm" defer></script>
+  <link rel="stylesheet" href="styles.css?v=20260506-comms">
+  <script src="src/game.js?v=20260506-comms" defer></script>
 </head>
 <body>
   <main class="shell">
@@ -70,6 +70,14 @@
           <button id="refreshLeaderboardButton" type="button">Refresh</button>
         </div>
       </div>
+      <div class="leaderboard-share-row" id="shareRow">
+        <span class="leaderboard-share-label">Share:</span>
+        <button type="button" data-share="whatsapp" aria-label="Share on WhatsApp">WhatsApp</button>
+        <button type="button" data-share="twitter" aria-label="Share on X">X</button>
+        <button type="button" data-share="facebook" aria-label="Share on Facebook">FB</button>
+        <button type="button" data-share="linkedin" aria-label="Share on LinkedIn">LinkedIn</button>
+        <button type="button" data-share="copy" aria-label="Copy link">Copy</button>
+      </div>
       <ol class="leaderboard-list" id="leaderboardList">
         <li class="leaderboard-empty">Waiting for SQLite scores</li>
       </ol>
@@ -97,6 +105,12 @@
           <input id="kasiCommInput" type="text" maxlength="240" placeholder="Type a transmission" aria-label="Chat message">
           <button id="kasiCommSend" type="submit">Send</button>
         </form>
+        <div class="kasi-comm-incentive">
+          <p class="kasi-comm-incentive-headline">Got a real upgrade idea?</p>
+          <p class="kasi-comm-incentive-body">Email <a href="mailto:rkholofelo@kopanolabs.com">rkholofelo@kopanolabs.com</a>. Strong ideas can earn a Sovereign Tech bounty (R150&#8211;R5000+ ZAR, paid via Yoco / PayFast / EFT). See <a href="https://github.com/Kopano-Labs/starfall-salvage/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener">CONTRIBUTING.md</a>.</p>
+          <button id="submitIdeaButton" type="button">Submit an idea</button>
+          <button id="exportDiagnosticsButton" type="button" class="is-secondary">Export diagnostics</button>
+        </div>
       </div>
     </aside>
 
