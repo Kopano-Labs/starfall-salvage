@@ -18,12 +18,17 @@ Active development.
 - Pilot profile UI added with offline fallback and optional local backend.
 - Local Python backend added for demo sign-in, score storage, leaderboard, and static file serving.
 - KC strict QA lane added.
+- Kopano Labs Upgrade (2026-05-05): native HTML5 Vibration API on hull damage and game over, WhatsApp share button on leaderboard, in-game Kasi-Comm chat lobby with SQLite persistence and 3s polling, Sovereign Tech CONTRIBUTING.md bounty doctrine.
+- Open Graph + Twitter Card meta tags added for WhatsApp/social link previews.
+- Chat backend rate-limited to one transmission per pilot every 1.5s.
 
 ## Not Yet Proven
 
-- `https://starfallsavage.kopanolabs.com` is not proven live as a production game URL.
+- `https://starfallsalvage.kopanolabs.com` is registered on IONOS but not yet pointed at a deployed origin (subdomain in "not currently in use" state as of 2026-05-05).
 - Production backend hosting is not configured. Current backend is local-demo only.
 - Full WebGL context rebuild after GPU context loss is not implemented; current behavior reloads on context restore.
+- Kasi-Comm has no WebSocket/realtime layer; polling cadence is 3s and may show send-receive lag during heavy traffic.
+- Bounty payout rails (Yoco/PayFast/EFT) are documented in CONTRIBUTING.md but not yet wired to a payout automation.
 
 ## Verification
 

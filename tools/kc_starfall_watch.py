@@ -70,16 +70,81 @@ def check_required_files() -> dict[str, Any]:
         "PROJECT_DOCUMENTATION.md",
         "README.md",
         "DEPLOYMENT.md",
+        "CONTRIBUTING.md",
         "Structure/Starfall Salvage - Index.md",
         "Structure/KC Dev Lane.md",
+        "Structure/KC Student-Teacher Curriculum.md",
     ]
     missing = [path for path in required if not (ROOT / path).exists()]
     return {
         "name": "required_files",
-        "expected": "all branded, backend, docs, and sub-brain files exist",
+        "expected": "all branded, backend, docs, sub-brain, and curriculum files exist",
         "ok": not missing,
         "actual": "all files present" if not missing else f"missing: {', '.join(missing)}",
         "retry": "create or restore the missing files, then rerun the KC watch check",
+    }
+
+
+def _read_text(relative: str) -> str:
+    path = ROOT / relative
+    if not path.exists():
+        return ""
+    try:
+        return path.read_text(encoding="utf-8")
+    except OSError:
+        return ""
+
+
+def check_kopano_upgrade_features() -> dict[str, Any]:
+    """Student check: prove the 2026-05-05 Kopano Labs Upgrade actually shipped."""
+    game_js = _read_text("src/game.js")
+    index_html = _read_text("index.html")
+    backend_py = _read_text("backend/starfall_server.py")
+    contributing_md = _read_text("CONTRIBUTING.md")
+    manifest_json = _read_text("manifest.webmanifest")
+
+    proofs = {
+        # Lesson 001 — Kopano Labs Upgrade
+        "haptic_vibrate_present": "navigator.vibrate" in game_js,
+        "haptic_damage_pattern": "[200, 100, 200]" in game_js,
+        "haptic_gameover_pattern": "[400, 120, 400, 120, 600]" in game_js,
+        "whatsapp_share_url": "api.whatsapp.com/send" in game_js,
+        "whatsapp_share_domain_correct": "starfallsalvage.kopanolabs.com" in game_js
+        and "starfallsavage.kopanolabs.com" not in game_js,
+        "share_button_markup": 'id="shareWhatsappButton"' in index_html,
+        "kasi_comm_markup": 'id="kasiComm"' in index_html,
+        "kasi_comm_form_markup": 'id="kasiCommForm"' in index_html,
+        "chat_table_schema": "chat_messages" in backend_py,
+        "chat_get_route": '/api/chat' in backend_py and "handle_chat" in backend_py,
+        "chat_rate_limit": "Slow down, pilot" in backend_py,
+        "chat_polling_interval": "CHAT_POLL_INTERVAL_MS" in game_js,
+        "open_graph_tags": 'property="og:title"' in index_html
+        and 'property="og:image"' in index_html,
+        "twitter_card_tags": 'name="twitter:card"' in index_html,
+        "contributing_bounty_doctrine": "Sovereign Tech" in contributing_md
+        and "bounty" in contributing_md.lower(),
+        "contributing_local_rails": "Yoco" in contributing_md
+        and "PayFast" in contributing_md
+        and "EFT" in contributing_md,
+        # Lesson 005 — Mobile Sovereignty (PWA Foundation)
+        "pwa_manifest_file_present": '"name": "Starfall Salvage"' in manifest_json,
+        "pwa_manifest_linked": 'rel="manifest"' in index_html,
+        "pwa_apple_touch_icon": 'rel="apple-touch-icon"' in index_html,
+        "pwa_manifest_theme_color": '"theme_color": "#07080e"' in manifest_json,
+        "pwa_manifest_display_standalone": '"display": "standalone"' in manifest_json,
+        "pwa_manifest_lang_za": '"lang": "en-ZA"' in manifest_json,
+    }
+    missing = [name for name, ok in proofs.items() if not ok]
+    return {
+        "name": "kopano_upgrade_audit",
+        "expected": f"all {len(proofs)} curriculum proofs present in shipped files",
+        "ok": not missing,
+        "actual": "all proofs satisfied" if not missing else f"missing proofs: {', '.join(missing)}",
+        "retry": (
+            "patch the listed feature back into the source file. Refer to "
+            "Structure/KC Student-Teacher Curriculum.md for the exact spec."
+        ),
+        "proofs": proofs,
     }
 
 
@@ -140,6 +205,7 @@ def build_report(health_url: str) -> dict[str, Any]:
     checks: list[dict[str, Any]] = [check_required_files(), check_git_clean_enough()]
     checks.extend(check_syntax())
     checks.append(check_backend_health(health_url))
+    checks.append(check_kopano_upgrade_features())
     failed = [check for check in checks if not check.get("ok")]
     return {
         "timestamp": utc_now(),
@@ -183,7 +249,9 @@ def seed_kc_context(report: dict[str, Any], kc_impl: Path, kc_store_path: Path) 
     record = store.create({
         "title": f"Starfall Salvage KC hard QA pass - {report['timestamp']}",
         "teacher_context": (
-            "KC is promoted from intern notes to strict dev QA. "
+            "KC is the strict dev QA student. Teacher (Claude / Master Robyn) ships features. "
+            "KC reads Structure/KC Student-Teacher Curriculum.md, audits the codebase against it, "
+            "and refuses to mark work complete unless every proof is present. "
             "Expected behavior: fail incomplete work, state what broke, issue retry instructions, and log proof."
         ),
         "student_response": json.dumps(report["summary"], sort_keys=True),

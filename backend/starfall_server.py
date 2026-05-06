@@ -29,6 +29,11 @@ def clean_callsign(value: Any) -> str:
     return callsign[:24] or "Salvage Pilot"
 
 
+def clean_chat_message(value: Any) -> str:
+    text = re.sub(r"[\x00-\x1f\x7f]", "", str(value or "")).strip()
+    return text[:240]
+
+
 def hash_text(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()
 
@@ -73,9 +78,42 @@ def init_db() -> None:
 
             CREATE INDEX IF NOT EXISTS idx_scores_rank
               ON scores(score DESC, saved_at DESC);
+
+            CREATE TABLE IF NOT EXISTS chat_messages (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              pilot_id TEXT,
+              callsign TEXT NOT NULL,
+              message TEXT NOT NULL,
+              created_at TEXT NOT NULL
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_chat_recent
+              ON chat_messages(id DESC);
             """
         )
         migrate_legacy_json(db)
+
+
+def chat_rows(db: sqlite3.Connection, limit: int = 20) -> list[dict[str, Any]]:
+    rows = db.execute(
+        """
+        SELECT id, pilot_id, callsign, message, created_at
+        FROM chat_messages
+        ORDER BY id DESC
+        LIMIT ?
+        """,
+        (limit,),
+    ).fetchall()
+    return [
+        {
+            "id": int(row["id"]),
+            "pilotId": row["pilot_id"] or "",
+            "callsign": row["callsign"],
+            "message": row["message"],
+            "createdAt": row["created_at"],
+        }
+        for row in reversed(rows)
+    ]
 
 
 def migrate_legacy_json(db: sqlite3.Connection) -> None:
@@ -218,6 +256,16 @@ class StarfallHandler(SimpleHTTPRequestHandler):
             with DB_LOCK, connect_db() as db:
                 self.send_json({"ok": True, "scores": leaderboard_rows(db)})
             return
+        if route == "/api/chat":
+            params = parse_qs(parsed.query)
+            try:
+                requested = int((params.get("limit") or ["20"])[0])
+            except ValueError:
+                requested = 20
+            limit = max(1, min(50, requested))
+            with DB_LOCK, connect_db() as db:
+                self.send_json({"ok": True, "messages": chat_rows(db, limit)})
+            return
         if route == "/api/me":
             params = parse_qs(parsed.query)
             pilot_id = (params.get("pilotId") or [""])[0]
@@ -234,6 +282,9 @@ class StarfallHandler(SimpleHTTPRequestHandler):
             return
         if route == "/api/score":
             self.handle_score()
+            return
+        if route == "/api/chat":
+            self.handle_chat()
             return
         self.send_json({"ok": False, "error": "Unknown API route"}, status=404)
 
@@ -304,6 +355,54 @@ class StarfallHandler(SimpleHTTPRequestHandler):
             "pilot": row_to_pilot(row),
             "leaderboard": leaderboard,
         })
+
+    def handle_chat(self) -> None:
+        body = self.read_json_body()
+        callsign = clean_callsign(body.get("callsign"))
+        pilot_id = str(body.get("pilotId") or "").strip()[:64]
+        message = clean_chat_message(body.get("message"))
+        if not message:
+            self.send_json({"ok": False, "error": "Empty message"}, status=400)
+            return
+        now = utc_now()
+        rate_key = pilot_id or f"anon:{self.client_address[0]}"
+
+        with DB_LOCK, connect_db() as db:
+            recent = db.execute(
+                """
+                SELECT created_at FROM chat_messages
+                WHERE pilot_id IS ? OR (pilot_id IS NULL AND ? IS NULL)
+                ORDER BY id DESC LIMIT 1
+                """,
+                (pilot_id or None, pilot_id or None),
+            ).fetchone()
+            if recent is not None:
+                try:
+                    last_dt = datetime.fromisoformat(recent["created_at"])
+                    if (datetime.now(timezone.utc) - last_dt).total_seconds() < 1.5:
+                        messages = chat_rows(db)
+                        self.send_json(
+                            {
+                                "ok": False,
+                                "error": "Slow down, pilot. One transmission every 1.5s.",
+                                "messages": messages,
+                                "rateLimitKey": rate_key,
+                            },
+                            status=429,
+                        )
+                        return
+                except ValueError:
+                    pass
+            db.execute(
+                """
+                INSERT INTO chat_messages (pilot_id, callsign, message, created_at)
+                VALUES (?, ?, ?, ?)
+                """,
+                (pilot_id or None, callsign, message, now),
+            )
+            messages = chat_rows(db)
+
+        self.send_json({"ok": True, "messages": messages})
 
     def send_json(self, payload: dict[str, Any], status: int = 200) -> None:
         encoded = json.dumps(payload).encode("utf-8")

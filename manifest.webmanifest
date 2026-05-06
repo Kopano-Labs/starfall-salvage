@@ -1,0 +1,36 @@
+{
+  "name": "Starfall Salvage",
+  "short_name": "Starfall",
+  "description": "Township-built raw WebGL salvage runner from Kopano Labs. Phase-dash debris, harvest cores, climb the SQLite leaderboard.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#07080e",
+  "theme_color": "#07080e",
+  "lang": "en-ZA",
+  "categories": ["games", "entertainment"],
+  "icons": [
+    {
+      "src": "/assets/kopano-labs-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/kopano-labs-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/starfall-smoke.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Starfall Salvage in flight"
+    }
+  ]
+}

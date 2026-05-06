@@ -4,9 +4,22 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Starfall Salvage - WebGL Edition</title>
+  <meta name="description" content="Raw WebGL salvage runner from Kopano Labs. Dodge debris, harvest cores, climb the SQLite leaderboard.">
+  <meta name="theme-color" content="#07080e">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Starfall Salvage - Kopano Labs WebGL Edition">
+  <meta property="og:description" content="Township-built raw WebGL salvage runner. Phase-dash debris, score cores, share your run on WhatsApp.">
+  <meta property="og:url" content="https://starfallsalvage.kopanolabs.com/">
+  <meta property="og:image" content="https://starfallsalvage.kopanolabs.com/starfall-smoke.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Starfall Salvage - Kopano Labs WebGL Edition">
+  <meta name="twitter:description" content="Township-built raw WebGL salvage runner. Phase-dash debris, score cores, share your run on WhatsApp.">
+  <meta name="twitter:image" content="https://starfallsalvage.kopanolabs.com/starfall-smoke.png">
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="styles.css?v=20260505-hudfix">
-  <script src="src/game.js?v=20260505-hudfix" defer></script>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="assets/kopano-labs-logo.png">
+  <link rel="stylesheet" href="styles.css?v=20260505-kasi-comm">
+  <script src="src/game.js?v=20260505-kasi-comm" defer></script>
 </head>
 <body>
   <main class="shell">
@@ -46,7 +59,46 @@
       <p class="control-line">WASD or Arrow Keys move. Space activates a short phase dash.</p>
     </section>
 
+    <section class="leaderboard-panel" id="leaderboardPanel" aria-live="polite">
+      <div class="leaderboard-head">
+        <div>
+          <p class="eyebrow">Leaderboard</p>
+          <h2>Top Runs</h2>
+        </div>
+        <div class="leaderboard-actions">
+          <button id="shareWhatsappButton" type="button" class="is-hidden" aria-label="Share score on WhatsApp">Share</button>
+          <button id="refreshLeaderboardButton" type="button">Refresh</button>
+        </div>
+      </div>
+      <ol class="leaderboard-list" id="leaderboardList">
+        <li class="leaderboard-empty">Waiting for SQLite scores</li>
+      </ol>
+      <p class="leaderboard-status" id="leaderboardStatus">Checking local backend...</p>
+    </section>
+
     <div class="event-toast" id="eventToast" aria-live="polite"></div>
+
+    <aside class="kasi-comm is-collapsed" id="kasiComm" aria-label="Kasi-Comm in-game chat">
+      <button id="kasiCommToggle" type="button" class="kasi-comm-toggle" aria-expanded="false" aria-controls="kasiCommBody">
+        <span class="kasi-comm-toggle-icon" aria-hidden="true">&#x1F4AC;</span>
+        <span class="kasi-comm-toggle-label">Kasi-Comm</span>
+      </button>
+      <div class="kasi-comm-body" id="kasiCommBody">
+        <header class="kasi-comm-head">
+          <p class="eyebrow">Lobby</p>
+          <h2>Kasi-Comm</h2>
+          <p class="kasi-comm-status" id="kasiCommStatus">Polling lobby...</p>
+        </header>
+        <ol class="kasi-comm-list" id="kasiCommList" aria-live="polite">
+          <li class="kasi-comm-empty">No transmissions yet. Drop a line and rally the lane.</li>
+        </ol>
+        <form class="kasi-comm-form" id="kasiCommForm" autocomplete="off">
+          <label class="visually-hidden" for="kasiCommInput">Message</label>
+          <input id="kasiCommInput" type="text" maxlength="240" placeholder="Type a transmission" aria-label="Chat message">
+          <button id="kasiCommSend" type="submit">Send</button>
+        </form>
+      </div>
+    </aside>
 
     <section class="account-modal is-hidden" id="accountModal" aria-label="Pilot sign in">
       <div class="account-card">
@@ -54,6 +106,10 @@
         <p class="eyebrow">Pilot Access</p>
         <h2>Kopano Labs Flight Deck</h2>
         <p class="account-copy">Create a local pilot profile for best scores and leaderboard practice. It works offline and upgrades to the local backend when the optional server is running.</p>
+        <div class="account-summary" id="accountSummary">
+          <span>Signed in as Guest Pilot</span>
+          <strong>Best score 0</strong>
+        </div>
         <label for="callsignInput">Callsign</label>
         <input id="callsignInput" type="text" maxlength="24" autocomplete="nickname" placeholder="e.g. RobynAce">
         <label for="accessCodeInput">Squad code</label>
@@ -62,6 +118,9 @@
           <button id="savePilotButton" type="button">Save Pilot</button>
           <button id="guestPilotButton" type="button">Guest</button>
           <button id="closeAccountButton" type="button">Close</button>
+        </div>
+        <div class="account-secondary-actions">
+          <button id="resetPilotButton" type="button">Reset Pilot</button>
         </div>
         <p class="account-status" id="accountStatus">No network account required.</p>
       </div>

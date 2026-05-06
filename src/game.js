@@ -21,13 +21,26 @@
     resetButton: document.getElementById("resetButton"),
     pilotBadge: document.getElementById("pilotBadge"),
     signInButton: document.getElementById("signInButton"),
+    leaderboardList: document.getElementById("leaderboardList"),
+    leaderboardStatus: document.getElementById("leaderboardStatus"),
+    refreshLeaderboardButton: document.getElementById("refreshLeaderboardButton"),
+    shareWhatsappButton: document.getElementById("shareWhatsappButton"),
     accountModal: document.getElementById("accountModal"),
+    accountSummary: document.getElementById("accountSummary"),
     callsignInput: document.getElementById("callsignInput"),
     accessCodeInput: document.getElementById("accessCodeInput"),
     savePilotButton: document.getElementById("savePilotButton"),
     guestPilotButton: document.getElementById("guestPilotButton"),
+    resetPilotButton: document.getElementById("resetPilotButton"),
     closeAccountButton: document.getElementById("closeAccountButton"),
-    accountStatus: document.getElementById("accountStatus")
+    accountStatus: document.getElementById("accountStatus"),
+    kasiComm: document.getElementById("kasiComm"),
+    kasiCommToggle: document.getElementById("kasiCommToggle"),
+    kasiCommList: document.getElementById("kasiCommList"),
+    kasiCommStatus: document.getElementById("kasiCommStatus"),
+    kasiCommForm: document.getElementById("kasiCommForm"),
+    kasiCommInput: document.getElementById("kasiCommInput"),
+    kasiCommSend: document.getElementById("kasiCommSend")
   };
 
   if (!gl) {
@@ -142,6 +155,9 @@
   const LIGHT_DIRECTION = new Float32Array([0.35, 0.9, 0.55]);
   const PROFILE_STORAGE_KEY = "starfallSalvagePilotProfile";
   const SCORES_STORAGE_KEY = "starfallSalvageLocalScores";
+  const LEADERBOARD_LIMIT = 12;
+  const CHAT_LIMIT = 20;
+  const CHAT_POLL_INTERVAL_MS = 3000;
 
   const Mat4 = {
     create() {
@@ -524,6 +540,24 @@
   hud.signInButton.addEventListener("click", openAccountModal);
   hud.closeAccountButton.addEventListener("click", closeAccountModal);
   hud.guestPilotButton.addEventListener("click", useGuestPilot);
+  hud.resetPilotButton.addEventListener("click", resetPilotSession);
+  hud.refreshLeaderboardButton.addEventListener("click", () => {
+    refreshLeaderboard();
+  });
+  hud.shareWhatsappButton.addEventListener("click", () => {
+    shareScoreToWhatsapp();
+  });
+  hud.kasiCommToggle.addEventListener("click", toggleKasiComm);
+  hud.kasiCommForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    sendChatMessage();
+  });
+  hud.kasiCommInput.addEventListener("keydown", (event) => {
+    event.stopPropagation();
+  });
+  hud.kasiCommInput.addEventListener("keyup", (event) => {
+    event.stopPropagation();
+  });
   hud.savePilotButton.addEventListener("click", () => {
     signInPilot();
   });
@@ -670,6 +704,9 @@
     hud.shell.classList.remove("is-hit");
     hud.eventToast.classList.remove("is-visible");
     hud.eventToast.textContent = "";
+    if (hud.shareWhatsappButton) {
+      hud.shareWhatsappButton.classList.add("is-hidden");
+    }
     updateHud();
     setStatus("Ready", "Collect blue energy cores, dodge red debris, and use Space to phase dash through danger.", false);
   }
@@ -788,10 +825,141 @@
     updatePilotBadge();
   }
 
+  function formatScore(value) {
+    return Math.max(0, Math.floor(Number(value) || 0)).toLocaleString("en-US");
+  }
+
+  function localLeaderboardRows() {
+    const scores = readJsonStorage(SCORES_STORAGE_KEY, []);
+    return (Array.isArray(scores) ? scores : [])
+      .map((score) => ({
+        pilotId: score.pilotId || "local",
+        callsign: normalizeCallsign(score.callsign) || "Local Pilot",
+        score: Math.max(0, Math.floor(Number(score.score) || 0)),
+        cores: Math.max(0, Math.floor(Number(score.cores) || 0)),
+        time: Math.max(0, Number(score.time) || 0),
+        savedAt: score.savedAt || ""
+      }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, LEADERBOARD_LIMIT);
+  }
+
+  function renderLeaderboard(scores, statusText) {
+    const rows = (Array.isArray(scores) ? scores : [])
+      .map((score) => ({
+        callsign: normalizeCallsign(score.callsign) || "Unknown Pilot",
+        score: Math.max(0, Math.floor(Number(score.score) || 0)),
+        cores: Math.max(0, Math.floor(Number(score.cores) || 0)),
+        time: Math.max(0, Number(score.time) || 0)
+      }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, LEADERBOARD_LIMIT);
+
+    hud.leaderboardList.textContent = "";
+    if (!rows.length) {
+      const empty = document.createElement("li");
+      empty.className = "leaderboard-empty";
+      empty.textContent = "No runs submitted yet. Sign in, launch, and fly until mission end.";
+      hud.leaderboardList.append(empty);
+    } else {
+      rows.forEach((row, index) => {
+        const item = document.createElement("li");
+        item.className = "leaderboard-row";
+
+        const rank = document.createElement("span");
+        rank.className = "leaderboard-rank";
+        rank.textContent = `#${index + 1}`;
+
+        const pilot = document.createElement("span");
+        pilot.className = "leaderboard-pilot";
+        pilot.textContent = row.callsign;
+        pilot.title = row.callsign;
+
+        const score = document.createElement("span");
+        score.className = "leaderboard-score";
+        score.textContent = formatScore(row.score);
+
+        const meta = document.createElement("span");
+        meta.className = "leaderboard-meta";
+        meta.textContent = `${row.cores} cores | ${row.time.toFixed(1)}s`;
+
+        item.append(rank, pilot, score, meta);
+        hud.leaderboardList.append(item);
+      });
+    }
+
+    hud.leaderboardStatus.textContent = statusText;
+  }
+
+  async function refreshLeaderboard(options = {}) {
+    const quiet = options.quiet === true;
+    if (!quiet) {
+      hud.leaderboardStatus.textContent = "Checking SQLite leaderboard...";
+    }
+    hud.refreshLeaderboardButton.disabled = true;
+    try {
+      const data = await requestJson("/api/leaderboard");
+      if (!data.ok || !Array.isArray(data.scores)) {
+        throw new Error("Invalid leaderboard response");
+      }
+      renderLeaderboard(data.scores, "SQLite leaderboard synced.");
+      return data.scores;
+    } catch {
+      const localRows = localLeaderboardRows();
+      const status = localRows.length
+        ? "Backend offline. Showing local browser scores."
+        : "Start the local backend for SQLite leaderboard scores.";
+      renderLeaderboard(localRows, status);
+      return localRows;
+    } finally {
+      hud.refreshLeaderboardButton.disabled = false;
+    }
+  }
+
+  function updateAccountSummary() {
+    const modeLabel = pilotProfile.mode === "backend"
+      ? "SQLite backend"
+      : pilotProfile.mode === "local"
+        ? "local browser profile"
+        : "guest session";
+
+    hud.accountSummary.textContent = "";
+
+    const identity = document.createElement("span");
+    identity.textContent = `Signed in as ${pilotProfile.callsign} (${modeLabel})`;
+
+    const best = document.createElement("strong");
+    best.textContent = `Best score ${formatScore(pilotProfile.bestScore)}`;
+
+    hud.accountSummary.append(identity, best);
+  }
+
+  async function refreshPilotBestScore() {
+    updateAccountSummary();
+    if (pilotProfile.mode !== "backend" || pilotProfile.id === "guest") {
+      return;
+    }
+    try {
+      const data = await requestJson(`/api/me?pilotId=${encodeURIComponent(pilotProfile.id)}`);
+      if (data.ok && data.pilot) {
+        persistPilotProfile({
+          ...pilotProfile,
+          bestScore: Number(data.pilot.bestScore) || 0,
+          lastSeen: data.pilot.lastSeen
+        });
+        hud.accountStatus.textContent = "SQLite profile loaded for this pilot.";
+      }
+    } catch {
+      hud.accountStatus.textContent = "SQLite profile could not be refreshed. Cached best score shown.";
+      updateAccountSummary();
+    }
+  }
+
   function updatePilotBadge() {
     hud.pilotBadge.textContent = pilotProfile.callsign;
     hud.pilotBadge.title = `${pilotProfile.callsign} (${pilotProfile.mode})`;
     hud.signInButton.textContent = pilotProfile.mode === "guest" ? "Sign in" : "Pilot";
+    updateAccountSummary();
   }
 
   function openAccountModal() {
@@ -805,6 +973,7 @@
     hud.accountStatus.textContent = pilotProfile.mode === "backend"
       ? "Backend profile active. Scores will sync when the local server is running."
       : "Offline profile mode is available with no network account.";
+    refreshPilotBestScore();
     hud.accountModal.classList.remove("is-hidden");
     hud.callsignInput.focus();
   }
@@ -823,7 +992,23 @@
     }
     updatePilotBadge();
     hud.accountStatus.textContent = "Guest pilot active. Scores stay in this browser session.";
+    refreshLeaderboard({ quiet: true });
     closeAccountModal();
+  }
+
+  function resetPilotSession() {
+    pilotProfile = defaultPilotProfile();
+    try {
+      window.localStorage.removeItem(PROFILE_STORAGE_KEY);
+      window.localStorage.removeItem(SCORES_STORAGE_KEY);
+    } catch {
+      // Local storage may be unavailable in locked-down browsers.
+    }
+    updatePilotBadge();
+    renderLeaderboard([], "Local pilot data cleared. SQLite scores remain on the backend.");
+    setEventMessage("Pilot reset");
+    hud.accountStatus.textContent = "Pilot reset. Sign in again to link scores with SQLite.";
+    refreshLeaderboard({ quiet: true });
   }
 
   async function requestJson(url, options = {}) {
@@ -876,16 +1061,129 @@
         bestScore: Number(data.pilot.bestScore) || 0,
         lastSeen: data.pilot.lastSeen
       });
-      hud.accountStatus.textContent = "Backend profile linked.";
+      if (Array.isArray(data.leaderboard)) {
+        renderLeaderboard(data.leaderboard, "SQLite leaderboard synced.");
+      }
+      hud.accountStatus.textContent = `Signed in as ${pilotProfile.callsign}. Best score ${formatScore(pilotProfile.bestScore)}.`;
       setEventMessage(`Pilot linked: ${pilotProfile.callsign}`);
       closeAccountModal();
     } catch {
       persistPilotProfile(fallbackProfile);
+      renderLeaderboard(localLeaderboardRows(), "Backend offline. Showing local browser scores.");
       hud.accountStatus.textContent = "Backend unavailable. Local pilot saved for offline demo mode.";
       setEventMessage(`Local pilot: ${pilotProfile.callsign}`);
       closeAccountModal();
     } finally {
       hud.savePilotButton.disabled = false;
+    }
+  }
+
+  let chatPollHandle = 0;
+  let lastChatId = 0;
+  let chatBackendOnline = false;
+
+  function toggleKasiComm() {
+    const collapsed = hud.kasiComm.classList.toggle("is-collapsed");
+    hud.kasiCommToggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
+    if (!collapsed) {
+      refreshChatMessages();
+      startChatPolling();
+      window.setTimeout(() => hud.kasiCommInput.focus(), 30);
+    } else {
+      stopChatPolling();
+    }
+  }
+
+  function startChatPolling() {
+    if (chatPollHandle) {
+      return;
+    }
+    chatPollHandle = window.setInterval(refreshChatMessages, CHAT_POLL_INTERVAL_MS);
+  }
+
+  function stopChatPolling() {
+    if (chatPollHandle) {
+      window.clearInterval(chatPollHandle);
+      chatPollHandle = 0;
+    }
+  }
+
+  function renderChatMessages(messages) {
+    hud.kasiCommList.textContent = "";
+    if (!Array.isArray(messages) || messages.length === 0) {
+      const empty = document.createElement("li");
+      empty.className = "kasi-comm-empty";
+      empty.textContent = "No transmissions yet. Drop a line and rally the lane.";
+      hud.kasiCommList.append(empty);
+      lastChatId = 0;
+      return;
+    }
+    messages.forEach((row) => {
+      const item = document.createElement("li");
+      item.className = "kasi-comm-row";
+      if (row.pilotId && row.pilotId === pilotProfile.id) {
+        item.classList.add("is-self");
+      }
+      const author = document.createElement("span");
+      author.className = "kasi-comm-author";
+      author.textContent = row.callsign || "Unknown";
+      const text = document.createElement("span");
+      text.className = "kasi-comm-text";
+      text.textContent = row.message || "";
+      item.append(author, text);
+      hud.kasiCommList.append(item);
+    });
+    lastChatId = Number(messages[messages.length - 1].id) || lastChatId;
+    hud.kasiCommList.scrollTop = hud.kasiCommList.scrollHeight;
+  }
+
+  async function refreshChatMessages() {
+    try {
+      const data = await requestJson(`/api/chat?limit=${CHAT_LIMIT}`);
+      if (!data.ok || !Array.isArray(data.messages)) {
+        throw new Error("Invalid chat response");
+      }
+      chatBackendOnline = true;
+      hud.kasiCommStatus.textContent = `Lobby live. ${data.messages.length} recent transmissions.`;
+      hud.kasiCommSend.disabled = false;
+      renderChatMessages(data.messages);
+    } catch {
+      chatBackendOnline = false;
+      hud.kasiCommStatus.textContent = "Lobby offline. Start the local backend to chat.";
+      hud.kasiCommSend.disabled = true;
+    }
+  }
+
+  async function sendChatMessage() {
+    const raw = hud.kasiCommInput.value.trim();
+    if (!raw) {
+      return;
+    }
+    if (!chatBackendOnline) {
+      hud.kasiCommStatus.textContent = "Lobby offline. Start the local backend to chat.";
+      return;
+    }
+    hud.kasiCommSend.disabled = true;
+    try {
+      const data = await requestJson("/api/chat", {
+        method: "POST",
+        body: JSON.stringify({
+          callsign: pilotProfile.callsign,
+          pilotId: pilotProfile.id,
+          message: raw.slice(0, 240)
+        })
+      });
+      if (!data.ok || !Array.isArray(data.messages)) {
+        throw new Error("Invalid chat post response");
+      }
+      hud.kasiCommInput.value = "";
+      renderChatMessages(data.messages);
+      hud.kasiCommStatus.textContent = "Transmission delivered.";
+    } catch {
+      hud.kasiCommStatus.textContent = "Send failed. Backend may be offline.";
+    } finally {
+      hud.kasiCommSend.disabled = false;
+      hud.kasiCommInput.focus();
     }
   }
 
@@ -923,6 +1221,7 @@
     const bestScore = saveLocalScore(payload);
 
     if (pilotProfile.mode !== "backend") {
+      renderLeaderboard(localLeaderboardRows(), "Backend offline. Showing local browser scores.");
       setEventMessage(`Local best: ${bestScore}`);
       return;
     }
@@ -937,20 +1236,44 @@
           ...pilotProfile,
           bestScore: Number(data.pilot.bestScore) || bestScore
         });
+        if (Array.isArray(data.leaderboard)) {
+          renderLeaderboard(data.leaderboard, "SQLite leaderboard synced.");
+        }
         setEventMessage("Score synced");
       }
     } catch {
+      renderLeaderboard(localLeaderboardRows(), "Score saved locally. SQLite sync failed.");
       setEventMessage("Score saved offline");
     }
+  }
+
+  function revealShareButton(finalScore) {
+    if (!hud.shareWhatsappButton) {
+      return;
+    }
+    hud.shareWhatsappButton.dataset.score = String(Math.max(0, Math.floor(Number(finalScore) || 0)));
+    hud.shareWhatsappButton.classList.remove("is-hidden");
+    hud.shareWhatsappButton.textContent = "Share to WhatsApp";
+  }
+
+  function shareScoreToWhatsapp() {
+    const score = Math.floor(Number(hud.shareWhatsappButton.dataset.score) || state.score || pilotProfile.bestScore || 0);
+    const message = `I just survived ${score} parsecs in Starfall Salvage. Beat my score at starfallsalvage.kopanolabs.com! 🚀`;
+    const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
+    window.open(url, "_blank", "noopener,noreferrer");
   }
 
   function handleGameOver() {
     state.mode = "gameover";
     hud.pauseButton.textContent = "Pause";
+    if (navigator.vibrate) {
+      navigator.vibrate([400, 120, 400, 120, 600]);
+    }
     const finalScore = Math.floor(state.score);
     const bestScore = Math.max(pilotProfile.bestScore || 0, finalScore);
     setStatus("Mission Failed", `Pilot: ${pilotProfile.callsign} | Final score: ${finalScore} | Best: ${bestScore} | Cores: ${state.cores} | Time: ${state.time.toFixed(1)}s. Reset to fly again.`, false);
     submitScore();
+    revealShareButton(finalScore);
   }
 
   function updateHud() {
@@ -1107,6 +1430,9 @@
             hud.shell.classList.add("is-hit");
             setEventMessage("Hull damaged");
             spawnSparks(object.x, object.y, object.z, [1, 0.25, 0.34, 0.94], 26);
+            if (navigator.vibrate) {
+              navigator.vibrate([200, 100, 200]);
+            }
             if (state.hull <= 0) {
               handleGameOver();
             }
@@ -1400,5 +1726,6 @@
   resizeCanvas();
   updatePilotBadge();
   resetGame();
+  refreshLeaderboard({ quiet: true });
   requestAnimationFrame(frame);
 })();
