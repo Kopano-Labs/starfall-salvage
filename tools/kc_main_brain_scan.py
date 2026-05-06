@@ -173,8 +173,8 @@ def check_sub_brain_alignment(schematics: Path) -> dict[str, Any]:
     proofs = {
         "sub_brain_live_url": live_url in sub_text,
         "main_brain_live_url": live_url in main_text,
-        "sub_brain_no_savage_typo": "starfallsavage.kopanolabs.com" not in sub_text,
-        "main_brain_no_savage_typo": "starfallsavage.kopanolabs.com" not in main_text,
+        "sub_brain_no_savage_typo": "https://starfallsavage.kopanolabs.com" not in sub_text,
+        "main_brain_no_savage_typo": "https://starfallsavage.kopanolabs.com" not in main_text,
     }
     missing = [k for k, v in proofs.items() if not v]
     return {
