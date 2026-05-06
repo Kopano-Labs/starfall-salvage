@@ -183,6 +183,37 @@ The teacher reads this, fixes the source, and triggers the next pass. No back-an
 
 ---
 
+## Lesson 007: Mobile Functionality (Touch Input + Tap Controls)
+
+**Why:** Owner-proof negative — Master reported "the game is frozen on Mobile" on 2026-05-06 against the Lesson 006 build. Diagnosis: keyboard-only input pipeline (`window.keydown`) gives no movement vector on mobile, so the ship sat still while the lane scrolled it into debris. KasiLink users are mobile-first; this lesson is non-negotiable for production fitness.
+
+**Spec:** Add native touch input on the WebGL canvas — virtual joystick from first-touch anchor with deadzone + normalized magnitude, tap-to-start when not playing, tap-to-dash mid-flight. Prevent browser scroll/zoom on canvas. No external libraries.
+
+**Files in scope:** `src/game.js`, `styles.css`, `index.html`.
+
+### Required Proofs (Lesson 007)
+
+| # | Proof Key | File | Search String |
+|---|-----------|------|---------------|
+| 32 | `touch_axis_state` | `src/game.js` | `touchAxis` AND `activeTouchId` |
+| 33 | `touch_capable_detect` | `src/game.js` | `isTouchCapable` |
+| 34 | `touch_start_handler` | `src/game.js` | `canvas.addEventListener("touchstart"` |
+| 35 | `touch_move_handler` | `src/game.js` | `canvas.addEventListener("touchmove"` |
+| 36 | `touch_end_handler` | `src/game.js` | `canvas.addEventListener("touchend"` |
+| 37 | `tap_to_start_or_dash` | `src/game.js` | `wasTap` AND `dashRequested = true` |
+| 38 | `touch_axis_in_movement` | `src/game.js` | `moveX += touchAxis.x` |
+| 39 | `touch_action_none_css` | `styles.css` | `touch-action: none` |
+| 40 | `mobile_control_hint_html` | `index.html` | `Mobile:` AND `tap to start` |
+
+### Acceptance Criteria
+
+- All 9 new proofs `true` (running total: 40 proofs across 4 lessons).
+- `node --check src/game.js` passes.
+- Live URL serves `?v=20260506-mobile` cache-bust.
+- **Owner-proof gate:** Master physically loads the game on a mobile device, drags to fly, taps to dash, and confirms the ship responds. Until that happens, this lesson stays in `submitted` state in the KC store, not `reviewed`.
+
+---
+
 ## Maintenance
 
 - Every shipped feature spec adds a new lesson and at least one new proof key.

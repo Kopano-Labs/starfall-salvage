@@ -96,6 +96,10 @@ input:focus {
   height: 100%;
   display: block;
   background: #03040a;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .hud {

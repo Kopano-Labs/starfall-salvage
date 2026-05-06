@@ -148,6 +148,16 @@ def check_kopano_upgrade_features() -> dict[str, Any]:
         "kasi_comm_offline_bounty_cta": "Sovereign Tech bounty" in game_js,
         "incentive_panel_markup": "kasi-comm-incentive" in index_html,
         "bounty_email_in_html": "rkholofelo@kopanolabs.com" in index_html,
+        # Lesson 007 — Mobile Functionality (Touch Input)
+        "touch_axis_state": "touchAxis" in game_js and "activeTouchId" in game_js,
+        "touch_capable_detect": "isTouchCapable" in game_js,
+        "touch_start_handler": 'canvas.addEventListener("touchstart"' in game_js,
+        "touch_move_handler": 'canvas.addEventListener("touchmove"' in game_js,
+        "touch_end_handler": 'canvas.addEventListener("touchend"' in game_js,
+        "tap_to_start_or_dash": "wasTap" in game_js and "dashRequested = true" in game_js,
+        "touch_axis_in_movement": "moveX += touchAxis.x" in game_js,
+        "touch_action_none_css": "touch-action: none" in _read_text("styles.css"),
+        "mobile_control_hint_html": "Mobile:" in index_html and "tap to start" in index_html,
     }
     missing = [name for name, ok in proofs.items() if not ok]
     return {

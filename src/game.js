@@ -501,6 +501,19 @@
   const keys = new Set();
   const blockingKeys = new Set(["arrowup", "arrowdown", "arrowleft", "arrowright", " ", "w", "a", "s", "d"]);
   let dashRequested = false;
+  const touchAxis = { x: 0, y: 0 };
+  let activeTouchId = null;
+  let touchStartX = 0;
+  let touchStartY = 0;
+  let touchStartTime = 0;
+  let touchMaxTravel = 0;
+  const TOUCH_DEADZONE_PX = 8;
+  const TOUCH_FULL_RANGE_PX = 70;
+  const TOUCH_TAP_MAX_PX = 14;
+  const TOUCH_TAP_MAX_MS = 260;
+  const isTouchCapable = (typeof window !== "undefined") && (
+    "ontouchstart" in window || (navigator.maxTouchPoints && navigator.maxTouchPoints > 0)
+  );
   let pilotProfile = loadPilotProfile();
   let wasPlayingBeforeHidden = false;
   let contextLost = false;
@@ -538,6 +551,91 @@
     }
     keys.delete(event.key.toLowerCase());
   });
+
+  function applyTouchVector(touch) {
+    const dx = touch.clientX - touchStartX;
+    const dy = touch.clientY - touchStartY;
+    const dist = Math.hypot(dx, dy);
+    if (dist > touchMaxTravel) {
+      touchMaxTravel = dist;
+    }
+    if (dist <= TOUCH_DEADZONE_PX) {
+      touchAxis.x = 0;
+      touchAxis.y = 0;
+      return;
+    }
+    const range = TOUCH_FULL_RANGE_PX - TOUCH_DEADZONE_PX;
+    const magnitude = Math.min(1, (dist - TOUCH_DEADZONE_PX) / range);
+    touchAxis.x = (dx / dist) * magnitude;
+    // Browser y-axis is inverted vs game world Y (up is negative pixel delta).
+    touchAxis.y = -(dy / dist) * magnitude;
+  }
+
+  function clearTouchAxis() {
+    touchAxis.x = 0;
+    touchAxis.y = 0;
+    activeTouchId = null;
+  }
+
+  if (canvas && isTouchCapable) {
+    canvas.addEventListener("touchstart", (event) => {
+      if (isAccountModalOpen() || isTypingTarget(event.target)) {
+        return;
+      }
+      if (activeTouchId !== null) {
+        return;
+      }
+      const touch = event.changedTouches[0];
+      if (!touch) {
+        return;
+      }
+      event.preventDefault();
+      activeTouchId = touch.identifier;
+      touchStartX = touch.clientX;
+      touchStartY = touch.clientY;
+      touchStartTime = performance.now();
+      touchMaxTravel = 0;
+      touchAxis.x = 0;
+      touchAxis.y = 0;
+    }, { passive: false });
+
+    canvas.addEventListener("touchmove", (event) => {
+      if (activeTouchId === null) {
+        return;
+      }
+      for (const touch of event.changedTouches) {
+        if (touch.identifier === activeTouchId) {
+          event.preventDefault();
+          applyTouchVector(touch);
+          break;
+        }
+      }
+    }, { passive: false });
+
+    const handleTouchEnd = (event) => {
+      if (activeTouchId === null) {
+        return;
+      }
+      for (const touch of event.changedTouches) {
+        if (touch.identifier === activeTouchId) {
+          const elapsed = performance.now() - touchStartTime;
+          const wasTap = elapsed <= TOUCH_TAP_MAX_MS && touchMaxTravel <= TOUCH_TAP_MAX_PX;
+          if (wasTap) {
+            if (state.mode !== "playing") {
+              startGame();
+            } else {
+              dashRequested = true;
+              logEvent("touch_dash", {});
+            }
+          }
+          clearTouchAxis();
+          break;
+        }
+      }
+    };
+    canvas.addEventListener("touchend", handleTouchEnd, { passive: true });
+    canvas.addEventListener("touchcancel", () => clearTouchAxis(), { passive: true });
+  }
 
   hud.startButton.addEventListener("click", startGame);
   hud.pauseButton.addEventListener("click", togglePause);
@@ -1515,6 +1613,8 @@
     if (keys.has("d") || keys.has("arrowright")) moveX += 1;
     if (keys.has("w") || keys.has("arrowup")) moveY += 1;
     if (keys.has("s") || keys.has("arrowdown")) moveY -= 1;
+    moveX += touchAxis.x;
+    moveY += touchAxis.y;
 
     const length = Math.hypot(moveX, moveY) || 1;
     moveX /= length;
