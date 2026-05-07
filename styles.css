@@ -676,6 +676,60 @@ h1 {
   border: 0;
 }
 
+.mobile-lockdown {
+  position: absolute;
+  inset: 0;
+  z-index: 99;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(3, 5, 12, 0.97);
+  pointer-events: auto;
+  overflow-y: auto;
+}
+
+.mobile-lockdown.is-hidden {
+  display: none;
+}
+
+.mobile-lockdown-card {
+  width: min(440px, calc(100vw - 32px));
+  border: 2px solid rgba(255, 82, 107, 0.5);
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(8, 16, 28, 0.98), rgba(28, 12, 18, 0.98));
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.7), 0 0 32px rgba(255, 82, 107, 0.2);
+  padding: 22px;
+  color: var(--text);
+}
+
+.mobile-lockdown-card .eyebrow {
+  color: #ff526b;
+}
+
+.mobile-lockdown-card h2 {
+  margin: 0 0 14px;
+  font-size: 1.28rem;
+  line-height: 1.18;
+}
+
+.mobile-lockdown-card p {
+  color: #d9e7ff;
+  line-height: 1.5;
+  margin: 0 0 12px;
+  font-size: 0.9rem;
+}
+
+.mobile-lockdown-card a {
+  color: #3be3ff;
+  font-weight: 800;
+}
+
+.mobile-lockdown-meta {
+  color: #9db0c9;
+  font-size: 0.72rem;
+  margin-top: 14px;
+}
+
 .mobile-fire-button {
   position: absolute;
   right: 24px;

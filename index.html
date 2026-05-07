@@ -18,8 +18,8 @@
   <link rel="icon" href="data:,">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="assets/kopano-labs-logo.png">
-  <link rel="stylesheet" href="styles.css?v=20260506-bosses">
-  <script src="src/game.js?v=20260506-bosses" defer></script>
+  <link rel="stylesheet" href="styles.css?v=20260506-lockdown">
+  <script src="src/game.js?v=20260506-lockdown" defer></script>
 </head>
 <body>
   <main class="shell">
@@ -87,6 +87,18 @@
     <div class="event-toast" id="eventToast" aria-live="polite"></div>
 
     <button id="mobileFireButton" type="button" class="mobile-fire-button is-hidden" aria-label="Fire weapon">FIRE</button>
+
+    <section class="mobile-lockdown is-hidden" id="mobileLockdown" role="dialog" aria-labelledby="mobileLockdownTitle">
+      <div class="mobile-lockdown-card">
+        <p class="eyebrow">KC Protocol 13 &mdash; Commandment XII Save Kill</p>
+        <h2 id="mobileLockdownTitle">Mobile build paused for performance audit</h2>
+        <p>The mobile branch has been severed from active deployment per Master's 80% Optimal Threshold law. We do not ship sub-threshold builds to township pilots. The desktop branch is unaffected and fully playable.</p>
+        <p><strong>What works now:</strong> Open this URL on a laptop or desktop &mdash; full game with onboarding, danger zone, shooting, and bosses.</p>
+        <p><strong>Mobile is being rebuilt</strong> against the Asymmetric Edge Reality test (low-end Android, township infrastructure, zero-budget hardware). Re-open this page after the next deploy.</p>
+        <p><strong>Got a mobile-perf fix or upgrade idea?</strong> Email <a href="mailto:rkholofelo@kopanolabs.com">rkholofelo@kopanolabs.com</a> &mdash; Sovereign Tech bounty applies (Tier 2, R500&ndash;R1500 ZAR via Yoco / PayFast / EFT).</p>
+        <p class="mobile-lockdown-meta">Build: 20260506-lockdown &middot; Audit started: 2026-05-06 &middot; Repo: github.com/Kopano-Labs/starfall-salvage</p>
+      </div>
+    </section>
 
     <aside class="kasi-comm is-collapsed" id="kasiComm" aria-label="Kasi-Comm in-game chat">
       <button id="kasiCommToggle" type="button" class="kasi-comm-toggle" aria-expanded="false" aria-controls="kasiCommBody">

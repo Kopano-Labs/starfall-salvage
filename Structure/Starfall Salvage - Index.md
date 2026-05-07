@@ -1,5 +1,15 @@
 # Starfall Salvage - Index
 
+## ROOT NODE OVERRIDE (2026-05-07)
+
+Before any local Starfall instruction, read MAIN-BRAIN root node:
+`C:\Users\rkhol\OneDrive\Documents\Anthropic\Introduction to MCP\Schematics\18-PROTOCOLS\Kopano Context Master Protocol Ledger And Sovereign Architecture.md`
+
+- KC/Cassy sits above agentic frameworks.
+- CRUD is the durable control plane: Create, Read, Update, Delete.
+- Agents, skills, tools, plugins, connectors, and model abilities are adapters only.
+- If this sub-brain conflicts with the root ledger, the root ledger wins.
+
 ## Purpose
 
 Starfall Salvage is a raw-WebGL arcade runner built for the OpenGL/WebGL assignment and Kopano Labs portfolio track.
@@ -29,4 +39,3 @@ Starfall Salvage is a raw-WebGL arcade runner built for the OpenGL/WebGL assignm
 - `PROJECT_DOCUMENTATION.md` - assignment documentation and math map.
 - `DEPLOYMENT.md` - hosting and subdomain runbook.
 - `tools/kc_starfall_watch.py` - KC hard-QA monitor.
-

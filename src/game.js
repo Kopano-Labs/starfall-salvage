@@ -47,8 +47,20 @@
     onboardingModal: document.getElementById("onboardingModal"),
     onboardingAck: document.getElementById("onboardingAck"),
     onboardingContinueButton: document.getElementById("onboardingContinueButton"),
-    mobileFireButton: document.getElementById("mobileFireButton")
+    mobileFireButton: document.getElementById("mobileFireButton"),
+    mobileLockdown: document.getElementById("mobileLockdown")
   };
+
+  // ===== KC PROTOCOL 13 / COMMANDMENT XII (SAVE KILL) — 2026-05-06 =====
+  // Mobile build failed Master's physical Asymmetric Edge Reality test (devices freezing).
+  // Per the 80% Optimal Threshold law, the mobile branch is severed from active deployment
+  // until a sandboxed perf audit clears the new mobile rebuild.
+  // Desktop branch is unaffected.
+  const MOBILE_LOCKDOWN = true;
+  const DIAG_PARAM = (typeof window !== "undefined" && window.location && window.location.search)
+    ? new URLSearchParams(window.location.search).get("diag")
+    : null;
+  const DIAG_ENABLED = DIAG_PARAM === "1";
 
   if (!gl) {
     hud.statusTitle.textContent = "WebGL unavailable";
@@ -645,7 +657,26 @@
     showOnboardingModal();
   }
 
-  if (hud.mobileFireButton && isTouchCapable) {
+  const mobileLockdownActive = MOBILE_LOCKDOWN && isTouchCapable;
+  if (mobileLockdownActive) {
+    if (hud.mobileLockdown) {
+      hud.mobileLockdown.classList.remove("is-hidden");
+    }
+    if (hud.onboardingModal) {
+      hud.onboardingModal.classList.add("is-hidden");
+    }
+    if (hud.mobileFireButton) {
+      hud.mobileFireButton.classList.add("is-hidden");
+    }
+    state.mode = "lockdown";
+    logEvent("mobile_lockdown_engaged", {
+      build: "20260506-lockdown",
+      reason: "Protocol 13 / Commandment XII Save Kill",
+      threshold: "80% optimal not met"
+    });
+  }
+
+  if (hud.mobileFireButton && isTouchCapable && !mobileLockdownActive) {
     hud.mobileFireButton.classList.remove("is-hidden");
     const fireHandler = (event) => {
       event.preventDefault();
@@ -658,7 +689,7 @@
     });
   }
 
-  if (canvas && isTouchCapable) {
+  if (canvas && isTouchCapable && !mobileLockdownActive) {
     canvas.addEventListener("touchstart", (event) => {
       if (isAccountModalOpen() || isTypingTarget(event.target)) {
         return;
@@ -1763,6 +1794,23 @@
     }
     state.score += dt * 14 * (1 + state.cores * 0.015);
     state.bulletCooldown = Math.max(0, (state.bulletCooldown || 0) - dt);
+    if (DIAG_ENABLED) {
+      state.diagFrames = (state.diagFrames || 0) + 1;
+      state.diagMaxDt = Math.max(state.diagMaxDt || 0, dt);
+      state.diagSumDt = (state.diagSumDt || 0) + dt;
+      if (state.diagFrames % 60 === 0) {
+        logEvent("frame_profile", {
+          frames: state.diagFrames,
+          meanDt: Number(((state.diagSumDt || 0) / 60).toFixed(4)),
+          maxDt: Number((state.diagMaxDt || 0).toFixed(4)),
+          sparkCount: sparks.length,
+          objectCount: objects.length,
+          trailCount: trailParticles.length
+        });
+        state.diagMaxDt = 0;
+        state.diagSumDt = 0;
+      }
+    }
     state.spawnTimer -= dt;
 
     if (state.spawnTimer <= 0) {

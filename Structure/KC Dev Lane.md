@@ -1,5 +1,19 @@
 # KC Dev Lane
 
+## Root Node Binding (2026-05-07)
+
+KC's Starfall QA lane inherits MAIN-BRAIN root node:
+`C:\Users\rkhol\OneDrive\Documents\Anthropic\Introduction to MCP\Schematics\18-PROTOCOLS\Kopano Context Master Protocol Ledger And Sovereign Architecture.md`
+
+Starfall KC checks must remain CRUD-bound:
+
+- Create bounded lesson/proof records.
+- Read verified source, live URL, repo state, and MAIN-BRAIN state.
+- Update only with evidence.
+- Delete or kill stale/false claims with a logged reason.
+
+Agents, skills, tools, and model abilities are adapters only.
+
 ## Role Upgrade
 
 KC is no longer treated as a passive intern note bucket for Starfall Salvage. KC is assigned as a strict dev QA lane:
