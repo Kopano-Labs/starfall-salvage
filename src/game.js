@@ -184,6 +184,28 @@
   const PUBLIC_LIVE_URL = "https://starfallsalvage.kopanolabs.com";
   const PUBLIC_REPO_URL = "https://github.com/Kopano-Labs/starfall-salvage";
 
+  const state = {
+    mode: "ready",
+    time: 0,
+    score: 0,
+    hull: 3,
+    cores: 0,
+    speed: 18,
+    spawnTimer: 0,
+    lastTime: 0,
+    fps: 0,
+    frameCounter: 0,
+    fpsTimer: 0,
+    hitShakeTime: 0,
+    hitShakeStrength: 0,
+    currentFov: BASE_FOV,
+    targetFov: BASE_FOV,
+    eventMessage: "",
+    eventTimer: 0,
+    hitFlashTimer: 0,
+    scoreSubmitted: false
+  };
+
   const Mat4 = {
     create() {
       const out = new Float32Array(16);
@@ -835,28 +857,6 @@
   canvas.addEventListener("webglcontextrestored", () => {
     window.location.reload();
   });
-
-  const state = {
-    mode: "ready",
-    time: 0,
-    score: 0,
-    hull: 3,
-    cores: 0,
-    speed: 18,
-    spawnTimer: 0,
-    lastTime: 0,
-    fps: 0,
-    frameCounter: 0,
-    fpsTimer: 0,
-    hitShakeTime: 0,
-    hitShakeStrength: 0,
-    currentFov: BASE_FOV,
-    targetFov: BASE_FOV,
-    eventMessage: "",
-    eventTimer: 0,
-    hitFlashTimer: 0,
-    scoreSubmitted: false
-  };
 
   const player = {
     x: 0,
