@@ -2082,7 +2082,10 @@
     Mat4.identity(viewMatrix);
     Mat4.translate(viewMatrix, viewMatrix, [shakeX - player.x * 0.018, shakeY - player.y * 0.016, 0]);
 
-    const dangerLerp = Math.max(0, Math.min(1, ((state.lastSpeedMultiplier || 1) - 2) / 1));
+    const speedMultiplier = state.lastSpeedMultiplier || 1;
+    const dangerLerp = speedMultiplier >= 2
+      ? Math.max(0.48, Math.min(1, 0.48 + ((speedMultiplier - 2) / 0.8) * 0.52))
+      : 0;
     const calm = [0.005, 0.007, 0.016];
     const danger = [0.16, 0.02, 0.04];
     const cr = calm[0] + (danger[0] - calm[0]) * dangerLerp;
