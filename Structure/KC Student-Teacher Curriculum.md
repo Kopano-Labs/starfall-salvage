@@ -1,4 +1,6 @@
 ---
+root-node: "[[Schematics/18-PROTOCOLS/Kopano Context Master Protocol Ledger And Sovereign Architecture]]"
+inherits-mandate: "CRUD-only; KC sits above all agentic frameworks; 80% Optimal Threshold for Owner-Proof Gate"
 title: KC Student-Teacher Curriculum
 type: curriculum
 project: Starfall Salvage

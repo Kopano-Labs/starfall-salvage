@@ -19,16 +19,18 @@ Starfall Salvage is a raw-WebGL arcade runner built for the OpenGL/WebGL assignm
 - Project root: `C:\Users\rkhol\Starfall Salvage`
 - GitHub repo: `https://github.com/Kopano-Labs/starfall-salvage`
 - Local game URL: `http://127.0.0.1:8765/`
-- Target public subdomain: `https://starfallsavage.kopanolabs.com`
+- Live public URL: `https://starfallsalvage.kopanolabs.com` (Vercel Hobby + IONOS CNAME, served from `cpt1` Cape Town edge — desktop branch only as of 2026-05-07; mobile branch is locked down per Protocol 13 Save Kill).
 - Main Brain root: `C:\Users\rkhol\OneDrive\Documents\Anthropic\Introduction to MCP\Schematics`
 - KC implementation: `C:\Users\rkhol\OneDrive\Documents\Anthropic\Introduction to MCP\Schematics\06-Reference\kopano-code-implementation`
 
 ## Current Truth
 
-- The game exists locally and is pushed to the private Kopano Labs GitHub repo.
-- The IONOS subdomain exists but is not proven live as a hosted game yet.
-- KC is wired as a strict local QA/dev lane through documentation, context-store entries, and `tools/kc_starfall_watch.py`.
-- KC is not yet a separate autonomous AI runtime unless a real endpoint/process is connected later.
+- The game is live on the public Kopano Labs GitHub repo (public 2026-05-06 per Sovereign Tech / CONTRIBUTING.md doctrine).
+- The IONOS subdomain `starfallsalvage.kopanolabs.com` is proven live with HTTPS + Vercel edge serving, owner-proof verified for the desktop branch.
+- The mobile branch is severed under Protocol 13 Save Kill (Commandment 10) and Pillar 2 (Community) breach since 2026-05-06; lockdown overlay active until the sandboxed mobile rebuild clears the 80% Optimal Threshold.
+- KC is wired as a strict local QA/dev lane through documentation, context-store entries, `tools/kc_starfall_watch.py` (sub-brain proofs), and `tools/kc_main_brain_scan.py` (main-brain alignment).
+- KC operates under the CRUD-only mandate inherited from the root node — agents, skills, tools, and model abilities are adapters only.
+- KC is not yet a separate autonomous AI runtime; it is durable memory + ledger.
 
 ## Core Files
 
