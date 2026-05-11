@@ -48,15 +48,18 @@
     onboardingAck: document.getElementById("onboardingAck"),
     onboardingContinueButton: document.getElementById("onboardingContinueButton"),
     mobileFireButton: document.getElementById("mobileFireButton"),
-    mobileLockdown: document.getElementById("mobileLockdown")
+    mobileLockdown: document.getElementById("mobileLockdown"),
+    opsConsoleButton: document.getElementById("opsConsoleButton"),
+    opsConsole: document.getElementById("opsConsole"),
+    opsConsoleClose: document.getElementById("opsConsoleClose"),
+    opsLog: document.getElementById("opsLog")
   };
 
-  // ===== KC PROTOCOL 13 / COMMANDMENT XII (SAVE KILL) — 2026-05-06 =====
-  // Mobile build failed Master's physical Asymmetric Edge Reality test (devices freezing).
-  // Per the 80% Optimal Threshold law, the mobile branch is severed from active deployment
-  // until a sandboxed perf audit clears the new mobile rebuild.
-  // Desktop branch is unaffected.
-  const MOBILE_LOCKDOWN = true;
+  // Mobile: playable by default (touch + FIRE). Append ?strictMobile=1 to show the audit lockdown wall again.
+  const MOBILE_LOCKDOWN =
+    typeof window !== "undefined" &&
+    window.location &&
+    new URLSearchParams(window.location.search).get("strictMobile") === "1";
   const DIAG_PARAM = (typeof window !== "undefined" && window.location && window.location.search)
     ? new URLSearchParams(window.location.search).get("diag")
     : null;
@@ -179,10 +182,49 @@
   const EVENTS_MAX = 200;
   const LEADERBOARD_LIMIT = 12;
   const CHAT_LIMIT = 20;
+  const SPARKS_MAX = 200;
+  const TRAIL_MAX = 150;
   const CHAT_POLL_INTERVAL_MS = 3000;
   const KOPANO_BOUNTY_EMAIL = "rkholofelo@kopanolabs.com";
   const PUBLIC_LIVE_URL = "https://starfallsalvage.kopanolabs.com";
   const PUBLIC_REPO_URL = "https://github.com/Kopano-Labs/starfall-salvage";
+  /**
+   * Main-Brain 1.2 — append-only vault on local metal (Chief Architect path).
+   * Browser JS cannot write here; vault ingest is Owner/KC/Obsidian/CLI. Used for
+   * diagnostics alignment and ops copy — canonical durable truth stays off the public CDN edge.
+   */
+  const MAIN_BRAIN_VAULT_CANONICAL_WIN = "E:\\KopanoLabs\\main-brain-1.2";
+  /** Degraded fan-out / marketing surface — never treated as sole SoT when SQLite + vault exist. */
+  const DEGRADED_SYNC_PUBLIC_ORIGIN = PUBLIC_LIVE_URL;
+
+  function resolveApiUrl(path) {
+    if (typeof path !== "string" || !path.startsWith("/")) {
+      return path;
+    }
+    const injected =
+      typeof window !== "undefined" && window.__STARFALL_LOCAL_API_ORIGIN__;
+    if (injected && typeof injected === "string" && /^https?:\/\//i.test(injected)) {
+      return `${injected.replace(/\/$/, "")}${path}`;
+    }
+    try {
+      if (typeof window !== "undefined" && window.location) {
+        const raw = new URLSearchParams(window.location.search).get("localApiOrigin");
+        if (raw && /^https?:\/\//i.test(raw)) {
+          const u = new URL(raw);
+          const host = u.hostname.replace(/^www\./i, "").toLowerCase();
+          if (host === "localhost" || host.endsWith(".kopanolabs.com")) {
+            return `${raw.replace(/\/$/, "")}${path}`;
+          }
+        }
+      }
+    } catch {
+      // ignore malformed localApiOrigin
+    }
+    return path;
+  }
+  /** Set squad code to this value on Save Pilot to unlock local Ops console (events + pilot JSON). Not a server secret. */
+  const ADMIN_OPS_CODE = "kopano-flight-ops-2026";
+  const ADMIN_SESSION_KEY = "starfallSalvageOpsMonitor";
 
   const state = {
     mode: "ready",
@@ -203,7 +245,15 @@
     eventMessage: "",
     eventTimer: 0,
     hitFlashTimer: 0,
-    scoreSubmitted: false
+    scoreSubmitted: false,
+    dangerZoneActive: false,
+    lastSpeedMultiplier: 1,
+    bulletCooldown: 0,
+    diagFrames: 0,
+    diagMaxDt: 0,
+    diagSumDt: 0,
+    lastBossWaveIndex: 0,
+    forceBossSpawn: false
   };
 
   const Mat4 = {
@@ -692,7 +742,7 @@
     }
     state.mode = "lockdown";
     logEvent("mobile_lockdown_engaged", {
-      build: "20260506-lockdown",
+      build: "20260509-mobile-eco",
       reason: "Protocol 13 / Commandment XII Save Kill",
       threshold: "80% optimal not met"
     });
@@ -710,6 +760,8 @@
       spawnPlayerBullet();
     });
   }
+
+  refreshOpsConsoleVisibility();
 
   if (canvas && isTouchCapable && !mobileLockdownActive) {
     canvas.addEventListener("touchstart", (event) => {
@@ -833,6 +885,23 @@
       signInPilot();
     }
   });
+  if (hud.opsConsoleButton) {
+    hud.opsConsoleButton.addEventListener("click", openOpsConsole);
+  }
+  if (hud.opsConsoleClose) {
+    hud.opsConsoleClose.addEventListener("click", closeOpsConsole);
+  }
+  const opsConsoleScrim = document.querySelector(".ops-console-scrim");
+  if (opsConsoleScrim) {
+    opsConsoleScrim.addEventListener("click", closeOpsConsole);
+  }
+  if (hud.opsConsole) {
+    hud.opsConsole.addEventListener("click", (event) => {
+      if (event.target === hud.opsConsole) {
+        closeOpsConsole();
+      }
+    });
+  }
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) {
       wasPlayingBeforeHidden = state.mode === "playing";
@@ -867,7 +936,8 @@
     radius: 0.62,
     dash: 0,
     dashCooldown: 0,
-    trailTimer: 0
+    trailTimer: 0,
+    fireBoostTimer: 0
   };
 
   const objects = [];
@@ -890,7 +960,7 @@
   }
 
   function resizeCanvas() {
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const dpr = Math.min(window.devicePixelRatio || 1, isTouchCapable ? 1.5 : 2);
     const width = Math.floor(canvas.clientWidth * dpr);
     const height = Math.floor(canvas.clientHeight * dpr);
     if (canvas.width !== width || canvas.height !== height) {
@@ -921,6 +991,14 @@
     state.eventTimer = 0;
     state.hitFlashTimer = 0;
     state.scoreSubmitted = false;
+    state.dangerZoneActive = false;
+    state.lastSpeedMultiplier = 1;
+    state.bulletCooldown = 0;
+    state.diagFrames = 0;
+    state.diagMaxDt = 0;
+    state.diagSumDt = 0;
+    state.lastBossWaveIndex = 0;
+    state.forceBossSpawn = false;
     player.x = 0;
     player.y = -0.45;
     player.vx = 0;
@@ -928,6 +1006,7 @@
     player.dash = 0;
     player.dashCooldown = 0;
     player.trailTimer = 0;
+    player.fireBoostTimer = 0;
     objects.length = 0;
     sparks.length = 0;
     trailParticles.length = 0;
@@ -1243,10 +1322,11 @@
   }
 
   async function requestJson(url, options = {}) {
+    const resolvedUrl = resolveApiUrl(url);
     const controller = new AbortController();
     const timeoutId = window.setTimeout(() => controller.abort(), 1200);
     try {
-      const response = await fetch(url, {
+      const response = await fetch(resolvedUrl, {
         ...options,
         signal: controller.signal,
         headers: {
@@ -1297,12 +1377,14 @@
       }
       hud.accountStatus.textContent = `Signed in as ${pilotProfile.callsign}. Best score ${formatScore(pilotProfile.bestScore)}.`;
       setEventMessage(`Pilot linked: ${pilotProfile.callsign}`);
+      maybeEnableOpsConsole();
       closeAccountModal();
     } catch {
       persistPilotProfile(fallbackProfile);
       renderLeaderboard(localLeaderboardRows(), "Backend offline. Showing local browser scores.");
       hud.accountStatus.textContent = "Backend unavailable. Local pilot saved for offline demo mode.";
       setEventMessage(`Local pilot: ${pilotProfile.callsign}`);
+      maybeEnableOpsConsole();
       closeAccountModal();
     } finally {
       hud.savePilotButton.disabled = false;
@@ -1331,9 +1413,22 @@
     }
   }
 
-  function logEvent(type, payload) {
+  let eventBuffer = [];
+  let eventFlushHandle = 0;
+
+  function flushEventBuffer() {
+    eventFlushHandle = 0;
+    if (eventBuffer.length === 0) return;
     const log = loadEventLog();
-    log.push({
+    for (let i = 0; i < eventBuffer.length; i++) {
+      log.push(eventBuffer[i]);
+    }
+    eventBuffer.length = 0;
+    saveEventLog(log);
+  }
+
+  function logEvent(type, payload) {
+    eventBuffer.push({
       type,
       payload: payload || {},
       pilotId: pilotProfile.id || null,
@@ -1342,7 +1437,61 @@
       mode: state.mode || "init",
       ts: new Date().toISOString()
     });
-    saveEventLog(log);
+    if (!eventFlushHandle) {
+      eventFlushHandle = window.setTimeout(flushEventBuffer, 1000);
+    }
+  }
+
+  function refreshOpsConsoleVisibility() {
+    let ok = false;
+    try {
+      ok = window.sessionStorage.getItem(ADMIN_SESSION_KEY) === "1";
+    } catch {
+      ok = false;
+    }
+    if (hud.opsConsoleButton) {
+      hud.opsConsoleButton.classList.toggle("is-hidden", !ok);
+    }
+  }
+
+  function maybeEnableOpsConsole() {
+    const code = hud.accessCodeInput.value.trim();
+    if (code === ADMIN_OPS_CODE) {
+      try {
+        window.sessionStorage.setItem(ADMIN_SESSION_KEY, "1");
+      } catch {
+        /* ignore */
+      }
+      logEvent("ops_console_enabled", {
+        callsign: pilotProfile.callsign,
+        touch: Boolean(isTouchCapable)
+      });
+    }
+    refreshOpsConsoleVisibility();
+  }
+
+  function openOpsConsole() {
+    flushEventBuffer();
+    if (!hud.opsConsole || !hud.opsLog) return;
+    const events = loadEventLog().slice(-140);
+    hud.opsLog.textContent = JSON.stringify(
+      {
+        pilot: pilotProfile,
+        speedMultiplier: Number((state.lastSpeedMultiplier || 1).toFixed(2)),
+        dangerZone: state.dangerZoneActive,
+        generatedAt: new Date().toISOString(),
+        events
+      },
+      null,
+      2
+    );
+    hud.opsConsole.classList.remove("is-hidden");
+  }
+
+  function closeOpsConsole() {
+    if (hud.opsConsole) {
+      hud.opsConsole.classList.add("is-hidden");
+    }
   }
 
   function shareScoreText() {
@@ -1383,6 +1532,7 @@
   }
 
   function openIdeaMailto() {
+    flushEventBuffer();
     const log = loadEventLog();
     const recent = log.slice(-15).map((e) => `${e.ts} ${e.type} ${JSON.stringify(e.payload)}`).join("\n");
     const subject = `Starfall Salvage idea — ${pilotProfile.callsign || "Guest Pilot"}`;
@@ -1404,7 +1554,7 @@
       `Pilot: ${pilotProfile.callsign || "Guest"} (${pilotProfile.id || "anon"})`,
       `Best score: ${pilotProfile.bestScore || 0}`,
       `Mode at submit: ${state.mode}`,
-      `Game version: 20260506-comms`,
+      `Game version: 20260509-mobile-eco`,
       `URL: ${PUBLIC_LIVE_URL}`,
       `Repo: ${PUBLIC_REPO_URL}`,
       "Recent events:",
@@ -1416,10 +1566,19 @@
   }
 
   function exportDiagnostics() {
+    flushEventBuffer();
     const payload = {
       generatedAt: new Date().toISOString(),
-      gameVersion: "20260506-comms",
+      gameVersion: "20260509-mobile-eco",
       liveUrl: PUBLIC_LIVE_URL,
+      mainBrainSyncRouting: {
+        vaultCanonicalWinPath: MAIN_BRAIN_VAULT_CANONICAL_WIN,
+        degradedPublicOrigin: DEGRADED_SYNC_PUBLIC_ORIGIN,
+        mobileLockdownStrictMobileParam: MOBILE_LOCKDOWN,
+        apiDefault: "same-origin /api/* (SQLite server on deploy host)",
+        apiOverride:
+          "Optional: window.__STARFALL_LOCAL_API_ORIGIN__ = 'http://127.0.0.1:PORT' or ?localApiOrigin= for dev bridge; public live URL remains degraded fan-out only."
+      },
       pilot: pilotProfile,
       currentMode: state.mode,
       currentScore: Math.floor(state.score || 0),
@@ -1643,33 +1802,92 @@
     hud.fps.textContent = state.fps ? Math.round(state.fps).toString() : "--";
   }
 
+  function spawnBossEntity(mult) {
+    const size = randomRange(1.65, 2.15);
+    const extraHp = mult >= 2 ? Math.max(0, Math.floor((mult - 2) * 2.2)) : 0;
+    const hp = 4 + extraHp;
+    objects.push({
+      type: "boss",
+      x: randomRange(-3.2, 3.2),
+      y: randomRange(-1.4, 1.0),
+      z: -78,
+      size,
+      radius: size * 0.85,
+      rotX: 0,
+      rotY: 0,
+      rotZ: 0,
+      spinX: randomRange(-0.6, 0.6),
+      spinY: randomRange(-0.8, 0.8),
+      spinZ: randomRange(-0.5, 0.5),
+      hp,
+      maxHp: hp,
+      bossShootTimer: randomRange(1.0, 1.9)
+    });
+    logEvent("boss_spawned", { hp });
+  }
+
   function spawnObject() {
     const roll = Math.random();
     const dangerActive = !!state.dangerZoneActive;
-    const isBoss = dangerActive && roll < 0.07; // ~7% during danger zone
-    if (isBoss) {
-      const size = randomRange(1.7, 2.1);
-      objects.push({
-        type: "boss",
-        x: randomRange(-3.2, 3.2),
-        y: randomRange(-1.4, 1.0),
-        z: -78,
-        size,
-        radius: size * 0.85,
-        rotX: 0,
-        rotY: 0,
-        rotZ: 0,
-        spinX: randomRange(-0.6, 0.6),
-        spinY: randomRange(-0.8, 0.8),
-        spinZ: randomRange(-0.5, 0.5),
-        hp: 4,
-        maxHp: 4,
-        bossShootTimer: randomRange(1.2, 2.2)
-      });
-      logEvent("boss_spawned", {});
+    const mult = state.lastSpeedMultiplier || 1;
+    const deciStepsSpawn = mult >= 1 ? Math.floor((mult - 1) * 10) : 0;
+
+    if (state.forceBossSpawn && dangerActive) {
+      state.forceBossSpawn = false;
+      spawnBossEntity(mult);
       return;
     }
-    const isCrystal = roll > 0.66;
+
+    const bossChance = dangerActive
+      ? Math.min(0.22, 0.055 + deciStepsSpawn * 0.012 + (mult >= 4 ? 0.05 : 0))
+      : 0;
+    if (dangerActive && roll < bossChance) {
+      spawnBossEntity(mult);
+      return;
+    }
+
+    if (mult >= 1.12 && roll < 0.05) {
+      const s = randomRange(0.42, 0.62);
+      objects.push({
+        type: "rangeTarget",
+        x: randomRange(-3.4, 3.4),
+        y: randomRange(-1.8, 1.4),
+        z: -74,
+        size: s,
+        radius: s * 0.75,
+        hp: 2,
+        maxHp: 2,
+        rotX: randomRange(0, Math.PI * 2),
+        rotY: randomRange(0, Math.PI * 2),
+        rotZ: randomRange(0, Math.PI * 2),
+        spinX: randomRange(-0.9, 0.9),
+        spinY: randomRange(-1.1, 1.1),
+        spinZ: randomRange(-0.8, 0.8)
+      });
+      return;
+    }
+
+    if (mult >= 1.05 && roll < 0.065) {
+      const s = randomRange(0.38, 0.55);
+      objects.push({
+        type: "powerOrb",
+        x: randomRange(-3.2, 3.2),
+        y: randomRange(-1.7, 1.3),
+        z: -73,
+        size: s,
+        radius: s * 0.72,
+        rotX: randomRange(0, Math.PI * 2),
+        rotY: randomRange(0, Math.PI * 2),
+        rotZ: randomRange(0, Math.PI * 2),
+        spinX: randomRange(-1.2, 1.2),
+        spinY: randomRange(-1.2, 1.2),
+        spinZ: randomRange(-1.0, 1.0)
+      });
+      return;
+    }
+
+    const crystalBias = 0.66 - Math.min(0.14, deciStepsSpawn * 0.012);
+    const isCrystal = roll > crystalBias;
     const size = isCrystal ? randomRange(0.55, 0.85) : randomRange(0.85, 1.35);
     objects.push({
       type: isCrystal ? "crystal" : "debris",
@@ -1691,10 +1909,13 @@
     if (state.mode !== "playing") {
       return;
     }
-    if ((state.bulletCooldown || 0) > 0) {
+    if (state.bulletCooldown > 0) {
       return;
     }
-    state.bulletCooldown = 0.18;
+    if (sparks.length >= SPARKS_MAX) {
+      return;
+    }
+    state.bulletCooldown = player.fireBoostTimer > 0 ? 0.1 : 0.18;
     sparks.push({
       kind: "bullet",
       team: "player",
@@ -1713,6 +1934,7 @@
   }
 
   function spawnBossBullet(boss) {
+    if (sparks.length >= SPARKS_MAX) return;
     const dx = player.x - boss.x;
     const dy = player.y - boss.y;
     const dz = player.z - boss.z;
@@ -1735,7 +1957,10 @@
   }
 
   function spawnSparks(x, y, z, color, count = 14) {
-    for (let i = 0; i < count; i++) {
+    const budget = SPARKS_MAX - sparks.length;
+    if (budget <= 0) return;
+    const actual = Math.min(count, budget);
+    for (let i = 0; i < actual; i++) {
       sparks.push({
         x,
         y,
@@ -1752,6 +1977,7 @@
   }
 
   function spawnTrailParticle(force = false) {
+    if (trailParticles.length >= TRAIL_MAX) return;
     const moving = Math.hypot(player.vx, player.vy) > 0.1;
     if (!force && state.mode !== "playing") {
       return;
@@ -1780,18 +2006,33 @@
     }
 
     state.time += dt;
-    state.speed = Math.min(50, 14 + state.time * 0.34);
     const previousMultiplier = state.lastSpeedMultiplier || 1;
+    const deciSteps = previousMultiplier >= 1 ? Math.floor((previousMultiplier - 1) * 10) : 0;
+    const ramp =
+      0.34 +
+      deciSteps * 0.05 +
+      (previousMultiplier >= 2 ? (previousMultiplier - 2) * 0.16 : 0);
+    state.speed = Math.min(58, 14 + state.time * ramp);
     const speedMultiplier = state.speed / 18;
     state.lastSpeedMultiplier = speedMultiplier;
     if (previousMultiplier < 2 && speedMultiplier >= 2) {
       state.dangerZoneActive = true;
+      state.lastBossWaveIndex = Math.max(state.lastBossWaveIndex || 0, 1);
+      state.forceBossSpawn = true;
       logEvent("danger_zone_entered", { speedMultiplier: Number(speedMultiplier.toFixed(2)) });
-      setEventMessage("Danger zone — bosses inbound");
+      setEventMessage("Danger zone — boss wave");
     }
     if (previousMultiplier >= 2 && speedMultiplier < 2) {
       state.dangerZoneActive = false;
     }
+    const bossWave = Math.floor(speedMultiplier / 2);
+    if (bossWave >= 2 && bossWave > (state.lastBossWaveIndex || 0)) {
+      state.lastBossWaveIndex = bossWave;
+      state.forceBossSpawn = true;
+      logEvent("boss_wave_milestone", { wave: bossWave, speedMultiplier: Number(speedMultiplier.toFixed(2)) });
+      setEventMessage(`Boss wave at ${(bossWave * 2).toFixed(0)}x thrust`);
+    }
+    player.fireBoostTimer = Math.max(0, (player.fireBoostTimer || 0) - dt);
     state.score += dt * 14 * (1 + state.cores * 0.015);
     state.bulletCooldown = Math.max(0, (state.bulletCooldown || 0) - dt);
     if (DIAG_ENABLED) {
@@ -1815,8 +2056,11 @@
 
     if (state.spawnTimer <= 0) {
       spawnObject();
-      const difficulty = clamp(state.time / 85, 0, 0.5);
-      state.spawnTimer = randomRange(0.46, 0.92 - difficulty);
+      const difficulty =
+        clamp(state.time / 85, 0, 0.52) +
+        deciSteps * 0.035 +
+        (speedMultiplier >= 2 ? (speedMultiplier - 2) * 0.06 : 0);
+      state.spawnTimer = randomRange(0.34, 0.88 - Math.min(0.42, difficulty));
     }
 
     let moveX = 0;
@@ -1871,8 +2115,9 @@
         }
       }
 
+      let removeObject = false;
       const dz = Math.abs(object.z - player.z);
-      if (dz < 1.1) {
+      if (object.type !== "rangeTarget" && dz < 1.1) {
         const distance = Math.hypot(object.x - player.x, object.y - player.y);
         if (distance < object.radius + player.radius) {
           if (object.type === "boss") {
@@ -1883,7 +2128,7 @@
                 state.score += 320;
                 setEventMessage("Boss down!");
                 spawnSparks(object.x, object.y, object.z, [1, 0.4, 0.92, 1], 30);
-                objects.splice(i, 1);
+                removeObject = true;
                 logEvent("boss_destroyed", { method: "ram-dash" });
               }
             } else {
@@ -1901,44 +2146,53 @@
                 handleGameOver();
               }
             }
-            continue;
-          }
-          if (object.type === "crystal") {
-            state.cores += 1;
-            state.score += 140;
-            if (state.cores % 7 === 0) {
-              state.hull = Math.min(5, state.hull + 1);
-              setEventMessage("Hull restored");
-            } else {
-              setEventMessage("+ Core");
-            }
-            spawnSparks(object.x, object.y, object.z, [0.45, 0.95, 1, 0.9], 18);
-          } else if (player.dash > 0) {
-            state.score += 90;
-            setEventMessage("Debris phased");
-            spawnSparks(object.x, object.y, object.z, [1, 0.82, 0.28, 0.86], 20);
           } else {
-            state.hull -= 1;
-            state.hitShakeTime = 0.42;
-            state.hitShakeStrength = 1;
-            state.hitFlashTimer = 0.42;
-            hud.shell.classList.add("is-hit");
-            setEventMessage("Hull damaged");
-            spawnSparks(object.x, object.y, object.z, [1, 0.25, 0.34, 0.94], 26);
-            if (navigator.vibrate) {
-              navigator.vibrate([200, 100, 200]);
+            if (object.type === "powerOrb") {
+              player.fireBoostTimer = 5.2;
+              state.score += 95;
+              setEventMessage("Rapid fire charged");
+              spawnSparks(object.x, object.y, object.z, [1, 0.62, 0.35, 1], 24);
+              logEvent("power_orb_collected", {});
+            } else if (object.type === "crystal") {
+              state.cores += 1;
+              state.score += 140;
+              if (state.cores % 7 === 0) {
+                state.hull = Math.min(5, state.hull + 1);
+                setEventMessage("Hull restored");
+              } else {
+                setEventMessage("+ Core");
+              }
+              spawnSparks(object.x, object.y, object.z, [0.45, 0.95, 1, 0.9], 18);
+            } else if (player.dash > 0) {
+              state.score += 90;
+              setEventMessage("Debris phased");
+              spawnSparks(object.x, object.y, object.z, [1, 0.82, 0.28, 0.86], 20);
+            } else {
+              state.hull -= 1;
+              state.hitShakeTime = 0.42;
+              state.hitShakeStrength = 1;
+              state.hitFlashTimer = 0.42;
+              hud.shell.classList.add("is-hit");
+              setEventMessage("Hull damaged");
+              spawnSparks(object.x, object.y, object.z, [1, 0.25, 0.34, 0.94], 26);
+              if (navigator.vibrate) {
+                navigator.vibrate([200, 100, 200]);
+              }
+              if (state.hull <= 0) {
+                handleGameOver();
+              }
             }
-            if (state.hull <= 0) {
-              handleGameOver();
-            }
+            removeObject = true;
           }
-          objects.splice(i, 1);
-          continue;
         }
       }
 
-      if (object.z > 8) {
-        objects.splice(i, 1);
+      if (!removeObject && object.z > 8) {
+        removeObject = true;
+      }
+      if (removeObject) {
+        objects[i] = objects[objects.length - 1];
+        objects.pop();
       }
     }
 
@@ -1949,7 +2203,8 @@
       trail.y += trail.vy * dt;
       trail.z += trail.vz * dt;
       if (trail.life <= 0) {
-        trailParticles.splice(i, 1);
+        trailParticles[i] = trailParticles[trailParticles.length - 1];
+        trailParticles.pop();
       }
     }
 
@@ -1959,8 +2214,8 @@
       spark.x += spark.vx * dt;
       spark.y += spark.vy * dt;
       spark.z += spark.vz * dt;
+      let removeSpark = false;
       if (spark.kind === "bullet" && spark.team === "player") {
-        let consumed = false;
         for (let j = objects.length - 1; j >= 0; j--) {
           const obj = objects[j];
           if (Math.abs(obj.z - spark.z) > 1.0) continue;
@@ -1968,9 +2223,24 @@
           if (obj.type === "debris") {
             state.score += 60;
             spawnSparks(obj.x, obj.y, obj.z, [1, 0.65, 0.22, 0.9], 14);
-            objects.splice(j, 1);
+            objects[j] = objects[objects.length - 1];
+            objects.pop();
             logEvent("debris_destroyed", {});
-            consumed = true;
+            removeSpark = true;
+            break;
+          }
+          if (obj.type === "rangeTarget") {
+            obj.hp = (obj.hp || 2) - 1;
+            spawnSparks(spark.x, spark.y, spark.z, [1, 0.72, 0.2, 1], 10);
+            if (obj.hp <= 0) {
+              state.score += 150;
+              setEventMessage("Target cleared");
+              spawnSparks(obj.x, obj.y, obj.z, [1, 0.5, 0.15, 0.95], 20);
+              objects[j] = objects[objects.length - 1];
+              objects.pop();
+              logEvent("range_target_destroyed", {});
+            }
+            removeSpark = true;
             break;
           }
           if (obj.type === "boss") {
@@ -1980,16 +2250,13 @@
               state.score += 320;
               setEventMessage("Boss down!");
               spawnSparks(obj.x, obj.y, obj.z, [1, 0.4, 0.92, 1], 30);
-              objects.splice(j, 1);
+              objects[j] = objects[objects.length - 1];
+              objects.pop();
               logEvent("boss_destroyed", { score: 320 });
             }
-            consumed = true;
+            removeSpark = true;
             break;
           }
-        }
-        if (consumed) {
-          sparks.splice(i, 1);
-          continue;
         }
       } else if (spark.kind === "bullet" && spark.team === "boss") {
         if (Math.abs(player.z - spark.z) < 1.0 &&
@@ -2009,12 +2276,12 @@
               handleGameOver();
             }
           }
-          sparks.splice(i, 1);
-          continue;
+          removeSpark = true;
         }
       }
-      if (spark.life <= 0) {
-        sparks.splice(i, 1);
+      if (removeSpark || spark.life <= 0) {
+        sparks[i] = sparks[sparks.length - 1];
+        sparks.pop();
       }
     }
 
@@ -2199,6 +2466,28 @@
           texture: crystalTexture,
           textureMix: 0.78,
           pulse: 0.48 + Math.sin(alphaTime * 5 + object.x) * 0.16
+        });
+      } else if (object.type === "powerOrb") {
+        drawMesh(meshes.crystal, {
+          position: [object.x, object.y, object.z],
+          rotation: [object.rotX, object.rotY + alphaTime * 1.1, object.rotZ],
+          scale: [object.size * 1.1, object.size * 1.1, object.size * 1.1],
+          color: [1, 0.78, 0.28, 1],
+          texture: crystalTexture,
+          textureMix: 0.82,
+          pulse: 0.55 + Math.sin(alphaTime * 8 + object.y) * 0.22
+        });
+      } else if (object.type === "rangeTarget") {
+        const hpRatio = Math.max(0.2, (object.hp || 2) / (object.maxHp || 2));
+        drawMesh(meshes.cube, {
+          position: [object.x, object.y, object.z],
+          rotation: [object.rotX + alphaTime * 0.6, object.rotY + alphaTime * 0.9, object.rotZ],
+          scale: [object.size * 1.4, object.size * 0.35, object.size * 1.4],
+          color: [1, 0.45 + (1 - hpRatio) * 0.35, 0.12, 1],
+          texture: warningTexture,
+          textureMix: 0.7,
+          uvScale: [1.8, 1.8],
+          pulse: 0.42 + Math.sin(alphaTime * 11) * 0.2
         });
       } else if (object.type === "boss") {
         const hpRatio = Math.max(0.25, (object.hp || 1) / (object.maxHp || 4));
