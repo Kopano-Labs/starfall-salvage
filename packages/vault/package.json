@@ -1,0 +1,21 @@
+{
+  "name": "@starfall/vault",
+  "version": "0.1.0",
+  "private": true,
+  "description": "kopano_vault — Starfall Salvage offline IndexedDB data layer",
+  "main": "./src/kopano-vault.js",
+  "module": "./src/kopano-vault.js",
+  "exports": {
+    ".": "./src/kopano-vault.js"
+  },
+  "files": [
+    "src"
+  ],
+  "sideEffects": false,
+  "keywords": [
+    "indexeddb",
+    "offline-first",
+    "kopano-labs",
+    "starfall-salvage"
+  ]
+}

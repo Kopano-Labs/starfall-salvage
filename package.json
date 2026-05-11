@@ -1,0 +1,26 @@
+{
+  "name": "starfall-salvage-monorepo",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Starfall Salvage — Kopano Labs WebGL game + Ionic React mobile rebuild",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "type-check": "turbo run type-check",
+    "mobile:dev": "turbo run dev --filter=@starfall/mobile",
+    "vault:check": "node --input-type=module < src/kopano-vault.js"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.0",
+    "typescript": "^5.4.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "packageManager": "npm@10.8.0"
+}
