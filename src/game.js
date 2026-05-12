@@ -196,6 +196,8 @@
   const MAIN_BRAIN_VAULT_CANONICAL_WIN = "E:\\KopanoLabs\\main-brain-1.2";
   /** Degraded fan-out / marketing surface — never treated as sole SoT when SQLite + vault exist. */
   const DEGRADED_SYNC_PUBLIC_ORIGIN = PUBLIC_LIVE_URL;
+  let eventBuffer = [];
+  let eventFlushHandle = 0;
 
   function resolveApiUrl(path) {
     if (typeof path !== "string" || !path.startsWith("/")) {
@@ -1412,9 +1414,6 @@
       /* storage full or unavailable - silently drop */
     }
   }
-
-  let eventBuffer = [];
-  let eventFlushHandle = 0;
 
   function flushEventBuffer() {
     eventFlushHandle = 0;
