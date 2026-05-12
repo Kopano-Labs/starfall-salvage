@@ -1,5 +1,7 @@
 {
   "framework": null,
+  "installCommand": "echo \"Static Starfall deploy: no dependency install\"",
+  "buildCommand": "echo \"Static Starfall deploy: no build step\"",
   "outputDirectory": ".",
   "cleanUrls": true,
   "trailingSlash": false,
