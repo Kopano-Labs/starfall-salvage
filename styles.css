@@ -1151,6 +1151,13 @@ h1 {
     right: 10px;
     width: auto;
     padding: 10px;
+    pointer-events: none;
+  }
+
+  .leaderboard-actions,
+  .leaderboard-share-row,
+  .leaderboard-share-row button {
+    pointer-events: auto;
   }
 
   .leaderboard-list {
@@ -1186,6 +1193,11 @@ h1 {
     overflow-y: auto;
     padding: 8px 10px;
     font-size: 0.72rem;
+    pointer-events: none;
+  }
+
+  .kopano-ecosystem-links a {
+    pointer-events: auto;
   }
 
   .kopano-ecosystem-title {
