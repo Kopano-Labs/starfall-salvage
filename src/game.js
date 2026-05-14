@@ -275,7 +275,8 @@
   const PROFILE_STORAGE_KEY = "starfallSalvagePilotProfile";
   const SCORES_STORAGE_KEY = "starfallSalvageLocalScores";
   const ONBOARDING_STORAGE_KEY = "starfallSalvageOnboardingComplete";
-  const GUEST_CTA_SEEN_KEY = "starfallSalvageGuestCtaSeen";
+  const GUEST_CTA_SEEN_KEY = "starfall:guest_cta_seen_v1";
+  const GUEST_CTA_SEEN_LEGACY_KEYS = ["starfallSalvageGuestCtaSeen"];
   const EVENTS_STORAGE_KEY = "starfallSalvageEventLog";
   const RUN_RECEIPTS_STORAGE_KEY = "starfallSalvageRunReceipts";
   const EVENTS_MAX = 200;
@@ -285,7 +286,7 @@
   const KOPANO_BOUNTY_EMAIL = "rkholofelo@kopanolabs.com";
   const PUBLIC_LIVE_URL = "https://starfallsalvage.kopanolabs.com";
   const PUBLIC_REPO_URL = "https://github.com/Kopano-Labs/starfall-salvage";
-  const GAME_BUILD = "20260514-guest-cta-b";
+  const GAME_BUILD = "20260514-guest-cta-c";
   const PILOT_PALETTES = ["default", "blossom", "ember", "mono"];
   const REVIVE_TIME_SECONDS = 8;
   const REVIVE_CORES_NEEDED = 3;
@@ -1781,27 +1782,61 @@
     updateAccountSummary();
   }
 
+  function hasGuestCtaBeenSeen() {
+    try {
+      const raw = window.localStorage.getItem(GUEST_CTA_SEEN_KEY);
+      if (raw === "1" || raw === "true") {
+        return true;
+      }
+      if (raw && JSON.parse(raw) === true) {
+        return true;
+      }
+    } catch {
+      // ignore
+    }
+    for (const legacyKey of GUEST_CTA_SEEN_LEGACY_KEYS) {
+      if (readJsonStorage(legacyKey, false)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function markGuestCtaSeen() {
+    try {
+      window.localStorage.setItem(GUEST_CTA_SEEN_KEY, "1");
+    } catch {
+      writeJsonStorage(GUEST_CTA_SEEN_KEY, true);
+    }
+  }
+
   function dismissGuestSignUpCta() {
     if (hud.guestCtaModal) {
       hud.guestCtaModal.classList.add("is-hidden");
     }
+    markGuestCtaSeen();
     logEvent("guest_cta_dismissed", {});
   }
 
   function acceptGuestSignUpCta() {
-    dismissGuestSignUpCta();
+    markGuestCtaSeen();
+    if (hud.guestCtaModal) {
+      hud.guestCtaModal.classList.add("is-hidden");
+    }
     openAccountModal();
-    logEvent("guest_cta_accepted", {});
+    logEvent("guest_cta_accepted", { reason: "save_pilot" });
   }
 
   function maybeShowGuestSignUpCta(finalScore) {
     if (pilotProfile.mode !== "guest") {
       return;
     }
-    if (readJsonStorage(GUEST_CTA_SEEN_KEY, false)) {
+    if (state.mode !== "gameover") {
       return;
     }
-    writeJsonStorage(GUEST_CTA_SEEN_KEY, true);
+    if (hasGuestCtaBeenSeen()) {
+      return;
+    }
     if (hud.guestCtaScore) {
       hud.guestCtaScore.textContent = formatScore(finalScore);
     }
