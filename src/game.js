@@ -61,7 +61,11 @@
     reviveTimer: document.getElementById("reviveTimer"),
     reviveProgress: document.getElementById("reviveProgress"),
     reviveSkipButton: document.getElementById("reviveSkipButton"),
-    kasiCommEmojiBar: document.getElementById("kasiCommEmojiBar")
+    kasiCommEmojiBar: document.getElementById("kasiCommEmojiBar"),
+    guestCtaModal: document.getElementById("guestCtaModal"),
+    guestCtaScore: document.getElementById("guestCtaScore"),
+    guestCtaSaveButton: document.getElementById("guestCtaSaveButton"),
+    guestCtaDismissButton: document.getElementById("guestCtaDismissButton")
   };
 
   // Mobile: playable by default (touch + FIRE). Append ?strictMobile=1 to show the audit lockdown wall again.
@@ -81,7 +85,7 @@
   }
 
   canvas.addEventListener("mousedown", (event) => {
-    if (isAccountModalOpen() || isTypingTarget(event.target)) {
+    if (isAccountModalOpen() || isGuestCtaModalOpen() || isTypingTarget(event.target)) {
       return;
     }
     if (event.button !== 0) {
@@ -281,7 +285,7 @@
   const KOPANO_BOUNTY_EMAIL = "rkholofelo@kopanolabs.com";
   const PUBLIC_LIVE_URL = "https://starfallsalvage.kopanolabs.com";
   const PUBLIC_REPO_URL = "https://github.com/Kopano-Labs/starfall-salvage";
-  const GAME_BUILD = "20260514-guest-cta-a";
+  const GAME_BUILD = "20260514-guest-cta-b";
   const PILOT_PALETTES = ["default", "blossom", "ember", "mono"];
   const REVIVE_TIME_SECONDS = 8;
   const REVIVE_CORES_NEEDED = 3;
@@ -886,7 +890,13 @@
   let contextLost = false;
 
   window.addEventListener("keydown", (event) => {
-    if (isAccountModalOpen() || isTypingTarget(event.target)) {
+    if (isGuestCtaModalOpen()) {
+      if (event.key === "Escape") {
+        dismissGuestSignUpCta();
+      }
+      return;
+    }
+    if (isAccountModalOpen() || isGuestCtaModalOpen() || isTypingTarget(event.target)) {
       if (event.key === "Escape" && isAccountModalOpen()) {
         closeAccountModal();
       }
@@ -920,7 +930,7 @@
     if (event.key.toLowerCase() === "f") {
       fireHeld = false;
     }
-    if (isAccountModalOpen() || isTypingTarget(event.target)) {
+    if (isAccountModalOpen() || isGuestCtaModalOpen() || isTypingTarget(event.target)) {
       return;
     }
     keys.delete(event.key.toLowerCase());
@@ -1052,7 +1062,7 @@
 
   if (canvas && isTouchCapable && !mobileLockdownActive) {
     canvas.addEventListener("touchstart", (event) => {
-      if (isAccountModalOpen() || isTypingTarget(event.target)) {
+      if (isAccountModalOpen() || isGuestCtaModalOpen() || isTypingTarget(event.target)) {
         return;
       }
       if (activeTouchId !== null) {
@@ -1552,6 +1562,10 @@
     return !hud.accountModal.classList.contains("is-hidden");
   }
 
+  function isGuestCtaModalOpen() {
+    return Boolean(hud.guestCtaModal && !hud.guestCtaModal.classList.contains("is-hidden"));
+  }
+
   function isTypingTarget(target) {
     if (!target || !(target instanceof HTMLElement)) {
       return false;
@@ -1793,6 +1807,9 @@
     }
     if (hud.guestCtaModal) {
       hud.guestCtaModal.classList.remove("is-hidden");
+    }
+    if (hud.guestCtaSaveButton) {
+      window.requestAnimationFrame(() => hud.guestCtaSaveButton.focus());
     }
     logEvent("guest_cta_shown", { score: finalScore });
   }
