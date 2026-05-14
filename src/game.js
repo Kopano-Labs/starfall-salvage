@@ -286,7 +286,7 @@
   const KOPANO_BOUNTY_EMAIL = "rkholofelo@kopanolabs.com";
   const PUBLIC_LIVE_URL = "https://starfallsalvage.kopanolabs.com";
   const PUBLIC_REPO_URL = "https://github.com/Kopano-Labs/starfall-salvage";
-  const GAME_BUILD = "20260514-mobile-ux-a";
+  const GAME_BUILD = "20260514-mobile-ux-b";
   const PILOT_PALETTES = ["default", "blossom", "ember", "mono"];
   const REVIVE_TIME_SECONDS = 8;
   const REVIVE_CORES_NEEDED = 3;
@@ -305,22 +305,27 @@
       return;
     }
     window.history.pushState({ starfallModal: key }, "");
-    const handler = () => {
+    const entry = {
+      closedByPop: false,
+      handler: null
+    };
+    entry.handler = () => {
+      entry.closedByPop = true;
       detachModalBackTrap(key, true);
       onPopClose();
     };
-    modalBackTraps.set(key, handler);
-    window.addEventListener("popstate", handler);
+    modalBackTraps.set(key, entry);
+    window.addEventListener("popstate", entry.handler);
   }
 
   function detachModalBackTrap(key, fromPopState) {
-    const handler = modalBackTraps.get(key);
-    if (!handler) {
+    const entry = modalBackTraps.get(key);
+    if (!entry) {
       return;
     }
     modalBackTraps.delete(key);
-    window.removeEventListener("popstate", handler);
-    if (!fromPopState) {
+    window.removeEventListener("popstate", entry.handler);
+    if (!fromPopState && !entry.closedByPop) {
       const state = window.history.state;
       if (state && state.starfallModal === key) {
         window.history.back();
