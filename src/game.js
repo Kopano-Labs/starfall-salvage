@@ -286,11 +286,47 @@
   const KOPANO_BOUNTY_EMAIL = "rkholofelo@kopanolabs.com";
   const PUBLIC_LIVE_URL = "https://starfallsalvage.kopanolabs.com";
   const PUBLIC_REPO_URL = "https://github.com/Kopano-Labs/starfall-salvage";
-  const GAME_BUILD = "20260514-guest-cta-c";
+  const GAME_BUILD = "20260514-mobile-ux-a";
   const PILOT_PALETTES = ["default", "blossom", "ember", "mono"];
   const REVIVE_TIME_SECONDS = 8;
   const REVIVE_CORES_NEEDED = 3;
   const REVIVE_CORE_COUNT = 6;
+  const MODAL_TRAP = {
+    account: "account",
+    guestCta: "guestCta",
+    onboarding: "onboarding",
+    revive: "revive",
+    ops: "ops"
+  };
+  const modalBackTraps = new Map();
+
+  function attachModalBackTrap(key, onPopClose) {
+    if (modalBackTraps.has(key)) {
+      return;
+    }
+    window.history.pushState({ starfallModal: key }, "");
+    const handler = () => {
+      detachModalBackTrap(key, true);
+      onPopClose();
+    };
+    modalBackTraps.set(key, handler);
+    window.addEventListener("popstate", handler);
+  }
+
+  function detachModalBackTrap(key, fromPopState) {
+    const handler = modalBackTraps.get(key);
+    if (!handler) {
+      return;
+    }
+    modalBackTraps.delete(key);
+    window.removeEventListener("popstate", handler);
+    if (!fromPopState) {
+      const state = window.history.state;
+      if (state && state.starfallModal === key) {
+        window.history.back();
+      }
+    }
+  }
   const SIM_LAW_DEFAULT = {
     schemaVersion: 1,
     lanes: { count: 16, playerBounds: { xMin: -3.8, xMax: 3.8, yMin: -2.15, yMax: 1.55 } },
@@ -989,6 +1025,7 @@
     if (hud.onboardingContinueButton) {
       hud.onboardingContinueButton.disabled = true;
     }
+    attachModalBackTrap(MODAL_TRAP.onboarding, hideOnboardingModal);
     logEvent("onboarding_open", {});
   }
 
@@ -1004,6 +1041,7 @@
       return;
     }
     markOnboardingDone();
+    detachModalBackTrap(MODAL_TRAP.onboarding, false);
     hideOnboardingModal();
     logEvent("onboarding_complete", {});
     if (pilotProfile.mode === "guest") {
@@ -1411,6 +1449,7 @@
     if (hud.reviveModal) {
       hud.reviveModal.classList.remove("is-hidden");
     }
+    attachModalBackTrap(MODAL_TRAP.revive, () => completeRevive(false));
     if (hud.reviveTimer) {
       hud.reviveTimer.textContent = REVIVE_TIME_SECONDS.toFixed(1);
     }
@@ -1423,6 +1462,7 @@
   }
 
   function completeRevive(success) {
+    detachModalBackTrap(MODAL_TRAP.revive, false);
     if (hud.reviveModal) {
       hud.reviveModal.classList.add("is-hidden");
     }
@@ -1810,19 +1850,23 @@
     }
   }
 
-  function dismissGuestSignUpCta() {
+  function hideGuestCtaModalUi() {
     if (hud.guestCtaModal) {
       hud.guestCtaModal.classList.add("is-hidden");
     }
+  }
+
+  function dismissGuestSignUpCta() {
+    detachModalBackTrap(MODAL_TRAP.guestCta, false);
+    hideGuestCtaModalUi();
     markGuestCtaSeen();
     logEvent("guest_cta_dismissed", {});
   }
 
   function acceptGuestSignUpCta() {
     markGuestCtaSeen();
-    if (hud.guestCtaModal) {
-      hud.guestCtaModal.classList.add("is-hidden");
-    }
+    detachModalBackTrap(MODAL_TRAP.guestCta, false);
+    hideGuestCtaModalUi();
     openAccountModal();
     logEvent("guest_cta_accepted", { reason: "save_pilot" });
   }
@@ -1843,6 +1887,11 @@
     if (hud.guestCtaModal) {
       hud.guestCtaModal.classList.remove("is-hidden");
     }
+    attachModalBackTrap(MODAL_TRAP.guestCta, () => {
+      hideGuestCtaModalUi();
+      markGuestCtaSeen();
+      logEvent("guest_cta_dismissed", { via: "hardware_back" });
+    });
     if (hud.guestCtaSaveButton) {
       window.requestAnimationFrame(() => hud.guestCtaSaveButton.focus());
     }
@@ -1865,12 +1914,18 @@
       : "Offline profile mode is available with no network account.";
     refreshPilotBestScore();
     hud.accountModal.classList.remove("is-hidden");
+    attachModalBackTrap(MODAL_TRAP.account, hideAccountModalUi);
     hud.callsignInput.focus();
   }
 
-  function closeAccountModal() {
+  function hideAccountModalUi() {
     hud.accountModal.classList.add("is-hidden");
     canvas.focus();
+  }
+
+  function closeAccountModal() {
+    detachModalBackTrap(MODAL_TRAP.account, false);
+    hideAccountModalUi();
   }
 
   function useGuestPilot() {
@@ -2066,12 +2121,18 @@
       2
     );
     hud.opsConsole.classList.remove("is-hidden");
+    attachModalBackTrap(MODAL_TRAP.ops, closeOpsConsoleUi);
   }
 
-  function closeOpsConsole() {
+  function closeOpsConsoleUi() {
     if (hud.opsConsole) {
       hud.opsConsole.classList.add("is-hidden");
     }
+  }
+
+  function closeOpsConsole() {
+    detachModalBackTrap(MODAL_TRAP.ops, false);
+    closeOpsConsoleUi();
   }
 
   function shareScoreText() {
