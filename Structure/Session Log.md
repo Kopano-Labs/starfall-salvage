@@ -15,3 +15,13 @@
 - Profile/backend/KC lane, HUD logo fix, and KC verification log pushed to `origin/main`.
 - Login modal input isolation fixed so Enter submits the pilot profile without launching the game.
 - Backend storage upgraded from JSON to SQLite at `.data/starfall.db`.
+
+## 2026-05-14
+
+- Current public `origin/main` audited at `6a27bc1` before patching; older mobile-only branch was not pushed over newer main.
+- Working branch created: `codex/starfall-mobile-weapon-ecosystem`.
+- Unified-device ecosystem patch applied on top of current main: desktop FIRE visibility, active weapon labels, speed-responsive chrome, compact mobile HUD/share behavior, and ecosystem copy aligned to one ruleset across PC, Android, Xiaomi, and Apple browsers.
+- Existing `origin/main` buff model preserved: overcharge, triad, aegis, prism, revive modal, guest CTA, schema spawns, PWA boot, and modal history traps.
+- Browser proof passed across Redmi 393x873, narrow 360x800, and desktop 1280x720.
+- Speed-color proof passed with deterministic survival run: `speedStrength=0.125`, `speedAccent=hsl(170 47% 40%)`, `speedValue=1.4x`.
+- Case study added: `Structure/2026-05-14 - Unified Device Ecosystem Case Study.md`.

@@ -155,7 +155,7 @@
     const t = Math.max(0, Math.min(1, (multiplier - 1) / 3.2));
     const hue = Math.round(paletteHue - t * (palette === "mono" ? 24 : 148));
     const sat = Math.round((palette === "mono" ? 8 : 42) + t * 38);
-    const light = Math.round(12 + t * 10);
+    const light = Math.round(38 + t * 18);
     hud.shell.style.setProperty("--speed-hue", String(hue));
     hud.shell.style.setProperty("--speed-strength", t.toFixed(3));
     hud.shell.style.setProperty("--speed-accent", `hsl(${hue} ${sat}% ${light}%)`);
@@ -286,7 +286,7 @@
   const KOPANO_BOUNTY_EMAIL = "rkholofelo@kopanolabs.com";
   const PUBLIC_LIVE_URL = "https://starfallsalvage.kopanolabs.com";
   const PUBLIC_REPO_URL = "https://github.com/Kopano-Labs/starfall-salvage";
-  const GAME_BUILD = "20260514-mobile-ux-b";
+  const GAME_BUILD = "20260514-unified-ecosystem";
   const PILOT_PALETTES = ["default", "blossom", "ember", "mono"];
   const REVIVE_TIME_SECONDS = 8;
   const REVIVE_CORES_NEEDED = 3;
@@ -1089,7 +1089,7 @@
     });
   }
 
-  if (hud.mobileFireButton && isTouchCapable && !mobileLockdownActive) {
+  if (hud.mobileFireButton && !mobileLockdownActive) {
     hud.mobileFireButton.classList.remove("is-hidden");
     const fireHandler = (event) => {
       event.preventDefault();
@@ -1563,7 +1563,7 @@
     }
     updateHud();
     syncShellPlayState();
-    setStatus("Ready", "Collect blue energy cores, dodge red debris, and use Space to phase dash through danger.", false);
+    setStatus("Ready", "One flight deck on every device. Fire with F, canvas, or FIRE.", false);
   }
 
   function startGame() {
@@ -2508,6 +2508,21 @@
     maybeShowGuestSignUpCta(finalScore);
   }
 
+  function activeWeaponKind() {
+    if (player.buffKind && player.buffTimer > 0) {
+      return player.buffKind;
+    }
+    return player.fireBoostTimer > 0 ? "rapid" : "pulse";
+  }
+
+  function activeWeaponLabel() {
+    const kind = activeWeaponKind();
+    if (kind === "overcharge" || kind === "rapid") return "RAPID";
+    if (kind === "triad") return "TRIAD";
+    if (kind === "prism") return "PRISM";
+    return "FIRE";
+  }
+
   function updateHud() {
     hud.score.textContent = Math.floor(state.score).toString();
     hud.hull.textContent = state.hull.toString();
@@ -2516,6 +2531,15 @@
     hud.speed.textContent = `${(state.speed / 18).toFixed(1)}x`;
     if (hud.buff) {
       hud.buff.textContent = activeBuffLabel();
+    }
+    if (hud.mobileFireButton) {
+      const weaponKind = activeWeaponKind();
+      const weaponLabel = activeWeaponLabel();
+      hud.mobileFireButton.textContent = weaponLabel;
+      hud.mobileFireButton.dataset.weapon = weaponKind;
+      hud.mobileFireButton.title = weaponKind === "pulse"
+        ? "Fire weapon"
+        : `Fire weapon (${weaponLabel.toLowerCase()} active)`;
     }
     hud.fps.textContent = state.fps ? Math.round(state.fps).toString() : "--";
   }

@@ -48,3 +48,7 @@ Starfall Salvage is a raw-WebGL arcade runner built for the OpenGL/WebGL assignm
 - `PROJECT_DOCUMENTATION.md` - assignment documentation and math map.
 - `DEPLOYMENT.md` - hosting and subdomain runbook.
 - `tools/kc_starfall_watch.py` - KC hard-QA monitor.
+
+## Session Proofs
+
+- `Structure/2026-05-14 - Unified Device Ecosystem Case Study.md` - current-main proof for the unified PC/mobile gameplay ecosystem, desktop FIRE control, speed-color chrome, and Redmi-class layout audit.
