@@ -1265,6 +1265,7 @@
     state.sectorLabel = "Approach";
     player.x = 0;
     player.y = -0.45;
+    player.z = -7.8;
     player.vx = 0;
     player.vy = 0;
     player.dash = 0;
@@ -2759,8 +2760,8 @@
 
     renderStars(alphaTime);
     renderTunnel(alphaTime);
-    renderPlayer(alphaTime);
     renderObjects(alphaTime);
+    renderPlayer(alphaTime);
     renderGlowPass(alphaTime);
   }
 
@@ -2831,8 +2832,10 @@
 
   function renderPlayer(alphaTime) {
     const dashPulse = player.dash > 0 ? 0.75 : 0.12 + Math.sin(alphaTime * 7) * 0.04;
+    // Nudge toward camera so debris at the same lane depth cannot fully bury the hull.
+    const shipZ = player.z + 0.45;
     drawMesh(meshes.ship, {
-      position: [player.x, player.y, player.z],
+      position: [player.x, player.y, shipZ],
       rotation: [player.vy * -0.035, player.vx * 0.04, player.vx * -0.09],
       scale: [0.72, 0.66, 0.88],
       color: player.dash > 0 ? [0.35, 0.95, 1, 1] : [0.42, 1, 0.72, 1],
