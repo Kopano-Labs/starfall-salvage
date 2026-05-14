@@ -18,9 +18,9 @@
   <link rel="icon" href="data:,">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="starfall-smoke.png">
-  <link rel="stylesheet" href="styles.css?v=20260514-engage-swarm">
-  <script type="module" src="src/pwa-boot.js?v=20260514-engage-swarm"></script>
-  <script src="src/game.js?v=20260514-engage-swarm" defer></script>
+  <link rel="stylesheet" href="styles.css?v=20260514-guest-cta-a">
+  <script type="module" src="src/pwa-boot.js?v=20260514-guest-cta-a"></script>
+  <script src="src/game.js?v=20260514-guest-cta-a" defer></script>
 </head>
 <body>
   <main class="shell">
@@ -213,6 +213,19 @@
           <button id="resetPilotButton" type="button">Reset Pilot</button>
         </div>
         <p class="account-status" id="accountStatus">No network account required.</p>
+      </div>
+    </section>
+
+    <section class="guest-cta-modal is-hidden" id="guestCtaModal" role="dialog" aria-modal="true" aria-labelledby="guestCtaTitle">
+      <div class="guest-cta-card">
+        <p class="eyebrow">Pilot record</p>
+        <h2 id="guestCtaTitle">Save this run before you leave</h2>
+        <p class="guest-cta-copy">You just cleared the salvage lane as a guest. Link a callsign to keep your best score, squad up, and climb the leaderboard.</p>
+        <p class="guest-cta-score">Last run <strong id="guestCtaScore">0</strong></p>
+        <div class="guest-cta-actions">
+          <button id="guestCtaSaveButton" type="button">Save pilot stats / Squad up</button>
+          <button id="guestCtaDismissButton" type="button" class="is-secondary">Not now</button>
+        </div>
       </div>
     </section>
 

@@ -754,6 +754,83 @@ h1 {
  font-size: 1.45rem;
 }
 
+.account-status {
+ color: var(--muted);
+ line-height: 1.45;
+}
+
+.guest-cta-modal {
+ position: fixed;
+ inset: 0;
+ z-index: 45;
+ display: grid;
+ place-items: center;
+ padding: max(18px, env(safe-area-inset-top)) 18px max(18px, env(safe-area-inset-bottom));
+ background: rgba(0, 0, 0, 0.62);
+ backdrop-filter: blur(8px);
+ pointer-events: auto;
+ animation: reviveFadeIn 360ms ease both;
+}
+
+.guest-cta-modal.is-hidden {
+ display: none;
+}
+
+.guest-cta-card {
+ width: min(400px, calc(100vw - 32px));
+ border: 1px solid rgba(78, 240, 255, 0.22);
+ border-radius: 10px;
+ background: rgba(8, 16, 28, 0.97);
+ box-shadow: 0 22px 60px rgba(0, 0, 0, 0.48);
+ padding: 18px 16px 14px;
+ animation: uiDropIn 480ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.guest-cta-card h2 {
+ margin-bottom: 8px;
+ font-size: clamp(1.1rem, 4vw, 1.35rem);
+ line-height: 1.2;
+}
+
+.guest-cta-copy,
+.guest-cta-score {
+ color: var(--muted);
+ line-height: 1.45;
+ font-size: 0.92rem;
+}
+
+.guest-cta-score {
+ margin: 10px 0 0;
+}
+
+.guest-cta-score strong {
+ color: var(--green);
+ font-size: 1.05rem;
+}
+
+.guest-cta-actions {
+ display: grid;
+ gap: 8px;
+ margin-top: 14px;
+}
+
+.guest-cta-actions button {
+ width: 100%;
+ min-height: 42px;
+}
+
+.guest-cta-actions button.is-secondary {
+ background: rgba(255, 255, 255, 0.05);
+ color: var(--muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+ .guest-cta-modal,
+ .guest-cta-card {
+ animation: none !important;
+ }
+}
+
 .account-copy,
 .account-status,
 .account-summary {

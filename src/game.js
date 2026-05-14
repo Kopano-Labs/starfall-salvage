@@ -271,6 +271,7 @@
   const PROFILE_STORAGE_KEY = "starfallSalvagePilotProfile";
   const SCORES_STORAGE_KEY = "starfallSalvageLocalScores";
   const ONBOARDING_STORAGE_KEY = "starfallSalvageOnboardingComplete";
+  const GUEST_CTA_SEEN_KEY = "starfallSalvageGuestCtaSeen";
   const EVENTS_STORAGE_KEY = "starfallSalvageEventLog";
   const RUN_RECEIPTS_STORAGE_KEY = "starfallSalvageRunReceipts";
   const EVENTS_MAX = 200;
@@ -280,7 +281,7 @@
   const KOPANO_BOUNTY_EMAIL = "rkholofelo@kopanolabs.com";
   const PUBLIC_LIVE_URL = "https://starfallsalvage.kopanolabs.com";
   const PUBLIC_REPO_URL = "https://github.com/Kopano-Labs/starfall-salvage";
-  const GAME_BUILD = "20260514-engage-swarm";
+  const GAME_BUILD = "20260514-guest-cta-a";
   const PILOT_PALETTES = ["default", "blossom", "ember", "mono"];
   const REVIVE_TIME_SECONDS = 8;
   const REVIVE_CORES_NEEDED = 3;
@@ -1140,6 +1141,19 @@
       });
     });
   }
+  if (hud.guestCtaSaveButton) {
+    hud.guestCtaSaveButton.addEventListener("click", acceptGuestSignUpCta);
+  }
+  if (hud.guestCtaDismissButton) {
+    hud.guestCtaDismissButton.addEventListener("click", dismissGuestSignUpCta);
+  }
+  if (hud.guestCtaModal) {
+    hud.guestCtaModal.addEventListener("click", (event) => {
+      if (event.target === hud.guestCtaModal) {
+        dismissGuestSignUpCta();
+      }
+    });
+  }
   hud.closeAccountButton.addEventListener("click", closeAccountModal);
   hud.guestPilotButton.addEventListener("click", useGuestPilot);
   hud.resetPilotButton.addEventListener("click", resetPilotSession);
@@ -1753,6 +1767,36 @@
     updateAccountSummary();
   }
 
+  function dismissGuestSignUpCta() {
+    if (hud.guestCtaModal) {
+      hud.guestCtaModal.classList.add("is-hidden");
+    }
+    logEvent("guest_cta_dismissed", {});
+  }
+
+  function acceptGuestSignUpCta() {
+    dismissGuestSignUpCta();
+    openAccountModal();
+    logEvent("guest_cta_accepted", {});
+  }
+
+  function maybeShowGuestSignUpCta(finalScore) {
+    if (pilotProfile.mode !== "guest") {
+      return;
+    }
+    if (readJsonStorage(GUEST_CTA_SEEN_KEY, false)) {
+      return;
+    }
+    writeJsonStorage(GUEST_CTA_SEEN_KEY, true);
+    if (hud.guestCtaScore) {
+      hud.guestCtaScore.textContent = formatScore(finalScore);
+    }
+    if (hud.guestCtaModal) {
+      hud.guestCtaModal.classList.remove("is-hidden");
+    }
+    logEvent("guest_cta_shown", { score: finalScore });
+  }
+
   function openAccountModal() {
     if (state.mode === "playing") {
       state.mode = "paused";
@@ -2343,6 +2387,7 @@
     revealShareButton(finalScore);
     logEvent("game_over", { score: finalScore, cores: state.cores, time: Number(state.time.toFixed(2)) });
     syncShellPlayState();
+    maybeShowGuestSignUpCta(finalScore);
   }
 
   function updateHud() {
