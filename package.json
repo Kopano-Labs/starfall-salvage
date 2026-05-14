@@ -13,6 +13,9 @@
     "lint": "turbo run lint",
     "type-check": "turbo run type-check",
     "mobile:dev": "turbo run dev --filter=@starfall/mobile",
+    "twa:doctor": "npm run doctor --workspace=@starfall/twa",
+    "twa:build": "npm run build --workspace=@starfall/twa",
+    "twa:validate": "npm run validate --workspace=@starfall/twa",
     "vault:check": "node --input-type=module < src/kopano-vault.js"
   },
   "devDependencies": {

@@ -1,0 +1,43 @@
+{
+  "packageId": "com.kopanolabs.starfall.salvage",
+  "host": "starfallsalvage.kopanolabs.com",
+  "name": "Starfall Salvage",
+  "launcherName": "Starfall",
+  "display": "standalone",
+  "themeColor": "#07080E",
+  "navigationColor": "#07080E",
+  "navigationColorDark": "#07080E",
+  "navigationDividerColor": "#07080E",
+  "navigationDividerColorDark": "#07080E",
+  "backgroundColor": "#07080E",
+  "enableNotifications": false,
+  "startUrl": "/",
+  "iconUrl": "https://starfallsalvage.kopanolabs.com/starfall-smoke.png",
+  "maskableIconUrl": "https://starfallsalvage.kopanolabs.com/starfall-smoke.png",
+  "monochromeIconUrl": "https://starfallsalvage.kopanolabs.com/starfall-smoke.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "./android.keystore",
+    "alias": "starfall"
+  },
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
+  "shortcuts": [],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://starfallsalvage.kopanolabs.com/manifest.webmanifest",
+  "fallbackType": "customtabs",
+  "features": {
+    "playBilling": {
+      "enabled": false
+    }
+  },
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "minSdkVersion": 21,
+  "shareTarget": null,
+  "orientation": "default"
+}

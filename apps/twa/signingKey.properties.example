@@ -1,0 +1,6 @@
+# Copy to signingKey.properties after `bubblewrap build` prompts for keystore.
+# Do not commit signingKey.properties or android.keystore.
+storePassword=CHANGE_ME
+keyPassword=CHANGE_ME
+keyAlias=starfall
+storeFile=android.keystore

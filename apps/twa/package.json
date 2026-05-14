@@ -1,0 +1,15 @@
+{
+  "name": "@starfall/twa",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Bubblewrap TWA shell for Starfall Salvage (Google Play)",
+  "scripts": {
+    "init": "bubblewrap update --manifest=https://starfallsalvage.kopanolabs.com/manifest.webmanifest",
+    "build": "bubblewrap build",
+    "validate": "bubblewrap validate --url=https://starfallsalvage.kopanolabs.com/manifest.webmanifest",
+    "doctor": "bubblewrap doctor"
+  },
+  "devDependencies": {
+    "@bubblewrap/cli": "^1.24.1"
+  }
+}
