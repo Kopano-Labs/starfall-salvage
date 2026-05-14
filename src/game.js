@@ -253,16 +253,182 @@
   const SCORES_STORAGE_KEY = "starfallSalvageLocalScores";
   const ONBOARDING_STORAGE_KEY = "starfallSalvageOnboardingComplete";
   const EVENTS_STORAGE_KEY = "starfallSalvageEventLog";
+  const RUN_RECEIPTS_STORAGE_KEY = "starfallSalvageRunReceipts";
   const EVENTS_MAX = 200;
   const LEADERBOARD_LIMIT = 12;
   const CHAT_LIMIT = 20;
-  const SPARKS_MAX = 200;
-  const TRAIL_MAX = 150;
   const CHAT_POLL_INTERVAL_MS = 3000;
   const KOPANO_BOUNTY_EMAIL = "rkholofelo@kopanolabs.com";
   const PUBLIC_LIVE_URL = "https://starfallsalvage.kopanolabs.com";
   const PUBLIC_REPO_URL = "https://github.com/Kopano-Labs/starfall-salvage";
-  const GAME_BUILD = "20260514-unified-flight";
+  const GAME_BUILD = "20260514-ecosystem-runtime";
+  const SIM_LAW_DEFAULT = {
+    schemaVersion: 1,
+    lanes: { count: 16, playerBounds: { xMin: -3.8, xMax: 3.8, yMin: -2.15, yMax: 1.55 } },
+    speedTiers: [
+      { id: "cruise", multiplierMin: 1, multiplierMax: 1.99 },
+      { id: "danger", multiplierMin: 2, multiplierMax: 99, dangerZone: true }
+    ],
+    sectors: [
+      { id: 1, label: "Approach", speedMultiplierMin: 1, bossGate: false },
+      { id: 2, label: "Breach", speedMultiplierMin: 2, bossGate: true },
+      { id: 3, label: "Deep salvage", speedMultiplierMin: 4, bossGate: true },
+      { id: 4, label: "Core drift", speedMultiplierMin: 6, bossGate: true }
+    ],
+    spawn: {
+      intervalMin: 0.34,
+      intervalMax: 0.88,
+      difficultyTimeScale: 85,
+      difficultyCap: 0.52,
+      deciStepDifficulty: 0.035,
+      dangerZoneDifficulty: 0.06,
+      spawnZ: { hazard: -72, pickup: -73, boss: -78, rangeTarget: -74 },
+      boss: { baseChance: 0.055, deciStepBonus: 0.012, highSpeedBonus: 0.05, highSpeedThreshold: 4, chanceCap: 0.22 }
+    },
+    obstacleClasses: [
+      { id: "rangeTarget", type: "rangeTarget", minMultiplier: 1.12, rollMax: 0.05 },
+      { id: "buffOrb", type: "buffOrb", minMultiplier: 1.05, rollMax: 0.072 },
+      { id: "powerOrb", type: "powerOrb", minMultiplier: 1.05, rollMax: 0.13 },
+      { id: "boss", type: "boss", spawnVia: "bossGate", requiresDangerZone: true },
+      { id: "crystal", type: "crystal", crystalBiasBase: 0.66, crystalBiasDeciStep: 0.012, crystalBiasCap: 0.14 },
+      { id: "debris", type: "debris", fallback: true }
+    ],
+    salvage: { scorePerSecond: 14, coreScoreFactor: 0.015 },
+    tempest: { laneIndexFire: false, sectorClear: { enabled: false, usesPerSector: 1 } },
+    renderBudget: {
+      tiers: [
+        { id: "low", maxDpr: 1.35, particleScale: 0.55, tunnelDecorScale: 0.65, rotateTopology: false },
+        { id: "mid", maxDpr: 1.75, particleScale: 0.82, tunnelDecorScale: 0.88, rotateTopology: false },
+        { id: "high", maxDpr: 2, particleScale: 1, tunnelDecorScale: 1, rotateTopology: true }
+      ]
+    }
+  };
+  const SIM = structuredClone(SIM_LAW_DEFAULT);
+  let sparksMax = 200;
+  let trailMax = 150;
+
+  function applySimSchema(patch) {
+    if (!patch || typeof patch !== "object") {
+      return;
+    }
+    if (patch.lanes) {
+      Object.assign(SIM.lanes, patch.lanes);
+    }
+    if (Array.isArray(patch.speedTiers)) {
+      SIM.speedTiers = patch.speedTiers;
+    }
+    if (Array.isArray(patch.sectors)) {
+      SIM.sectors = patch.sectors;
+    }
+    if (patch.spawn) {
+      Object.assign(SIM.spawn, patch.spawn);
+      if (patch.spawn.boss) {
+        Object.assign(SIM.spawn.boss, patch.spawn.boss);
+      }
+      if (patch.spawn.spawnZ) {
+        SIM.spawn.spawnZ = { ...SIM.spawn.spawnZ, ...patch.spawn.spawnZ };
+      }
+    }
+    if (Array.isArray(patch.obstacleClasses)) {
+      SIM.obstacleClasses = patch.obstacleClasses;
+    }
+    if (patch.salvage) {
+      Object.assign(SIM.salvage, patch.salvage);
+    }
+    if (patch.tempest) {
+      SIM.tempest = { ...SIM.tempest, ...patch.tempest };
+    }
+    if (patch.renderBudget && Array.isArray(patch.renderBudget.tiers)) {
+      SIM.renderBudget.tiers = patch.renderBudget.tiers;
+    }
+    refreshRenderBudgetLimits();
+    logEvent("sim_schema_applied", { schemaVersion: patch.schemaVersion || SIM.schemaVersion });
+  }
+
+  async function loadSimLaw() {
+    try {
+      const response = await fetch(`src/sim.schema.json?v=${encodeURIComponent(GAME_BUILD)}`);
+      if (response.ok) {
+        applySimSchema(await response.json());
+      }
+    } catch {
+      refreshRenderBudgetLimits();
+    }
+  }
+
+  function getRenderBudgetTier() {
+    const dpr = window.devicePixelRatio || 1;
+    const tiers = (SIM.renderBudget && SIM.renderBudget.tiers) || SIM_LAW_DEFAULT.renderBudget.tiers;
+    let chosen = tiers[0];
+    tiers.forEach((tier) => {
+      if (dpr <= tier.maxDpr) {
+        chosen = tier;
+      }
+    });
+    return chosen || tiers[tiers.length - 1];
+  }
+
+  function refreshRenderBudgetLimits() {
+    const tier = getRenderBudgetTier();
+    const scale = tier.particleScale || 1;
+    sparksMax = Math.max(80, Math.floor(200 * scale));
+    trailMax = Math.max(60, Math.floor(150 * scale));
+  }
+
+  function getSectorForMultiplier(multiplier) {
+    const sectors = SIM.sectors || [];
+    let current = sectors[0] || { id: 1, label: "Approach", bossGate: false };
+    sectors.forEach((sector) => {
+      if (multiplier >= (sector.speedMultiplierMin || 1)) {
+        current = sector;
+      }
+    });
+    return current;
+  }
+
+  function nextSpawnInterval(deciSteps, speedMultiplier) {
+    const spawn = SIM.spawn;
+    const difficulty =
+      clamp(state.time / (spawn.difficultyTimeScale || 85), 0, spawn.difficultyCap || 0.52) +
+      deciSteps * (spawn.deciStepDifficulty || 0.035) +
+      (speedMultiplier >= 2 ? (speedMultiplier - 2) * (spawn.dangerZoneDifficulty || 0.06) : 0);
+    return randomRange(spawn.intervalMin || 0.34, (spawn.intervalMax || 0.88) - Math.min(0.42, difficulty));
+  }
+
+  function obstacleClassForRoll(roll, mult, dangerActive) {
+    const classes = SIM.obstacleClasses || [];
+    for (let i = 0; i < classes.length; i += 1) {
+      const entry = classes[i];
+      if (entry.fallback || entry.spawnVia === "bossGate") {
+        continue;
+      }
+      if (entry.requiresDangerZone && !dangerActive) {
+        continue;
+      }
+      if (entry.minMultiplier && mult < entry.minMultiplier) {
+        continue;
+      }
+      if (roll < (entry.rollMax || 0)) {
+        return entry;
+      }
+    }
+    return classes.find((entry) => entry.fallback) || { type: "debris" };
+  }
+
+  function bossSpawnChance(mult, dangerActive) {
+    if (!dangerActive) {
+      return 0;
+    }
+    const boss = SIM.spawn.boss || {};
+    const deciStepsSpawn = mult >= 1 ? Math.floor((mult - 1) * 10) : 0;
+    return Math.min(
+      boss.chanceCap || 0.22,
+      (boss.baseChance || 0.055) +
+        deciStepsSpawn * (boss.deciStepBonus || 0.012) +
+        (mult >= (boss.highSpeedThreshold || 4) ? boss.highSpeedBonus || 0.05 : 0)
+    );
+  }
+
   const BUFF_DEFS = {
     overcharge: { duration: 6.5, label: "Overcharge", color: [1, 0.82, 0.22, 1] },
     triad: { duration: 8, label: "Triad", color: [0.48, 1, 0.55, 1] },
@@ -336,7 +502,9 @@
     diagMaxDt: 0,
     diagSumDt: 0,
     lastBossWaveIndex: 0,
-    forceBossSpawn: false
+    forceBossSpawn: false,
+    sectorIndex: 1,
+    sectorLabel: "Approach"
   };
 
   const Mat4 = {
@@ -1052,7 +1220,9 @@
   }
 
   function resizeCanvas() {
-    const dpr = Math.min(window.devicePixelRatio || 1, isTouchCapable ? 1.5 : 2);
+    const budget = getRenderBudgetTier();
+    const dprCap = budget.maxDpr || (isTouchCapable ? 1.5 : 2);
+    const dpr = Math.min(window.devicePixelRatio || 1, dprCap);
     const width = Math.floor(canvas.clientWidth * dpr);
     const height = Math.floor(canvas.clientHeight * dpr);
     if (canvas.width !== width || canvas.height !== height) {
@@ -1091,6 +1261,8 @@
     state.diagSumDt = 0;
     state.lastBossWaveIndex = 0;
     state.forceBossSpawn = false;
+    state.sectorIndex = 1;
+    state.sectorLabel = "Approach";
     player.x = 0;
     player.y = -0.45;
     player.vx = 0;
@@ -1874,6 +2046,46 @@
     shareToChannel("whatsapp");
   }
 
+  function persistRunReceipt(finalScore) {
+    const receipt = {
+      score: finalScore,
+      cores: state.cores,
+      timeAlive: Number(state.time.toFixed(2)),
+      sectorIndex: state.sectorIndex,
+      sectorLabel: state.sectorLabel,
+      speedMultiplier: Number((state.lastSpeedMultiplier || 1).toFixed(2)),
+      build: GAME_BUILD,
+      callsign: pilotProfile.callsign || "Guest",
+      savedAt: new Date().toISOString()
+    };
+    const receipts = readJsonStorage(RUN_RECEIPTS_STORAGE_KEY, []);
+    receipts.unshift(receipt);
+    writeJsonStorage(RUN_RECEIPTS_STORAGE_KEY, receipts.slice(0, 50));
+    const vaultReady = window.__kopanoVaultReady;
+    if (vaultReady && typeof vaultReady.then === "function") {
+      vaultReady
+        .then((vault) => {
+          if (!vault) {
+            return null;
+          }
+          return vault.scores.add({
+            callsign: receipt.callsign,
+            score: receipt.score,
+            cores: receipt.cores,
+            timeAlive: receipt.timeAlive,
+            wave: receipt.sectorIndex,
+            mode: isTouchCapable ? "mobile" : "desktop"
+          });
+        })
+        .catch(() => null);
+    }
+    logEvent("run_receipt_saved", {
+      score: receipt.score,
+      sector: receipt.sectorIndex,
+      build: receipt.build
+    });
+  }
+
   function handleGameOver() {
     state.mode = "gameover";
     hud.pauseButton.textContent = "Pause";
@@ -1884,6 +2096,7 @@
     const bestScore = Math.max(pilotProfile.bestScore || 0, finalScore);
     setStatus("Mission Failed", `Pilot: ${pilotProfile.callsign} | Final score: ${finalScore} | Best: ${bestScore} | Cores: ${state.cores} | Time: ${state.time.toFixed(1)}s. Reset to fly again.`, false);
     submitScore();
+    persistRunReceipt(finalScore);
     revealShareButton(finalScore);
     logEvent("game_over", { score: finalScore, cores: state.cores, time: Number(state.time.toFixed(2)) });
     syncShellPlayState();
@@ -1902,6 +2115,7 @@
   }
 
   function spawnBossEntity(mult) {
+    const spawnZ = (SIM.spawn.spawnZ && SIM.spawn.spawnZ.boss) || -78;
     const size = randomRange(1.65, 2.15);
     const extraHp = mult >= 2 ? Math.max(0, Math.floor((mult - 2) * 2.2)) : 0;
     const hp = 4 + extraHp;
@@ -1909,7 +2123,7 @@
       type: "boss",
       x: randomRange(-3.2, 3.2),
       y: randomRange(-1.4, 1.0),
-      z: -78,
+      z: spawnZ,
       size,
       radius: size * 0.85,
       rotX: 0,
@@ -1929,7 +2143,7 @@
     const roll = Math.random();
     const dangerActive = !!state.dangerZoneActive;
     const mult = state.lastSpeedMultiplier || 1;
-    const deciStepsSpawn = mult >= 1 ? Math.floor((mult - 1) * 10) : 0;
+    const spawnZ = SIM.spawn.spawnZ || SIM_LAW_DEFAULT.spawn.spawnZ;
 
     if (state.forceBossSpawn && dangerActive) {
       state.forceBossSpawn = false;
@@ -1937,21 +2151,20 @@
       return;
     }
 
-    const bossChance = dangerActive
-      ? Math.min(0.22, 0.055 + deciStepsSpawn * 0.012 + (mult >= 4 ? 0.05 : 0))
-      : 0;
+    const bossChance = bossSpawnChance(mult, dangerActive);
     if (dangerActive && roll < bossChance) {
       spawnBossEntity(mult);
       return;
     }
 
-    if (mult >= 1.12 && roll < 0.05) {
+    const picked = obstacleClassForRoll(roll, mult, dangerActive);
+    if (picked.type === "rangeTarget") {
       const s = randomRange(0.42, 0.62);
       objects.push({
         type: "rangeTarget",
         x: randomRange(-3.4, 3.4),
         y: randomRange(-1.8, 1.4),
-        z: -74,
+        z: spawnZ.rangeTarget,
         size: s,
         radius: s * 0.75,
         hp: 2,
@@ -1966,7 +2179,7 @@
       return;
     }
 
-    if (mult >= 1.05 && roll < 0.072) {
+    if (picked.type === "buffOrb") {
       const buffKinds = ["overcharge", "triad", "aegis", "prism"];
       const buffKind = buffKinds[Math.floor(Math.random() * buffKinds.length)];
       const s = randomRange(0.36, 0.52);
@@ -1975,7 +2188,7 @@
         buffKind,
         x: randomRange(-3.2, 3.2),
         y: randomRange(-1.7, 1.3),
-        z: -73,
+        z: spawnZ.pickup,
         size: s,
         radius: s * 0.72,
         rotX: randomRange(0, Math.PI * 2),
@@ -1988,13 +2201,13 @@
       return;
     }
 
-    if (mult >= 1.05 && roll < 0.13) {
+    if (picked.type === "powerOrb") {
       const s = randomRange(0.38, 0.55);
       objects.push({
         type: "powerOrb",
         x: randomRange(-3.2, 3.2),
         y: randomRange(-1.7, 1.3),
-        z: -73,
+        z: spawnZ.pickup,
         size: s,
         radius: s * 0.72,
         rotX: randomRange(0, Math.PI * 2),
@@ -2007,14 +2220,18 @@
       return;
     }
 
-    const crystalBias = 0.66 - Math.min(0.14, deciStepsSpawn * 0.012);
+    const crystalRule = SIM.obstacleClasses.find((entry) => entry.type === "crystal") || {};
+    const deciStepsSpawn = mult >= 1 ? Math.floor((mult - 1) * 10) : 0;
+    const crystalBias =
+      (crystalRule.crystalBiasBase || 0.66) -
+      Math.min(crystalRule.crystalBiasCap || 0.14, deciStepsSpawn * (crystalRule.crystalBiasDeciStep || 0.012));
     const isCrystal = roll > crystalBias;
     const size = isCrystal ? randomRange(0.55, 0.85) : randomRange(0.85, 1.35);
     objects.push({
       type: isCrystal ? "crystal" : "debris",
       x: randomRange(-3.8, 3.8),
       y: randomRange(-2.0, 1.6),
-      z: -72,
+      z: spawnZ.hazard,
       size,
       radius: isCrystal ? size * 0.68 : size * 0.82,
       rotX: randomRange(0, Math.PI * 2),
@@ -2033,7 +2250,7 @@
     if (state.bulletCooldown > 0) {
       return;
     }
-    if (sparks.length >= SPARKS_MAX) {
+    if (sparks.length >= sparksMax) {
       return;
     }
     const rapid = player.fireBoostTimer > 0 || (player.buffKind === "overcharge" && player.buffTimer > 0);
@@ -2043,7 +2260,7 @@
     const offsets = triad ? [-0.14, 0, 0.14] : [0];
     const bulletColor = prism ? [0.95, 0.48, 1, 1] : rapid ? [1, 0.88, 0.38, 1] : [0.42, 0.96, 1, 1];
     offsets.forEach((offsetX) => {
-      if (sparks.length >= SPARKS_MAX) {
+      if (sparks.length >= sparksMax) {
         return;
       }
       sparks.push({
@@ -2066,7 +2283,7 @@
   }
 
   function spawnBossBullet(boss) {
-    if (sparks.length >= SPARKS_MAX) return;
+    if (sparks.length >= sparksMax) return;
     const dx = player.x - boss.x;
     const dy = player.y - boss.y;
     const dz = player.z - boss.z;
@@ -2089,7 +2306,7 @@
   }
 
   function spawnSparks(x, y, z, color, count = 14) {
-    const budget = SPARKS_MAX - sparks.length;
+    const budget = sparksMax - sparks.length;
     if (budget <= 0) return;
     const actual = Math.min(count, budget);
     for (let i = 0; i < actual; i++) {
@@ -2109,7 +2326,7 @@
   }
 
   function spawnTrailParticle(force = false) {
-    if (trailParticles.length >= TRAIL_MAX) return;
+    if (trailParticles.length >= trailMax) return;
     const moving = Math.hypot(player.vx, player.vy) > 0.1;
     if (!force && state.mode !== "playing") {
       return;
@@ -2174,12 +2391,26 @@
       logEvent("boss_wave_milestone", { wave: bossWave, speedMultiplier: Number(speedMultiplier.toFixed(2)) });
       setEventMessage(`Boss wave at ${(bossWave * 2).toFixed(0)}x thrust`);
     }
+    const sector = getSectorForMultiplier(speedMultiplier);
+    if (sector && sector.id !== state.sectorIndex) {
+      state.sectorIndex = sector.id;
+      state.sectorLabel = sector.label || `Sector ${sector.id}`;
+      logEvent("sector_entered", {
+        sector: sector.id,
+        label: state.sectorLabel,
+        speedMultiplier: Number(speedMultiplier.toFixed(2))
+      });
+      if (sector.bossGate) {
+        state.forceBossSpawn = true;
+        setEventMessage(`${state.sectorLabel} — boss gate`);
+      }
+    }
     player.fireBoostTimer = Math.max(0, (player.fireBoostTimer || 0) - dt);
     tickBuffs(dt);
     if (fireHeld || mouseFireHeld) {
       spawnPlayerBullet();
     }
-    state.score += dt * 14 * (1 + state.cores * 0.015);
+    state.score += dt * (SIM.salvage.scorePerSecond || 14) * (1 + state.cores * (SIM.salvage.coreScoreFactor || 0.015));
     state.bulletCooldown = Math.max(0, (state.bulletCooldown || 0) - dt);
     if (DIAG_ENABLED) {
       state.diagFrames = (state.diagFrames || 0) + 1;
@@ -2203,11 +2434,7 @@
 
     if (state.spawnTimer <= 0) {
       spawnObject();
-      const difficulty =
-        clamp(state.time / 85, 0, 0.52) +
-        deciSteps * 0.035 +
-        (speedMultiplier >= 2 ? (speedMultiplier - 2) * 0.06 : 0);
-      state.spawnTimer = randomRange(0.34, 0.88 - Math.min(0.42, difficulty));
+      state.spawnTimer = nextSpawnInterval(deciSteps, speedMultiplier);
     }
 
     let moveX = 0;
@@ -2226,8 +2453,9 @@
     const controlSpeed = player.dash > 0 ? 11 : 7.2;
     player.vx = moveX * controlSpeed;
     player.vy = moveY * controlSpeed;
-    player.x = clamp(player.x + player.vx * dt, -3.8, 3.8);
-    player.y = clamp(player.y + player.vy * dt, -2.15, 1.55);
+    const bounds = (SIM.lanes && SIM.lanes.playerBounds) || SIM_LAW_DEFAULT.lanes.playerBounds;
+    player.x = clamp(player.x + player.vx * dt, bounds.xMin, bounds.xMax);
+    player.y = clamp(player.y + player.vy * dt, bounds.yMin, bounds.yMax);
 
     player.dash = Math.max(0, player.dash - dt);
     player.dashCooldown = Math.max(0, player.dashCooldown - dt);
@@ -2753,8 +2981,15 @@
   gl.cullFace(gl.BACK);
   gl.activeTexture(gl.TEXTURE0);
   resizeCanvas();
-  updatePilotBadge();
-  resetGame();
-  refreshLeaderboard({ quiet: true });
-  requestAnimationFrame(frame);
+
+  async function boot() {
+    refreshRenderBudgetLimits();
+    await loadSimLaw();
+    updatePilotBadge();
+    resetGame();
+    refreshLeaderboard({ quiet: true });
+    requestAnimationFrame(frame);
+  }
+
+  boot();
 })();

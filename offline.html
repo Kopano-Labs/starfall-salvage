@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#07080e">
+  <title>Starfall Salvage — Offline</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body { display: grid; place-items: center; min-height: 100vh; padding: 24px; }
+    .offline-card { max-width: 420px; text-align: center; }
+    .offline-card h1 { font-size: 1.35rem; margin-bottom: 0.75rem; }
+    .offline-card p { color: var(--muted, #9aa3b2); line-height: 1.5; }
+    .offline-card button { margin-top: 1.25rem; }
+  </style>
+</head>
+<body>
+  <main class="offline-card panel">
+    <h1>Salvage link paused</h1>
+    <p>The flight deck needs a network pass to load the latest run law. Cached shell is ready — retry when signal returns.</p>
+    <button type="button" class="primary" onclick="location.reload()">Retry link</button>
+  </main>
+</body>
+</html>

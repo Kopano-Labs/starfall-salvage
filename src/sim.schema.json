@@ -1,0 +1,128 @@
+{
+  "schemaVersion": 1,
+  "doctrine": "one-flight-deck",
+  "lanes": {
+    "count": 16,
+    "rimInset": 0.15,
+    "projectileLanes": 8,
+    "playerBounds": { "xMin": -3.8, "xMax": 3.8, "yMin": -2.15, "yMax": 1.55 }
+  },
+  "speedTiers": [
+    {
+      "id": "cruise",
+      "label": "Cruise",
+      "multiplierMin": 1,
+      "multiplierMax": 1.99,
+      "referenceSpeed": 18
+    },
+    {
+      "id": "danger",
+      "label": "Danger zone",
+      "multiplierMin": 2,
+      "multiplierMax": 99,
+      "dangerZone": true
+    }
+  ],
+  "sectors": [
+    { "id": 1, "label": "Approach", "speedMultiplierMin": 1, "bossGate": false },
+    { "id": 2, "label": "Breach", "speedMultiplierMin": 2, "bossGate": true },
+    { "id": 3, "label": "Deep salvage", "speedMultiplierMin": 4, "bossGate": true },
+    { "id": 4, "label": "Core drift", "speedMultiplierMin": 6, "bossGate": true }
+  ],
+  "spawn": {
+    "intervalMin": 0.34,
+    "intervalMax": 0.88,
+    "difficultyTimeScale": 85,
+    "difficultyCap": 0.52,
+    "deciStepDifficulty": 0.035,
+    "dangerZoneDifficulty": 0.06,
+    "spawnZ": { "hazard": -72, "pickup": -73, "boss": -78, "rangeTarget": -74 },
+    "boss": {
+      "baseChance": 0.055,
+      "deciStepBonus": 0.012,
+      "highSpeedBonus": 0.05,
+      "highSpeedThreshold": 4,
+      "chanceCap": 0.22
+    }
+  },
+  "obstacleClasses": [
+    {
+      "id": "rangeTarget",
+      "type": "rangeTarget",
+      "minMultiplier": 1.12,
+      "rollMax": 0.05,
+      "requiresDangerZone": false
+    },
+    {
+      "id": "buffOrb",
+      "type": "buffOrb",
+      "minMultiplier": 1.05,
+      "rollMax": 0.072,
+      "requiresDangerZone": false
+    },
+    {
+      "id": "powerOrb",
+      "type": "powerOrb",
+      "minMultiplier": 1.05,
+      "rollMax": 0.13,
+      "requiresDangerZone": false
+    },
+    {
+      "id": "boss",
+      "type": "boss",
+      "spawnVia": "bossGate",
+      "requiresDangerZone": true
+    },
+    {
+      "id": "crystal",
+      "type": "crystal",
+      "crystalBiasBase": 0.66,
+      "crystalBiasDeciStep": 0.012,
+      "crystalBiasCap": 0.14
+    },
+    {
+      "id": "debris",
+      "type": "debris",
+      "fallback": true
+    }
+  ],
+  "salvage": {
+    "scorePerSecond": 14,
+    "coreScoreFactor": 0.015,
+    "shardClasses": ["crystal", "buffOrb", "powerOrb"]
+  },
+  "tempest": {
+    "laneIndexFire": false,
+    "sectorClear": {
+      "enabled": false,
+      "usesPerSector": 1,
+      "inputKey": "z",
+      "label": "Sector clear"
+    }
+  },
+  "renderBudget": {
+    "tiers": [
+      {
+        "id": "low",
+        "maxDpr": 1.35,
+        "particleScale": 0.55,
+        "tunnelDecorScale": 0.65,
+        "rotateTopology": false
+      },
+      {
+        "id": "mid",
+        "maxDpr": 1.75,
+        "particleScale": 0.82,
+        "tunnelDecorScale": 0.88,
+        "rotateTopology": false
+      },
+      {
+        "id": "high",
+        "maxDpr": 2,
+        "particleScale": 1,
+        "tunnelDecorScale": 1,
+        "rotateTopology": true
+      }
+    ]
+  }
+}
