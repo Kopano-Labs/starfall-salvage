@@ -7,6 +7,7 @@
     "init": "bubblewrap update --manifest=https://starfallsalvage.kopanolabs.com/manifest.webmanifest",
     "build": "bubblewrap build",
     "validate": "bubblewrap validate --url=https://starfallsalvage.kopanolabs.com/manifest.webmanifest",
+    "verify-assetlinks": "node verify-assetlinks.mjs",
     "doctor": "bubblewrap doctor"
   },
   "devDependencies": {

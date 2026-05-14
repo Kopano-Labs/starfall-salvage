@@ -16,6 +16,7 @@
     "twa:doctor": "npm run doctor --workspace=@starfall/twa",
     "twa:build": "npm run build --workspace=@starfall/twa",
     "twa:validate": "npm run validate --workspace=@starfall/twa",
+    "twa:verify-assetlinks": "npm run verify-assetlinks --workspace=@starfall/twa",
     "vault:check": "node --input-type=module < src/kopano-vault.js"
   },
   "devDependencies": {
