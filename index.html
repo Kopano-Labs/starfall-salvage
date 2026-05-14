@@ -18,22 +18,22 @@
   <link rel="icon" href="data:,">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="starfall-smoke.png">
-  <link rel="stylesheet" href="styles.css?v=20260514-mobile-ship-lock">
-  <script type="module" src="src/pwa-boot.js?v=20260514-mobile-ship-lock"></script>
-  <script src="src/game.js?v=20260514-mobile-ship-lock" defer></script>
+  <link rel="stylesheet" href="styles.css?v=20260514-engage-swarm">
+  <script type="module" src="src/pwa-boot.js?v=20260514-engage-swarm"></script>
+  <script src="src/game.js?v=20260514-engage-swarm" defer></script>
 </head>
 <body>
   <main class="shell">
     <canvas id="glCanvas" tabindex="0" aria-label="Starfall Salvage WebGL game canvas"></canvas>
 
     <section class="hud" aria-live="polite">
-      <div class="brand brand-anchor">
+      <a class="brand brand-anchor" href="https://kopanolabs.com/" target="_blank" rel="noopener" aria-label="Kopano Labs — open kopanolabs.com">
         <div class="brand-logo" role="img" aria-label="Kopano Labs logo"></div>
         <div>
           <p class="eyebrow">WebGL Edition</p>
           <h1>Starfall Salvage</h1>
         </div>
-      </div>
+      </a>
 
       <div class="stats ui-chrome">
         <div><span>Score</span><strong id="scoreValue">0</strong></div>
@@ -47,6 +47,7 @@
 
       <div class="hud-actions ui-chrome">
         <span class="pilot-badge" id="pilotBadge">Guest Pilot</span>
+        <button id="inviteFriendsButton" type="button">Invite</button>
         <button id="signInButton" type="button">Sign in</button>
         <button id="opsConsoleButton" type="button" class="ops-console-trigger is-hidden" aria-label="Open flight ops monitor">OPS</button>
         <button id="startButton" type="button">Start</button>
@@ -68,9 +69,11 @@
       <h2 class="kopano-ecosystem-title">Township tech lane</h2>
       <p class="kopano-ecosystem-copy">Starfall Salvage ships beside the rest of the Kopano flight deck &mdash; arena football, bookings, and community rails built for low-bandwidth, high-trust runs.</p>
       <ul class="kopano-ecosystem-links">
-        <li><a href="https://fivesarena.com/" target="_blank" rel="noopener">Five&rsquo;s Arena</a> &mdash; live football intelligence</li>
+        <li><a href="https://fivesarena.com/" target="_blank" rel="noopener">Five&rsquo;s Arena</a> &mdash; gents football &amp; bookings</li>
+        <li><a href="https://news.fivesarena.com/" target="_blank" rel="noopener">Five&rsquo;s Arena News</a> &mdash; soccer bruus &amp; match intel</li>
+        <li><a href="https://kopanolabs.com/" target="_blank" rel="noopener">Kopano Labs</a> &mdash; township tech cloud</li>
         <li><a href="https://github.com/Kopano-Labs" target="_blank" rel="noopener">Kopano-Labs on GitHub</a> &mdash; repos and CONTRIBUTING</li>
-        <li><a href="https://starfallsalvage.kopanolabs.com/" target="_blank" rel="noopener">This game (production)</a></li>
+        <li><a href="https://starfallsalvage.kopanolabs.com/" target="_blank" rel="noopener">Starfall Salvage (production)</a></li>
       </ul>
     </section>
 
@@ -130,6 +133,18 @@
           <li class="kasi-comm-empty">No transmissions yet. Drop a line and rally the lane.</li>
         </ol>
         <form class="kasi-comm-form" id="kasiCommForm" autocomplete="off">
+          <div class="kasi-comm-emoji-bar" id="kasiCommEmojiBar" role="toolbar" aria-label="Quick reactions">
+            <button type="button" class="kasi-comm-emoji" data-emoji="⚽" aria-label="Football">⚽</button>
+            <button type="button" class="kasi-comm-emoji" data-emoji="🔥" aria-label="Fire">🔥</button>
+            <button type="button" class="kasi-comm-emoji" data-emoji="🛰️" aria-label="Satellite">🛰️</button>
+            <button type="button" class="kasi-comm-emoji" data-emoji="💬" aria-label="Chat">💬</button>
+            <button type="button" class="kasi-comm-emoji" data-emoji="🤝" aria-label="Squad up">🤝</button>
+            <button type="button" class="kasi-comm-emoji" data-emoji="✨" aria-label="Sparkle">✨</button>
+            <button type="button" class="kasi-comm-emoji" data-emoji="🎮" aria-label="Game">🎮</button>
+            <button type="button" class="kasi-comm-emoji" data-emoji="🏆" aria-label="Trophy">🏆</button>
+            <button type="button" class="kasi-comm-emoji" data-emoji="👋" aria-label="Wave">👋</button>
+            <button type="button" class="kasi-comm-emoji" data-emoji="🚀" aria-label="Launch">🚀</button>
+          </div>
           <label class="visually-hidden" for="kasiCommInput">Message</label>
           <input id="kasiCommInput" type="text" maxlength="240" placeholder="Type a transmission" aria-label="Chat message">
           <button id="kasiCommSend" type="submit">Send</button>
@@ -177,6 +192,13 @@
           <span>Signed in as Guest Pilot</span>
           <strong>Best score 0</strong>
         </div>
+        <label for="pilotPaletteSelect">Flight deck palette</label>
+        <select id="pilotPaletteSelect" aria-label="Flight deck colour palette">
+          <option value="default">Kopano default</option>
+          <option value="blossom">Blossom</option>
+          <option value="ember">Ember</option>
+          <option value="mono">Monochrome</option>
+        </select>
         <label for="callsignInput">Callsign</label>
         <input id="callsignInput" type="text" maxlength="24" autocomplete="nickname" placeholder="e.g. RobynAce">
         <label for="accessCodeInput">Squad code</label>
@@ -191,6 +213,20 @@
           <button id="resetPilotButton" type="button">Reset Pilot</button>
         </div>
         <p class="account-status" id="accountStatus">No network account required.</p>
+      </div>
+    </section>
+
+    <section class="revive-modal is-hidden" id="reviveModal" role="dialog" aria-modal="true" aria-labelledby="reviveTitle">
+      <div class="revive-card">
+        <p class="eyebrow">Mini salvage</p>
+        <h2 id="reviveTitle">Core Salvage — earn one hull back</h2>
+        <p class="revive-copy">Tap the glowing cores before the lane collapses. Catch three to relaunch with 1 hull. One rescue per run.</p>
+        <p class="revive-timer">Time <strong id="reviveTimer">8.0</strong>s</p>
+        <p class="revive-progress">Caught <strong id="reviveProgress">0 / 3</strong></p>
+        <div class="revive-arena" id="reviveArena" aria-label="Tap salvage cores"></div>
+        <div class="revive-actions">
+          <button id="reviveSkipButton" type="button">Skip rescue</button>
+        </div>
       </div>
     </section>
 

@@ -53,7 +53,15 @@
     opsConsoleButton: document.getElementById("opsConsoleButton"),
     opsConsole: document.getElementById("opsConsole"),
     opsConsoleClose: document.getElementById("opsConsoleClose"),
-    opsLog: document.getElementById("opsLog")
+    opsLog: document.getElementById("opsLog"),
+    inviteFriendsButton: document.getElementById("inviteFriendsButton"),
+    pilotPaletteSelect: document.getElementById("pilotPaletteSelect"),
+    reviveModal: document.getElementById("reviveModal"),
+    reviveArena: document.getElementById("reviveArena"),
+    reviveTimer: document.getElementById("reviveTimer"),
+    reviveProgress: document.getElementById("reviveProgress"),
+    reviveSkipButton: document.getElementById("reviveSkipButton"),
+    kasiCommEmojiBar: document.getElementById("kasiCommEmojiBar")
   };
 
   // Mobile: playable by default (touch + FIRE). Append ?strictMobile=1 to show the audit lockdown wall again.
@@ -138,13 +146,24 @@
   }
 
   function updateSpeedVisuals(multiplier) {
+    const palette = document.body.dataset.pilotPalette || "default";
+    const paletteHue = palette === "blossom" ? 318 : palette === "ember" ? 28 : palette === "mono" ? 210 : 188;
     const t = Math.max(0, Math.min(1, (multiplier - 1) / 3.2));
-    const hue = Math.round(188 - t * 148);
-    const sat = Math.round(42 + t * 38);
+    const hue = Math.round(paletteHue - t * (palette === "mono" ? 24 : 148));
+    const sat = Math.round((palette === "mono" ? 8 : 42) + t * 38);
     const light = Math.round(12 + t * 10);
     hud.shell.style.setProperty("--speed-hue", String(hue));
     hud.shell.style.setProperty("--speed-strength", t.toFixed(3));
     hud.shell.style.setProperty("--speed-accent", `hsl(${hue} ${sat}% ${light}%)`);
+  }
+
+  function applyPilotPalette(palette) {
+    const valid = PILOT_PALETTES.includes(palette) ? palette : "default";
+    document.body.dataset.pilotPalette = valid;
+    if (hud.pilotPaletteSelect) {
+      hud.pilotPaletteSelect.value = valid;
+    }
+    updateSpeedVisuals(state.lastSpeedMultiplier || 1);
   }
 
 
@@ -261,7 +280,11 @@
   const KOPANO_BOUNTY_EMAIL = "rkholofelo@kopanolabs.com";
   const PUBLIC_LIVE_URL = "https://starfallsalvage.kopanolabs.com";
   const PUBLIC_REPO_URL = "https://github.com/Kopano-Labs/starfall-salvage";
-  const GAME_BUILD = "20260514-mobile-ship-lock";
+  const GAME_BUILD = "20260514-engage-swarm";
+  const PILOT_PALETTES = ["default", "blossom", "ember", "mono"];
+  const REVIVE_TIME_SECONDS = 8;
+  const REVIVE_CORES_NEEDED = 3;
+  const REVIVE_CORE_COUNT = 6;
   const SIM_LAW_DEFAULT = {
     schemaVersion: 1,
     lanes: { count: 16, playerBounds: { xMin: -3.8, xMax: 3.8, yMin: -2.15, yMax: 1.55 } },
@@ -504,7 +527,8 @@
     lastBossWaveIndex: 0,
     forceBossSpawn: false,
     sectorIndex: 1,
-    sectorLabel: "Approach"
+    sectorLabel: "Approach",
+    reviveUsedThisRun: false
   };
 
   const Mat4 = {
@@ -970,6 +994,11 @@
     markOnboardingDone();
     hideOnboardingModal();
     logEvent("onboarding_complete", {});
+    if (pilotProfile.mode === "guest") {
+      window.setTimeout(() => {
+        setEventMessage("Sign in to save scores and squad up with friends");
+      }, 700);
+    }
   }
 
   if (hud.onboardingAck) {
@@ -1087,6 +1116,30 @@
     startGame();
   });
   hud.signInButton.addEventListener("click", openAccountModal);
+  if (hud.inviteFriendsButton) {
+    hud.inviteFriendsButton.addEventListener("click", inviteFriendsToLane);
+  }
+  if (hud.reviveSkipButton) {
+    hud.reviveSkipButton.addEventListener("click", () => completeRevive(false));
+  }
+  if (hud.pilotPaletteSelect) {
+    hud.pilotPaletteSelect.addEventListener("change", () => {
+      applyPilotPalette(hud.pilotPaletteSelect.value);
+    });
+  }
+  if (hud.kasiCommEmojiBar) {
+    hud.kasiCommEmojiBar.querySelectorAll(".kasi-comm-emoji").forEach((button) => {
+      button.addEventListener("click", () => {
+        const emoji = button.dataset.emoji || "";
+        if (!emoji || !hud.kasiCommInput) {
+          return;
+        }
+        const next = `${hud.kasiCommInput.value}${emoji}`.slice(0, 240);
+        hud.kasiCommInput.value = next;
+        hud.kasiCommInput.focus();
+      });
+    });
+  }
   hud.closeAccountButton.addEventListener("click", closeAccountModal);
   hud.guestPilotButton.addEventListener("click", useGuestPilot);
   hud.resetPilotButton.addEventListener("click", resetPilotSession);
@@ -1162,7 +1215,13 @@
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) {
       wasPlayingBeforeHidden = state.mode === "playing";
-      if (wasPlayingBeforeHidden) {
+      if (wasPlayingBeforeHidden || state.mode === "revive") {
+        if (state.mode === "revive") {
+          wasPlayingBeforeHidden = true;
+          if (hud.reviveModal) {
+            hud.reviveModal.classList.add("is-hidden");
+          }
+        }
         state.mode = "paused";
         hud.pauseButton.textContent = "Resume";
         setStatus("Paused", "Mission paused while the tab is hidden.", false);
@@ -1266,6 +1325,119 @@
     window.visualViewport.addEventListener("resize", resizeCanvas);
     window.visualViewport.addEventListener("scroll", resizeCanvas);
   }
+  window.addEventListener("orientationchange", () => {
+    window.setTimeout(resizeCanvas, 120);
+  });
+
+  const reviveState = {
+    timer: 0,
+    caught: 0,
+    need: REVIVE_CORES_NEEDED
+  };
+
+  function clearReviveArena() {
+    if (!hud.reviveArena) {
+      return;
+    }
+    hud.reviveArena.textContent = "";
+  }
+
+  function spawnReviveCores() {
+    if (!hud.reviveArena) {
+      return;
+    }
+    clearReviveArena();
+    const rect = hud.reviveArena.getBoundingClientRect();
+    const width = Math.max(rect.width, 280);
+    const height = Math.max(rect.height, 200);
+    for (let i = 0; i < REVIVE_CORE_COUNT; i += 1) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "revive-core";
+      button.style.left = `${randomRange(12, width - 12)}px`;
+      button.style.top = `${randomRange(12, height - 12)}px`;
+      button.setAttribute("aria-label", `Salvage core ${i + 1}`);
+      button.addEventListener("click", () => {
+        if (button.classList.contains("is-caught") || state.mode !== "revive") {
+          return;
+        }
+        button.classList.add("is-caught");
+        reviveState.caught += 1;
+        if (hud.reviveProgress) {
+          hud.reviveProgress.textContent = `${reviveState.caught} / ${reviveState.need}`;
+        }
+        if (navigator.vibrate) {
+          navigator.vibrate(18);
+        }
+        if (reviveState.caught >= reviveState.need) {
+          completeRevive(true);
+        }
+      });
+      hud.reviveArena.append(button);
+    }
+  }
+
+  function startReviveMiniGame() {
+    state.reviveUsedThisRun = true;
+    state.mode = "revive";
+    reviveState.timer = REVIVE_TIME_SECONDS;
+    reviveState.caught = 0;
+    reviveState.need = REVIVE_CORES_NEEDED;
+    if (hud.reviveModal) {
+      hud.reviveModal.classList.remove("is-hidden");
+    }
+    if (hud.reviveTimer) {
+      hud.reviveTimer.textContent = REVIVE_TIME_SECONDS.toFixed(1);
+    }
+    if (hud.reviveProgress) {
+      hud.reviveProgress.textContent = `0 / ${REVIVE_CORES_NEEDED}`;
+    }
+    window.requestAnimationFrame(() => spawnReviveCores());
+    setEventMessage("Core Salvage — tap three cores to relaunch");
+    syncShellPlayState();
+  }
+
+  function completeRevive(success) {
+    if (hud.reviveModal) {
+      hud.reviveModal.classList.add("is-hidden");
+    }
+    clearReviveArena();
+    if (success) {
+      state.hull = 1;
+      state.mode = "playing";
+      setEventMessage("Hull restored — keep flying!");
+      logEvent("revive_success", { score: Math.floor(state.score) });
+      syncShellPlayState();
+      updateHud();
+      return;
+    }
+    handleGameOver();
+  }
+
+  function tickRevive(dt) {
+    if (state.mode !== "revive") {
+      return;
+    }
+    reviveState.timer -= dt;
+    if (hud.reviveTimer) {
+      hud.reviveTimer.textContent = Math.max(0, reviveState.timer).toFixed(1);
+    }
+    if (reviveState.caught >= reviveState.need) {
+      completeRevive(true);
+      return;
+    }
+    if (reviveState.timer <= 0) {
+      completeRevive(false);
+    }
+  }
+
+  function attemptGameOver() {
+    if (!state.reviveUsedThisRun) {
+      startReviveMiniGame();
+      return;
+    }
+    handleGameOver();
+  }
 
   function resetGame() {
     state.mode = "ready";
@@ -1296,6 +1468,7 @@
     state.forceBossSpawn = false;
     state.sectorIndex = 1;
     state.sectorLabel = "Approach";
+    state.reviveUsedThisRun = false;
     player.x = 0;
     player.y = -0.45;
     player.z = -7.8;
@@ -1378,6 +1551,7 @@
       id: "guest",
       callsign: "Guest Pilot",
       mode: "guest",
+      palette: "default",
       bestScore: 0,
       lastSeen: new Date().toISOString()
     };
@@ -1423,6 +1597,7 @@
       id: saved.id || localPilotId(saved.callsign),
       callsign: normalizeCallsign(saved.callsign) || "Guest Pilot",
       mode: saved.mode || "local",
+      palette: PILOT_PALETTES.includes(saved.palette) ? saved.palette : "default",
       bestScore: Number(saved.bestScore) || 0,
       lastSeen: saved.lastSeen || new Date().toISOString()
     };
@@ -1432,10 +1607,12 @@
     pilotProfile = {
       ...profile,
       callsign: normalizeCallsign(profile.callsign) || "Guest Pilot",
+      palette: PILOT_PALETTES.includes(profile.palette) ? profile.palette : "default",
       bestScore: Number(profile.bestScore) || 0,
       lastSeen: new Date().toISOString()
     };
     writeJsonStorage(PROFILE_STORAGE_KEY, pilotProfile);
+    applyPilotPalette(pilotProfile.palette);
     updatePilotBadge();
   }
 
@@ -1584,6 +1761,9 @@
     }
     hud.callsignInput.value = pilotProfile.mode === "guest" ? "" : pilotProfile.callsign;
     hud.accessCodeInput.value = "";
+    if (hud.pilotPaletteSelect) {
+      hud.pilotPaletteSelect.value = pilotProfile.palette || "default";
+    }
     hud.accountStatus.textContent = pilotProfile.mode === "backend"
       ? "Backend profile active. Scores will sync when the local server is running."
       : "Offline profile mode is available with no network account.";
@@ -1649,10 +1829,12 @@
 
   async function signInPilot() {
     const callsign = normalizeCallsign(hud.callsignInput.value) || "Salvage Pilot";
+    const palette = hud.pilotPaletteSelect ? hud.pilotPaletteSelect.value : pilotProfile.palette;
     const fallbackProfile = {
       id: pilotProfile.id !== "guest" ? pilotProfile.id : localPilotId(callsign),
       callsign,
       mode: "local",
+      palette,
       bestScore: pilotProfile.bestScore || 0
     };
     hud.accountStatus.textContent = "Checking local backend...";
@@ -1673,6 +1855,7 @@
         id: data.pilot.id,
         callsign: data.pilot.callsign,
         mode: "backend",
+        palette,
         bestScore: Number(data.pilot.bestScore) || 0,
         lastSeen: data.pilot.lastSeen
       });
@@ -1798,6 +1981,28 @@
   function shareScoreText() {
     const score = Math.floor(Number(hud.shareWhatsappButton && hud.shareWhatsappButton.dataset.score) || state.score || pilotProfile.bestScore || 0);
     return `I just survived ${score} parsecs in Starfall Salvage. Beat my score at ${PUBLIC_LIVE_URL}! 🚀`;
+  }
+
+  function inviteFriendsToLane() {
+    const squad = (hud.accessCodeInput && hud.accessCodeInput.value.trim()) || "SALVAGE";
+    const url = new URL(PUBLIC_LIVE_URL);
+    url.searchParams.set("squad", squad);
+    const inviteText = `${pilotProfile.callsign} wants you in the Starfall Salvage lane. Squad code: ${squad}. Fly here: ${url}`;
+    if (navigator.share) {
+      navigator.share({
+        title: "Starfall Salvage — squad invite",
+        text: inviteText,
+        url: url.toString()
+      }).catch(() => {});
+      logEvent("invite_share", { squad });
+      return;
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(inviteText).then(() => setEventMessage("Squad invite copied"));
+    } else {
+      window.prompt("Copy squad invite:", inviteText);
+    }
+    logEvent("invite_share", { squad });
   }
 
   function shareToChannel(channel) {
@@ -2121,6 +2326,10 @@
   }
 
   function handleGameOver() {
+    if (hud.reviveModal) {
+      hud.reviveModal.classList.add("is-hidden");
+    }
+    clearReviveArena();
     state.mode = "gameover";
     hud.pauseButton.textContent = "Pause";
     if (navigator.vibrate) {
@@ -2128,7 +2337,7 @@
     }
     const finalScore = Math.floor(state.score);
     const bestScore = Math.max(pilotProfile.bestScore || 0, finalScore);
-    setStatus("Mission Failed", `Pilot: ${pilotProfile.callsign} | Final score: ${finalScore} | Best: ${bestScore} | Cores: ${state.cores} | Time: ${state.time.toFixed(1)}s. Reset to fly again.`, false);
+    setStatus("Mission Failed", `Pilot: ${pilotProfile.callsign} | Final score: ${finalScore} | Best: ${bestScore} | Cores: ${state.cores} | Time: ${state.time.toFixed(1)}s. Invite friends or sign in to save your lane. Reset to fly again.`, false);
     submitScore();
     persistRunReceipt(finalScore);
     revealShareButton(finalScore);
@@ -2401,11 +2610,13 @@
     state.time += dt;
     const previousMultiplier = state.lastSpeedMultiplier || 1;
     const deciSteps = previousMultiplier >= 1 ? Math.floor((previousMultiplier - 1) * 10) : 0;
+    const rampBase = isTouchCapable ? 0.28 : 0.34;
     const ramp =
-      0.34 +
-      deciSteps * 0.05 +
-      (previousMultiplier >= 2 ? (previousMultiplier - 2) * 0.16 : 0);
-    state.speed = Math.min(58, 14 + state.time * ramp);
+      rampBase +
+      deciSteps * (isTouchCapable ? 0.042 : 0.05) +
+      (previousMultiplier >= 2 ? (previousMultiplier - 2) * (isTouchCapable ? 0.13 : 0.16) : 0);
+    const maxSpeed = isTouchCapable ? 52 : 58;
+    state.speed = Math.min(maxSpeed, 14 + state.time * ramp);
     const speedMultiplier = state.speed / 18;
     state.lastSpeedMultiplier = speedMultiplier;
     if (previousMultiplier < 2 && speedMultiplier >= 2) {
@@ -2553,7 +2764,7 @@
                   navigator.vibrate([260, 120, 260]);
                 }
                 if (state.hull <= 0) {
-                  handleGameOver();
+                  attemptGameOver();
                 }
               }
             }
@@ -2595,7 +2806,7 @@
                   navigator.vibrate([200, 100, 200]);
                 }
                 if (state.hull <= 0) {
-                  handleGameOver();
+                  attemptGameOver();
                 }
               }
             }
@@ -2691,7 +2902,7 @@
                 navigator.vibrate([200, 100, 200]);
               }
               if (state.hull <= 0) {
-                handleGameOver();
+                attemptGameOver();
               }
             }
             removeSpark = true;
@@ -3033,7 +3244,11 @@
       requestAnimationFrame(frame);
       return;
     }
-    updateGame(dt);
+    if (state.mode === "revive") {
+      tickRevive(dt);
+    } else {
+      updateGame(dt);
+    }
     updatePresentation(dt);
     renderScene(seconds);
     requestAnimationFrame(frame);
@@ -3048,6 +3263,12 @@
   async function boot() {
     refreshRenderBudgetLimits();
     await loadSimLaw();
+    applyPilotPalette(pilotProfile.palette || "default");
+    const squadParam = new URLSearchParams(window.location.search).get("squad");
+    if (squadParam && hud.accessCodeInput) {
+      hud.accessCodeInput.value = squadParam.slice(0, 32);
+      setEventMessage(`Squad lane opened — code ${squadParam}`);
+    }
     updatePilotBadge();
     resetGame();
     refreshLeaderboard({ quiet: true });

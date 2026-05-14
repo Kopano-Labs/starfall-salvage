@@ -159,7 +159,7 @@ input:focus {
  border-radius: 6px;
  background:
  rgba(255, 255, 255, 0.92)
- url("assets/kopano-labs-logo.png?v=20260505-leaderboard") center / cover no-repeat;
+ url("starfall-smoke.png?v=20260514-engage-swarm") center / cover no-repeat;
  padding: 4px;
  box-shadow: 0 0 22px rgba(59, 227, 255, 0.28);
 }
@@ -744,7 +744,7 @@ h1 {
  border-radius: 6px;
  background:
  rgba(255, 255, 255, 0.94)
- url("assets/kopano-labs-logo.png?v=20260505-leaderboard") center / cover no-repeat;
+ url("starfall-smoke.png?v=20260514-engage-swarm") center / cover no-repeat;
  padding: 6px;
  margin-bottom: 14px;
 }
@@ -1347,8 +1347,187 @@ h1 {
 .brand-anchor {
  position: relative;
  z-index: 6;
+ pointer-events: auto;
+ text-decoration: none;
+ color: inherit;
  animation: none !important;
  transition: none !important;
+}
+
+.brand-anchor:hover h1,
+.brand-anchor:focus-visible h1 {
+ color: var(--cyan);
+}
+
+body[data-pilot-palette="blossom"] {
+ --cyan: #ff8ec8;
+ --green: #ffc4e8;
+ --magenta: #ff6fb0;
+ --speed-hue: 318;
+}
+
+body[data-pilot-palette="ember"] {
+ --cyan: #ffb347;
+ --green: #ffd166;
+ --magenta: #ff8f4a;
+ --speed-hue: 28;
+}
+
+body[data-pilot-palette="mono"] {
+ --cyan: #d8e2ef;
+ --green: #f0f4fa;
+ --magenta: #aeb8c7;
+ --speed-hue: 210;
+}
+
+select {
+ width: 100%;
+ min-height: 40px;
+ border: 1px solid rgba(255, 255, 255, 0.16);
+ border-radius: 6px;
+ background: rgba(3, 7, 14, 0.78);
+ color: var(--text);
+ font: inherit;
+ padding: 9px 10px;
+}
+
+select:focus {
+ border-color: rgba(59, 227, 255, 0.78);
+ outline: none;
+}
+
+.kasi-comm-emoji-bar {
+ display: flex;
+ flex-wrap: wrap;
+ gap: 6px;
+ margin-bottom: 8px;
+}
+
+.kasi-comm-emoji {
+ min-width: 38px;
+ min-height: 38px;
+ padding: 0;
+ font-size: 1.1rem;
+ line-height: 1;
+ border-radius: 8px;
+ background: rgba(255, 255, 255, 0.06);
+}
+
+.kasi-comm-emoji:hover,
+.kasi-comm-emoji:focus-visible {
+ transform: translateY(-2px) scale(1.06);
+ border-color: rgba(59, 227, 255, 0.75);
+}
+
+.revive-modal {
+ position: fixed;
+ inset: 0;
+ z-index: 40;
+ display: grid;
+ place-items: center;
+ padding: 18px;
+ background: rgba(3, 6, 12, 0.72);
+ backdrop-filter: blur(10px);
+ animation: reviveFadeIn 420ms ease both;
+}
+
+.revive-modal.is-hidden {
+ display: none;
+}
+
+.revive-card {
+ width: min(520px, 100%);
+ padding: 22px 20px 18px;
+ border-radius: 12px;
+ border: 1px solid rgba(255, 255, 255, 0.14);
+ background: var(--panel-strong);
+ box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+ animation: uiDropIn 560ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.revive-copy {
+ color: var(--muted);
+ line-height: 1.45;
+}
+
+.revive-timer,
+.revive-progress {
+ margin: 10px 0 0;
+ font-size: 0.95rem;
+}
+
+.revive-arena {
+ position: relative;
+ margin-top: 14px;
+ min-height: 220px;
+ border-radius: 10px;
+ border: 1px dashed rgba(78, 240, 255, 0.35);
+ background:
+ radial-gradient(circle at 50% 40%, rgba(78, 240, 255, 0.12), transparent 58%),
+ rgba(0, 0, 0, 0.28);
+ overflow: hidden;
+}
+
+.revive-core {
+ position: absolute;
+ width: 54px;
+ height: 54px;
+ border-radius: 50%;
+ border: 2px solid rgba(157, 255, 176, 0.85);
+ background: radial-gradient(circle at 35% 30%, #fff, var(--cyan) 42%, #0a1a2a 100%);
+ box-shadow: 0 0 22px rgba(78, 240, 255, 0.55);
+ cursor: pointer;
+ animation: reviveCorePulse 900ms ease-in-out infinite;
+ transform: translate(-50%, -50%);
+}
+
+.revive-core.is-caught {
+ animation: reviveCorePop 320ms ease forwards;
+ pointer-events: none;
+}
+
+.revive-actions {
+ margin-top: 14px;
+ display: flex;
+ justify-content: flex-end;
+}
+
+@keyframes reviveFadeIn {
+ from { opacity: 0; }
+ to { opacity: 1; }
+}
+
+@keyframes reviveCorePulse {
+ 0%, 100% { transform: translate(-50%, -50%) scale(1); }
+ 50% { transform: translate(-50%, -50%) scale(1.12); }
+}
+
+@keyframes reviveCorePop {
+ to {
+ transform: translate(-50%, -50%) scale(1.6);
+ opacity: 0;
+ }
+}
+
+@keyframes hudPulse {
+ 0%, 100% { box-shadow: 0 0 0 rgba(78, 240, 255, 0); }
+ 50% { box-shadow: 0 0 18px rgba(78, 240, 255, 0.35); }
+}
+
+.shell.is-playing .stats {
+ animation: hudPulse 2.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+ .ui-chrome,
+ .revive-modal,
+ .revive-card,
+ .revive-core,
+ .shell.is-playing .stats,
+ .kasi-comm-emoji {
+ animation: none !important;
+ transition: none !important;
+ }
 }
 
 .shell.is-playing .ui-chrome {
