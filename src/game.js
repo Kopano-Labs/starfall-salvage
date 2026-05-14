@@ -261,7 +261,7 @@
   const KOPANO_BOUNTY_EMAIL = "rkholofelo@kopanolabs.com";
   const PUBLIC_LIVE_URL = "https://starfallsalvage.kopanolabs.com";
   const PUBLIC_REPO_URL = "https://github.com/Kopano-Labs/starfall-salvage";
-  const GAME_BUILD = "20260514-ecosystem-runtime";
+  const GAME_BUILD = "20260514-mobile-ship-lock";
   const SIM_LAW_DEFAULT = {
     schemaVersion: 1,
     lanes: { count: 16, playerBounds: { xMin: -3.8, xMax: 3.8, yMin: -2.15, yMax: 1.55 } },
@@ -1211,6 +1211,34 @@
     phase: Math.random() * Math.PI * 2
   }));
 
+  function getPlayerBounds() {
+    const base = (SIM.lanes && SIM.lanes.playerBounds) || SIM_LAW_DEFAULT.lanes.playerBounds;
+    if (!isTouchCapable) {
+      return base;
+    }
+    return {
+      xMin: base.xMin * 0.7,
+      xMax: base.xMax * 0.7,
+      yMin: base.yMin * 0.62,
+      yMax: base.yMax * 0.62
+    };
+  }
+
+  function getCameraFollow() {
+    if (isTouchCapable) {
+      return { x: 1, y: 1 };
+    }
+    return { x: 0.018, y: 0.016 };
+  }
+
+  function getViewportCssSize() {
+    const vv = window.visualViewport;
+    if (vv && Number.isFinite(vv.width) && Number.isFinite(vv.height)) {
+      return { width: vv.width, height: vv.height };
+    }
+    return { width: canvas.clientWidth, height: canvas.clientHeight };
+  }
+
   function randomRange(min, max) {
     return min + Math.random() * (max - min);
   }
@@ -1223,8 +1251,9 @@
     const budget = getRenderBudgetTier();
     const dprCap = budget.maxDpr || (isTouchCapable ? 1.5 : 2);
     const dpr = Math.min(window.devicePixelRatio || 1, dprCap);
-    const width = Math.floor(canvas.clientWidth * dpr);
-    const height = Math.floor(canvas.clientHeight * dpr);
+    const { width: cssWidth, height: cssHeight } = getViewportCssSize();
+    const width = Math.floor(cssWidth * dpr);
+    const height = Math.floor(cssHeight * dpr);
     if (canvas.width !== width || canvas.height !== height) {
       canvas.width = width;
       canvas.height = height;
@@ -1233,6 +1262,10 @@
   }
 
   window.addEventListener("resize", resizeCanvas);
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", resizeCanvas);
+    window.visualViewport.addEventListener("scroll", resizeCanvas);
+  }
 
   function resetGame() {
     state.mode = "ready";
@@ -2454,7 +2487,7 @@
     const controlSpeed = player.dash > 0 ? 11 : 7.2;
     player.vx = moveX * controlSpeed;
     player.vy = moveY * controlSpeed;
-    const bounds = (SIM.lanes && SIM.lanes.playerBounds) || SIM_LAW_DEFAULT.lanes.playerBounds;
+    const bounds = getPlayerBounds();
     player.x = clamp(player.x + player.vx * dt, bounds.xMin, bounds.xMax);
     player.y = clamp(player.y + player.vy * dt, bounds.yMin, bounds.yMax);
 
@@ -2727,14 +2760,24 @@
 
   function renderScene(alphaTime) {
     resizeCanvas();
-    Mat4.perspective(projectionMatrix, state.currentFov, canvas.width / canvas.height, 0.1, 120);
+    const aspect = canvas.width / Math.max(1, canvas.height);
+    let renderFov = state.currentFov;
+    if (isTouchCapable && aspect < 0.92) {
+      renderFov *= 1.14;
+    }
+    Mat4.perspective(projectionMatrix, renderFov, aspect, 0.1, 120);
 
     const shakeLife = state.hitShakeTime > 0 ? state.hitShakeTime / 0.42 : 0;
     const shakeAmount = shakeLife * shakeLife * state.hitShakeStrength * 0.085;
     const shakeX = Math.sin(alphaTime * 82) * shakeAmount;
     const shakeY = Math.cos(alphaTime * 67) * shakeAmount * 0.72;
+    const follow = getCameraFollow();
     Mat4.identity(viewMatrix);
-    Mat4.translate(viewMatrix, viewMatrix, [shakeX - player.x * 0.018, shakeY - player.y * 0.016, 0]);
+    Mat4.translate(
+      viewMatrix,
+      viewMatrix,
+      [shakeX - player.x * follow.x, shakeY - player.y * follow.y, 0]
+    );
 
     const speedMultiplier = state.lastSpeedMultiplier || 1;
     const speedT = Math.max(0, Math.min(1, (speedMultiplier - 1) / 3.5));
@@ -2769,6 +2812,7 @@
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
     gl.depthMask(false);
+    renderPlayerGlow(alphaTime);
     renderCoreGlows(alphaTime);
     renderTrail(alphaTime);
     renderSparks(alphaTime);
@@ -2832,16 +2876,32 @@
 
   function renderPlayer(alphaTime) {
     const dashPulse = player.dash > 0 ? 0.75 : 0.12 + Math.sin(alphaTime * 7) * 0.04;
-    // Nudge toward camera so debris at the same lane depth cannot fully bury the hull.
     const shipZ = player.z + 0.45;
     drawMesh(meshes.ship, {
       position: [player.x, player.y, shipZ],
       rotation: [player.vy * -0.035, player.vx * 0.04, player.vx * -0.09],
-      scale: [0.72, 0.66, 0.88],
+      scale: isTouchCapable ? [0.82, 0.76, 0.96] : [0.72, 0.66, 0.88],
       color: player.dash > 0 ? [0.35, 0.95, 1, 1] : [0.42, 1, 0.72, 1],
       texture: crystalTexture,
       textureMix: 0.42,
       pulse: dashPulse
+    });
+  }
+
+  function renderPlayerGlow(alphaTime) {
+    if (state.mode !== "playing" && state.mode !== "paused") {
+      return;
+    }
+    const shipZ = player.z + 0.45;
+    const pulse = 0.42 + Math.sin(alphaTime * 6) * 0.14;
+    drawMesh(meshes.ship, {
+      position: [player.x, player.y, shipZ],
+      rotation: [player.vy * -0.02, player.vx * 0.02, player.vx * -0.05],
+      scale: isTouchCapable ? [0.98, 0.9, 1.12] : [0.86, 0.78, 1],
+      color: [0.35, 0.95, 1, isTouchCapable ? 0.42 : 0.28],
+      texture: crystalTexture,
+      textureMix: 0.18,
+      pulse
     });
   }
 

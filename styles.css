@@ -1389,6 +1389,11 @@ h1 {
  .desktop-fire-hint {
  display: none;
  }
+
+ .shell.is-playing .kopano-ecosystem,
+ .shell.is-playing .leaderboard-panel {
+ display: none !important;
+ }
 }
 
 .stats strong#buffValue {
