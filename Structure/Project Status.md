@@ -12,7 +12,8 @@
 
 - Active execution clone: `C:\Users\rkhol\OneDrive\Documents\Kopano Labs\starfall-salvage`.
 - Branch: `codex/starfall-mobile-weapon-ecosystem`.
-- Commit: `5467bb4 fix(starfall): unify device fire control and speed chrome`.
+- Code commit: `5467bb4 fix(starfall): unify device fire control and speed chrome`.
+- Branch proof docs: committed after the code patch on the same branch; use `git log -1` for the current branch tip.
 - Remote push: complete to `origin/codex/starfall-mobile-weapon-ecosystem`.
 - Manual PR URL: `https://github.com/Kopano-Labs/starfall-salvage/pull/new/codex/starfall-mobile-weapon-ecosystem`.
 - Production redeploy: pending merge to `main`.
