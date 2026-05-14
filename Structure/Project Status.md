@@ -6,7 +6,16 @@
 
 ## Last Updated
 
-2026-05-06
+2026-05-14
+
+## Current Branch Proof
+
+- Active execution clone: `C:\Users\rkhol\OneDrive\Documents\Kopano Labs\starfall-salvage`.
+- Branch: `codex/starfall-mobile-weapon-ecosystem`.
+- Commit: `5467bb4 fix(starfall): unify device fire control and speed chrome`.
+- Remote push: complete to `origin/codex/starfall-mobile-weapon-ecosystem`.
+- Manual PR URL: `https://github.com/Kopano-Labs/starfall-salvage/pull/new/codex/starfall-mobile-weapon-ecosystem`.
+- Production redeploy: pending merge to `main`.
 
 ## Completed
 
@@ -31,8 +40,19 @@
 - **OG/Twitter Card meta tags** resolving against absolute URLs — WhatsApp link previews work.
 - **PWA installable** via `manifest.webmanifest` (Android Add-to-Home-Screen).
 
+## Unified Device Ecosystem State (2026-05-14)
+
+- PC, Android, Xiaomi-class Chrome, and Apple-class browser gameplay use one simulation model.
+- Device differences are CSS/presentation only: safe-area, density, scroll containment, and touch target sizing.
+- FIRE is visible on PC and mobile, and its label follows active weapon state: `FIRE`, `RAPID`, `TRIAD`, or `PRISM`.
+- Existing buff system remains canonical: `overcharge`, `triad`, `aegis`, `prism`, plus legacy `powerOrb` bridge.
+- Speed-responsive chrome uses CSS variables (`--speed-strength`, `--speed-accent`) and brightens as speed rises.
+
 ## Not Yet Proven
 
+- Physical Redmi 13 recapture after this branch merges and Vercel redeploys production.
+- GitHub PR creation from this agent lane is blocked by invalid `gh` token / connector 403; branch push succeeded.
+- MAIN-BRAIN path drift remains on WATCH: older registry path is `C:\Users\rkhol\Starfall Salvage`, current execution clone is `C:\Users\rkhol\OneDrive\Documents\Kopano Labs\starfall-salvage`.
 - Kasi-Comm chat backend is **not deployed** on production — frontend gracefully shows "Lobby offline." Phase C of 2026-05-06 session adds mailto-based idea capture with bounty incentive.
 - SQLite leaderboard backend not deployed on production — frontend gracefully degrades to local browser scores.
 - Production backend hosting (the Python `starfall_server.py`) is not configured. Current backend is local-demo only.
@@ -43,6 +63,11 @@
 
 ## Verification
 
+- `node --check .\src\game.js` passed on 2026-05-14 resume audit.
+- `npm run vault:check` passed on 2026-05-14 resume audit.
+- `git diff --check` passed on 2026-05-14 resume audit.
+- Browser layout proof passed across Redmi 393x873, narrow 360x800, and desktop 1280x720: `C:\Users\rkhol\AppData\Local\Temp\starfall-audit-20260514-resume-r1\report.json`.
+- Speed-color proof passed in deterministic browser run: `C:\Users\rkhol\AppData\Local\Temp\starfall-audit-20260514-resume-speed-r5\report.json`.
 - `node --check src\game.js` passed.
 - `python -m py_compile backend\starfall_server.py tools\kc_starfall_watch.py` passed.
 - Backend `/api/health`, `/api/signin`, `/api/score`, and `/api/leaderboard` passed locally against SQLite.

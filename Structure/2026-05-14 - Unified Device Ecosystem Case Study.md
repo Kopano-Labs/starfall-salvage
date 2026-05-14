@@ -47,6 +47,8 @@ Starfall Salvage now has one gameplay ecosystem across PC, Android, Xiaomi-class
 | Desktop layout | `C:\Users\rkhol\AppData\Local\Temp\starfall-audit-20260514-current-main-r5\desktop-1280x720-ready.png` | PASS |
 | Playing chrome drop-out | `C:\Users\rkhol\AppData\Local\Temp\starfall-audit-20260514-current-main-r5\*-playing.png` | PASS |
 | Speed color shift | `C:\Users\rkhol\AppData\Local\Temp\starfall-audit-20260514-speed-current-r1\report.json` | PASS: `speedStrength=0.125`, `speedAccent=hsl(170 47% 40%)`, `speedValue=1.4x` |
+| Resume layout proof | `C:\Users\rkhol\AppData\Local\Temp\starfall-audit-20260514-resume-r1\report.json` | PASS: failures `[]` |
+| Resume speed proof | `C:\Users\rkhol\AppData\Local\Temp\starfall-audit-20260514-resume-speed-r5\report.json` | PASS: `speedStrength=0.029`, `speedAccent=hsl(184 43% 39%)`, `speedValue=1.1x` |
 
 ## Device Policy
 

@@ -16,19 +16,21 @@ Starfall Salvage is a raw-WebGL arcade runner built for the OpenGL/WebGL assignm
 
 ## Active Paths
 
-- Project root: `C:\Users\rkhol\Starfall Salvage`
+- Active execution clone: `C:\Users\rkhol\OneDrive\Documents\Kopano Labs\starfall-salvage`
+- Historical registry clone: `C:\Users\rkhol\Starfall Salvage` (WATCH until MAIN-BRAIN path drift is fully reconciled)
 - GitHub repo: `https://github.com/Kopano-Labs/starfall-salvage`
-- Local game URL: `http://127.0.0.1:8765/`
-- Live public URL: `https://starfallsalvage.kopanolabs.com` (Vercel Hobby + IONOS CNAME, served from `cpt1` Cape Town edge — desktop branch only as of 2026-05-07; mobile branch is locked down per Protocol 13 Save Kill).
+- Local static proof URL: `http://127.0.0.1:5178/`
+- Local backend proof URL: `http://127.0.0.1:8765/` (optional Python backend lane)
+- Live public URL: `https://starfallsalvage.kopanolabs.com` (Vercel Hobby + IONOS CNAME; production updates after merge to `main`).
 - Main Brain root: `C:\Users\rkhol\OneDrive\Documents\Anthropic\Introduction to MCP\Schematics`
 - KC implementation: `C:\Users\rkhol\OneDrive\Documents\Anthropic\Introduction to MCP\Schematics\06-Reference\kopano-code-implementation`
 
 ## Current Truth
 
 - The game is live on the public Kopano Labs GitHub repo (public 2026-05-06 per Sovereign Tech / CONTRIBUTING.md doctrine).
-- The IONOS subdomain `starfallsalvage.kopanolabs.com` is proven live with HTTPS + Vercel edge serving, owner-proof verified for the desktop branch.
-- The mobile branch is severed under Protocol 13 Save Kill (Commandment 10) and Pillar 2 (Community) breach since 2026-05-06; lockdown overlay active until the sandboxed mobile rebuild clears the 80% Optimal Threshold.
-- Build `20260509-mobile-eco` in working tree adds: Kopano ecosystem panel, OPS flight console, orange range-target plates, gold rapid-fire orbs, perf optimizations (swap-and-pop, array caps, logEvent throttle, state initialization hardening).
+- The IONOS subdomain `starfallsalvage.kopanolabs.com` is proven live with HTTPS + Vercel edge serving; branch `codex/starfall-mobile-weapon-ecosystem` is pushed for review before production redeploy.
+- The older mobile-lockdown notes are historical context, not the current branch truth. Current work unifies PC, Android, Xiaomi, and Apple browser gameplay under one ruleset and adapts only presentation density, safe-area, and touch affordances.
+- Build `20260514-unified-ecosystem` preserves current-main PWA boot, guest CTA, modal history traps, schema spawns, revive flow, and buff model while adding desktop-visible FIRE, active weapon labels, speed-color chrome, and compact Redmi-class layout.
 - Root node alignment: 5 Pillars, 15 Commandments, CRUD-only mandate, 80% Optimal Threshold, Asymmetric Edge Reality, Testimony Delta.
 - Thesis alignment: Starfall demonstrates Pillar 5 (Expansion) — raw WebGL under township constraints proves Commandment 9 (Offline-First Mandate) and the AER test.
 - KC is wired as a strict local QA/dev lane through documentation, context-store entries, `tools/kc_starfall_watch.py` (sub-brain proofs), and `tools/kc_main_brain_scan.py` (main-brain alignment).
@@ -52,3 +54,5 @@ Starfall Salvage is a raw-WebGL arcade runner built for the OpenGL/WebGL assignm
 ## Session Proofs
 
 - `Structure/2026-05-14 - Unified Device Ecosystem Case Study.md` - current-main proof for the unified PC/mobile gameplay ecosystem, desktop FIRE control, speed-color chrome, and Redmi-class layout audit.
+- Fresh resumed browser proof: `C:\Users\rkhol\AppData\Local\Temp\starfall-audit-20260514-resume-r1\report.json` with failures `[]`.
+- Fresh speed-color proof: `C:\Users\rkhol\AppData\Local\Temp\starfall-audit-20260514-resume-speed-r5\report.json` with `speedStrength=0.029`, `speedAccent=hsl(184 43% 39%)`, `speedValue=1.1x`, failures `[]`.

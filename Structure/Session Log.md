@@ -25,3 +25,4 @@
 - Browser proof passed across Redmi 393x873, narrow 360x800, and desktop 1280x720.
 - Speed-color proof passed with deterministic survival run: `speedStrength=0.125`, `speedAccent=hsl(170 47% 40%)`, `speedValue=1.4x`.
 - Case study added: `Structure/2026-05-14 - Unified Device Ecosystem Case Study.md`.
+- Resume audit after context compaction rechecked MAIN-BRAIN/sub-brain drift, reran `node --check`, `npm run vault:check`, `git diff --check`, fresh responsive browser proof, and fresh deterministic speed-color proof. New proof reports: `C:\Users\rkhol\AppData\Local\Temp\starfall-audit-20260514-resume-r1\report.json` and `C:\Users\rkhol\AppData\Local\Temp\starfall-audit-20260514-resume-speed-r5\report.json`.
