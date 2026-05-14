@@ -5,10 +5,14 @@
  --panel-strong: rgba(10, 18, 32, 0.9);
  --text: #edf6ff;
  --muted: #9db0c9;
- --cyan: #3be3ff;
- --green: #8ffd8f;
- --red: #ff526b;
+ --cyan: #4ef0ff;
+ --green: #9dffb0;
+ --red: #ff5f7a;
  --amber: #ffd166;
+ --magenta: #d96bff;
+ --speed-hue: 188;
+ --speed-strength: 0;
+ --speed-accent: hsl(188 42% 12%);
 }
 
 * {
@@ -28,10 +32,12 @@ body {
  overscroll-behavior: none;
  background-color: var(--bg);
  background:
- radial-gradient(circle at 24% 22%, rgba(59, 227, 255, 0.16), transparent 32%),
+ radial-gradient(circle at 24% 22%, hsla(var(--speed-hue), 88%, 62%, calc(0.12 + var(--speed-strength) * 0.22)), transparent 34%),
+ radial-gradient(circle at 78% 12%, hsla(calc(var(--speed-hue) + 40), 90%, 58%, calc(0.06 + var(--speed-strength) * 0.16)), transparent 28%),
  linear-gradient(135deg, #05070d 0%, #111827 42%, #090b16 100%);
  color: var(--text);
  font-family: Arial, Helvetica, sans-serif;
+ transition: background 280ms ease;
 }
 
 button {
@@ -1300,4 +1306,91 @@ h1 {
  .kopano-ecosystem {
  bottom: calc(156px + env(safe-area-inset-bottom, 0px));
  }
+}
+
+@keyframes uiDropIn {
+ from {
+ opacity: 0;
+ transform: translateY(-28px) scale(0.96);
+ filter: blur(4px);
+ }
+ to {
+ opacity: 1;
+ transform: translateY(0) scale(1);
+ filter: blur(0);
+ }
+}
+
+@keyframes uiDropOut {
+ from {
+ opacity: 1;
+ transform: translateY(0) scale(1);
+ filter: blur(0);
+ }
+ to {
+ opacity: 0;
+ transform: translateY(-32px) scale(0.94);
+ filter: blur(5px);
+ pointer-events: none;
+ }
+}
+
+.ui-chrome {
+ animation: uiDropIn 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+ transition:
+ opacity 420ms cubic-bezier(0.4, 0, 0.2, 1),
+ transform 520ms cubic-bezier(0.22, 1, 0.36, 1),
+ filter 420ms ease;
+ will-change: transform, opacity;
+}
+
+.brand-anchor {
+ position: relative;
+ z-index: 6;
+ animation: none !important;
+ transition: none !important;
+}
+
+.shell.is-playing .ui-chrome {
+ animation: uiDropOut 460ms cubic-bezier(0.55, 0, 0.9, 0.38) forwards;
+ opacity: 0;
+ transform: translateY(-36px) scale(0.92);
+ filter: blur(6px);
+ pointer-events: none;
+}
+
+.shell.is-paused .ui-chrome,
+.shell.is-ready .ui-chrome {
+ animation: uiDropIn 560ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+ opacity: 1;
+ transform: translateY(0) scale(1);
+ filter: blur(0);
+ pointer-events: auto;
+}
+
+.desktop-fire-hint {
+ margin: 8px 0 0;
+ font-size: 0.82rem;
+ color: var(--cyan);
+ letter-spacing: 0.02em;
+}
+
+@media (hover: hover) and (pointer: fine) {
+ .desktop-fire-hint {
+ display: block;
+ }
+
+ .shell.is-playing .desktop-fire-hint {
+ display: none;
+ }
+}
+
+@media (hover: none), (pointer: coarse) {
+ .desktop-fire-hint {
+ display: none;
+ }
+}
+
+.stats strong#buffValue {
+ color: var(--magenta);
 }

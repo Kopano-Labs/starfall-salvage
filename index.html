@@ -18,15 +18,15 @@
   <link rel="icon" href="data:,">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="assets/kopano-labs-logo.png">
-  <link rel="stylesheet" href="styles.css?v=20260514-mobile-layout">
-  <script src="src/game.js?v=20260514-mobile-layout" defer></script>
+  <link rel="stylesheet" href="styles.css?v=20260514-unified-flight">
+  <script src="src/game.js?v=20260514-unified-flight" defer></script>
 </head>
 <body>
   <main class="shell">
     <canvas id="glCanvas" tabindex="0" aria-label="Starfall Salvage WebGL game canvas"></canvas>
 
     <section class="hud" aria-live="polite">
-      <div class="brand">
+      <div class="brand brand-anchor">
         <div class="brand-logo" role="img" aria-label="Kopano Labs logo"></div>
         <div>
           <p class="eyebrow">WebGL Edition</p>
@@ -34,16 +34,17 @@
         </div>
       </div>
 
-      <div class="stats">
+      <div class="stats ui-chrome">
         <div><span>Score</span><strong id="scoreValue">0</strong></div>
         <div><span>Hull</span><strong id="hullValue">3</strong></div>
         <div><span>Cores</span><strong id="coreValue">0</strong></div>
         <div><span>Dash</span><strong id="dashValue">Ready</strong></div>
         <div><span>Speed</span><strong id="speedValue">1.0x</strong></div>
+        <div><span>Buff</span><strong id="buffValue">—</strong></div>
         <div><span>FPS</span><strong id="fpsValue">--</strong></div>
       </div>
 
-      <div class="hud-actions">
+      <div class="hud-actions ui-chrome">
         <span class="pilot-badge" id="pilotBadge">Guest Pilot</span>
         <button id="signInButton" type="button">Sign in</button>
         <button id="opsConsoleButton" type="button" class="ops-console-trigger is-hidden" aria-label="Open flight ops monitor">OPS</button>
@@ -53,14 +54,15 @@
       </div>
     </section>
 
-    <section class="status-panel" id="statusPanel">
+    <section class="status-panel ui-chrome" id="statusPanel">
       <p class="eyebrow">Mission</p>
       <h2 id="statusTitle">Ready</h2>
       <p id="statusText">Collect blue energy cores and avoid red debris inside the moving salvage lane.</p>
-      <p class="control-line">WASD / Arrow Keys move, Space dashes. Mobile: drag the canvas to fly, tap to start, tap mid-flight to dash.</p>
+      <p class="control-line">One flight deck on every device: WASD or drag to move, Space or tap to dash, F / click / hold FIRE to shoot. Collect prism buffs for spread, pierce, aegis, and overcharge.</p>
+      <p class="desktop-fire-hint ui-chrome" id="desktopFireHint">Desktop: click canvas or hold F to fire</p>
     </section>
 
-    <section class="kopano-ecosystem" aria-label="Kopano Labs ecosystem">
+    <section class="kopano-ecosystem ui-chrome" aria-label="Kopano Labs ecosystem">
       <p class="eyebrow">Kopano Labs</p>
       <h2 class="kopano-ecosystem-title">Township tech lane</h2>
       <p class="kopano-ecosystem-copy">Starfall Salvage ships beside the rest of the Kopano flight deck &mdash; arena football, bookings, and community rails built for low-bandwidth, high-trust runs.</p>
@@ -71,7 +73,7 @@
       </ul>
     </section>
 
-    <section class="leaderboard-panel" id="leaderboardPanel" aria-live="polite">
+    <section class="leaderboard-panel ui-chrome" id="leaderboardPanel" aria-live="polite">
       <div class="leaderboard-head">
         <div>
           <p class="eyebrow">Leaderboard</p>
@@ -108,7 +110,7 @@
         <p><strong>What works now:</strong> Open this URL on a laptop or desktop &mdash; full game with onboarding, danger zone, shooting, and bosses.</p>
         <p><strong>Mobile is being rebuilt</strong> against the Asymmetric Edge Reality test (low-end Android, township infrastructure, zero-budget hardware). Re-open this page after the next deploy.</p>
         <p><strong>Got a mobile-perf fix or upgrade idea?</strong> Email <a href="mailto:rkholofelo@kopanolabs.com">rkholofelo@kopanolabs.com</a> &mdash; Sovereign Tech bounty applies (Tier 2, R500&ndash;R1500 ZAR via Yoco / PayFast / EFT).</p>
-        <p class="mobile-lockdown-meta">Build: 20260509-mobile-eco &middot; Audit started: 2026-05-06 &middot; Repo: github.com/Kopano-Labs/starfall-salvage</p>
+        <p class="mobile-lockdown-meta">Build: 20260514-unified-flight &middot; Audit started: 2026-05-06 &middot; Repo: github.com/Kopano-Labs/starfall-salvage</p>
       </div>
     </section>
 

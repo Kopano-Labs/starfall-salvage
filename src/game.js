@@ -11,6 +11,7 @@
     cores: document.getElementById("coreValue"),
     dash: document.getElementById("dashValue"),
     speed: document.getElementById("speedValue"),
+    buff: document.getElementById("buffValue"),
     fps: document.getElementById("fpsValue"),
     eventToast: document.getElementById("eventToast"),
     statusPanel: document.getElementById("statusPanel"),
@@ -71,8 +72,81 @@
     return;
   }
 
-  canvas.focus();
+  canvas.addEventListener("mousedown", (event) => {
+    if (isAccountModalOpen() || isTypingTarget(event.target)) {
+      return;
+    }
+    if (event.button !== 0) {
+      return;
+    }
+    mouseFireHeld = true;
+    canvas.focus();
+    if (state.mode === "playing") {
+      spawnPlayerBullet();
+    } else if (state.mode === "ready" || state.mode === "gameover") {
+      startGame();
+    }
+  });
+  window.addEventListener("mouseup", () => {
+    mouseFireHeld = false;
+  });
   window.addEventListener("pointerdown", () => canvas.focus());
+
+  function syncShellPlayState() {
+    const playing = state.mode === "playing";
+    hud.shell.classList.toggle("is-playing", playing);
+    hud.shell.classList.toggle("is-paused", state.mode === "paused");
+    hud.shell.classList.toggle("is-ready", state.mode === "ready" || state.mode === "gameover");
+  }
+
+  function applyBuff(kind) {
+    const def = BUFF_DEFS[kind];
+    if (!def) {
+      return;
+    }
+    player.buffKind = kind;
+    player.buffTimer = def.duration;
+    if (kind === "overcharge") {
+      player.fireBoostTimer = Math.max(player.fireBoostTimer || 0, def.duration);
+    }
+    if (kind === "aegis") {
+      player.aegisHits = 1;
+    }
+    setEventMessage(def.label);
+    logEvent("buff_collected", { kind });
+  }
+
+  function tickBuffs(dt) {
+    if (player.buffTimer > 0) {
+      player.buffTimer = Math.max(0, player.buffTimer - dt);
+      if (player.buffTimer <= 0) {
+        player.buffKind = "";
+        player.aegisHits = 0;
+      }
+    }
+    if (player.buffKind !== "aegis") {
+      player.aegisHits = 0;
+    }
+  }
+
+  function activeBuffLabel() {
+    if (!player.buffKind || player.buffTimer <= 0) {
+      return player.fireBoostTimer > 0 ? "Rapid" : "—";
+    }
+    const def = BUFF_DEFS[player.buffKind];
+    return def ? `${def.label} ${player.buffTimer.toFixed(0)}s` : "—";
+  }
+
+  function updateSpeedVisuals(multiplier) {
+    const t = Math.max(0, Math.min(1, (multiplier - 1) / 3.2));
+    const hue = Math.round(188 - t * 148);
+    const sat = Math.round(42 + t * 38);
+    const light = Math.round(12 + t * 10);
+    hud.shell.style.setProperty("--speed-hue", String(hue));
+    hud.shell.style.setProperty("--speed-strength", t.toFixed(3));
+    hud.shell.style.setProperty("--speed-accent", `hsl(${hue} ${sat}% ${light}%)`);
+  }
+
 
   const vertexShaderSource = `
     attribute vec3 aPosition;
@@ -188,6 +262,13 @@
   const KOPANO_BOUNTY_EMAIL = "rkholofelo@kopanolabs.com";
   const PUBLIC_LIVE_URL = "https://starfallsalvage.kopanolabs.com";
   const PUBLIC_REPO_URL = "https://github.com/Kopano-Labs/starfall-salvage";
+  const GAME_BUILD = "20260514-unified-flight";
+  const BUFF_DEFS = {
+    overcharge: { duration: 6.5, label: "Overcharge", color: [1, 0.82, 0.22, 1] },
+    triad: { duration: 8, label: "Triad", color: [0.48, 1, 0.55, 1] },
+    aegis: { duration: 5, label: "Aegis", color: [0.38, 0.92, 1, 1] },
+    prism: { duration: 7, label: "Prism", color: [0.95, 0.42, 1, 1] }
+  };
   /**
    * Main-Brain 1.2 — append-only vault on local metal (Chief Architect path).
    * Browser JS cannot write here; vault ingest is Owner/KC/Obsidian/CLI. Used for
@@ -590,7 +671,9 @@
   };
 
   const keys = new Set();
-  const blockingKeys = new Set(["arrowup", "arrowdown", "arrowleft", "arrowright", " ", "w", "a", "s", "d"]);
+  const blockingKeys = new Set(["arrowup", "arrowdown", "arrowleft", "arrowright", " ", "w", "a", "s", "d", "f"]);
+  let fireHeld = false;
+  let mouseFireHeld = false;
   let dashRequested = false;
   const touchAxis = { x: 0, y: 0 };
   let activeTouchId = null;
@@ -635,11 +718,15 @@
       startGame();
     }
     if (key === "f") {
+      fireHeld = true;
       spawnPlayerBullet();
     }
   });
 
   window.addEventListener("keyup", (event) => {
+    if (event.key.toLowerCase() === "f") {
+      fireHeld = false;
+    }
     if (isAccountModalOpen() || isTypingTarget(event.target)) {
       return;
     }
@@ -744,7 +831,7 @@
     }
     state.mode = "lockdown";
     logEvent("mobile_lockdown_engaged", {
-      build: "20260509-mobile-eco",
+      build: GAME_BUILD,
       reason: "Protocol 13 / Commandment XII Save Kill",
       threshold: "80% optimal not met"
     });
@@ -939,7 +1026,10 @@
     dash: 0,
     dashCooldown: 0,
     trailTimer: 0,
-    fireBoostTimer: 0
+    fireBoostTimer: 0,
+    buffKind: "",
+    buffTimer: 0,
+    aegisHits: 0
   };
 
   const objects = [];
@@ -1009,6 +1099,9 @@
     player.dashCooldown = 0;
     player.trailTimer = 0;
     player.fireBoostTimer = 0;
+    player.buffKind = "";
+    player.buffTimer = 0;
+    player.aegisHits = 0;
     objects.length = 0;
     sparks.length = 0;
     trailParticles.length = 0;
@@ -1020,6 +1113,7 @@
       hud.shareWhatsappButton.classList.add("is-hidden");
     }
     updateHud();
+    syncShellPlayState();
     setStatus("Ready", "Collect blue energy cores, dodge red debris, and use Space to phase dash through danger.", false);
   }
 
@@ -1030,6 +1124,7 @@
     state.mode = "playing";
     hud.pauseButton.textContent = "Pause";
     setStatus("", "", true);
+    syncShellPlayState();
     canvas.focus();
   }
 
@@ -1044,6 +1139,7 @@
       setStatus("", "", true);
       canvas.focus();
     }
+    syncShellPlayState();
   }
 
   function setStatus(title, text, hidden) {
@@ -1553,7 +1649,7 @@
       `Pilot: ${pilotProfile.callsign || "Guest"} (${pilotProfile.id || "anon"})`,
       `Best score: ${pilotProfile.bestScore || 0}`,
       `Mode at submit: ${state.mode}`,
-      `Game version: 20260509-mobile-eco`,
+      `Game version: ${GAME_BUILD}`,
       `URL: ${PUBLIC_LIVE_URL}`,
       `Repo: ${PUBLIC_REPO_URL}`,
       "Recent events:",
@@ -1568,7 +1664,7 @@
     flushEventBuffer();
     const payload = {
       generatedAt: new Date().toISOString(),
-      gameVersion: "20260509-mobile-eco",
+      gameVersion: GAME_BUILD,
       liveUrl: PUBLIC_LIVE_URL,
       mainBrainSyncRouting: {
         vaultCanonicalWinPath: MAIN_BRAIN_VAULT_CANONICAL_WIN,
@@ -1790,6 +1886,7 @@
     submitScore();
     revealShareButton(finalScore);
     logEvent("game_over", { score: finalScore, cores: state.cores, time: Number(state.time.toFixed(2)) });
+    syncShellPlayState();
   }
 
   function updateHud() {
@@ -1798,6 +1895,9 @@
     hud.cores.textContent = state.cores.toString();
     hud.dash.textContent = player.dashCooldown <= 0 ? "Ready" : `${player.dashCooldown.toFixed(1)}s`;
     hud.speed.textContent = `${(state.speed / 18).toFixed(1)}x`;
+    if (hud.buff) {
+      hud.buff.textContent = activeBuffLabel();
+    }
     hud.fps.textContent = state.fps ? Math.round(state.fps).toString() : "--";
   }
 
@@ -1866,7 +1966,29 @@
       return;
     }
 
-    if (mult >= 1.05 && roll < 0.065) {
+    if (mult >= 1.05 && roll < 0.072) {
+      const buffKinds = ["overcharge", "triad", "aegis", "prism"];
+      const buffKind = buffKinds[Math.floor(Math.random() * buffKinds.length)];
+      const s = randomRange(0.36, 0.52);
+      objects.push({
+        type: "buffOrb",
+        buffKind,
+        x: randomRange(-3.2, 3.2),
+        y: randomRange(-1.7, 1.3),
+        z: -73,
+        size: s,
+        radius: s * 0.72,
+        rotX: randomRange(0, Math.PI * 2),
+        rotY: randomRange(0, Math.PI * 2),
+        rotZ: randomRange(0, Math.PI * 2),
+        spinX: randomRange(-1.2, 1.2),
+        spinY: randomRange(-1.2, 1.2),
+        spinZ: randomRange(-1.0, 1.0)
+      });
+      return;
+    }
+
+    if (mult >= 1.05 && roll < 0.13) {
       const s = randomRange(0.38, 0.55);
       objects.push({
         type: "powerOrb",
@@ -1914,22 +2036,33 @@
     if (sparks.length >= SPARKS_MAX) {
       return;
     }
-    state.bulletCooldown = player.fireBoostTimer > 0 ? 0.1 : 0.18;
-    sparks.push({
-      kind: "bullet",
-      team: "player",
-      x: player.x,
-      y: player.y + 0.18,
-      z: player.z + 0.1,
-      vx: 0,
-      vy: 0,
-      vz: -64,
-      life: 1.6,
-      maxLife: 1.6,
-      size: 0.22,
-      color: [0.42, 0.96, 1, 1]
+    const rapid = player.fireBoostTimer > 0 || (player.buffKind === "overcharge" && player.buffTimer > 0);
+    state.bulletCooldown = rapid ? 0.09 : 0.18;
+    const triad = player.buffKind === "triad" && player.buffTimer > 0;
+    const prism = player.buffKind === "prism" && player.buffTimer > 0;
+    const offsets = triad ? [-0.14, 0, 0.14] : [0];
+    const bulletColor = prism ? [0.95, 0.48, 1, 1] : rapid ? [1, 0.88, 0.38, 1] : [0.42, 0.96, 1, 1];
+    offsets.forEach((offsetX) => {
+      if (sparks.length >= SPARKS_MAX) {
+        return;
+      }
+      sparks.push({
+        kind: "bullet",
+        team: "player",
+        x: player.x + offsetX,
+        y: player.y + 0.18,
+        z: player.z + 0.1,
+        vx: offsetX * 8,
+        vy: 0,
+        vz: -64,
+        life: 1.6,
+        maxLife: 1.6,
+        size: triad ? 0.19 : 0.22,
+        color: bulletColor,
+        pierce: prism
+      });
     });
-    logEvent("player_shoot", {});
+    logEvent("player_shoot", { triad, prism });
   }
 
   function spawnBossBullet(boss) {
@@ -1999,6 +2132,16 @@
     });
   }
 
+  function absorbHullHit() {
+    if (player.aegisHits > 0) {
+      player.aegisHits -= 1;
+      setEventMessage("Aegis absorbed");
+      spawnSparks(player.x, player.y, player.z, [0.38, 0.92, 1, 0.95], 16);
+      return true;
+    }
+    return false;
+  }
+
   function updateGame(dt) {
     if (state.mode !== "playing") {
       return;
@@ -2032,6 +2175,10 @@
       setEventMessage(`Boss wave at ${(bossWave * 2).toFixed(0)}x thrust`);
     }
     player.fireBoostTimer = Math.max(0, (player.fireBoostTimer || 0) - dt);
+    tickBuffs(dt);
+    if (fireHeld || mouseFireHeld) {
+      spawnPlayerBullet();
+    }
     state.score += dt * 14 * (1 + state.cores * 0.015);
     state.bulletCooldown = Math.max(0, (state.bulletCooldown || 0) - dt);
     if (DIAG_ENABLED) {
@@ -2051,6 +2198,7 @@
         state.diagSumDt = 0;
       }
     }
+    updateSpeedVisuals(speedMultiplier);
     state.spawnTimer -= dt;
 
     if (state.spawnTimer <= 0) {
@@ -2131,25 +2279,31 @@
                 logEvent("boss_destroyed", { method: "ram-dash" });
               }
             } else {
-              state.hull -= 1;
-              state.hitShakeTime = 0.42;
-              state.hitShakeStrength = 1;
-              state.hitFlashTimer = 0.42;
-              hud.shell.classList.add("is-hit");
-              setEventMessage("Boss collision");
-              spawnSparks(object.x, object.y, object.z, [1, 0.4, 0.92, 0.95], 26);
-              if (navigator.vibrate) {
-                navigator.vibrate([260, 120, 260]);
-              }
-              if (state.hull <= 0) {
-                handleGameOver();
+              if (!absorbHullHit()) {
+                state.hull -= 1;
+                state.hitShakeTime = 0.42;
+                state.hitShakeStrength = 1;
+                state.hitFlashTimer = 0.42;
+                hud.shell.classList.add("is-hit");
+                setEventMessage("Boss collision");
+                spawnSparks(object.x, object.y, object.z, [1, 0.4, 0.92, 0.95], 26);
+                if (navigator.vibrate) {
+                  navigator.vibrate([260, 120, 260]);
+                }
+                if (state.hull <= 0) {
+                  handleGameOver();
+                }
               }
             }
           } else {
-            if (object.type === "powerOrb") {
-              player.fireBoostTimer = 5.2;
+            if (object.type === "buffOrb") {
+              applyBuff(object.buffKind || "overcharge");
+              state.score += 110;
+              const def = BUFF_DEFS[object.buffKind] || BUFF_DEFS.overcharge;
+              spawnSparks(object.x, object.y, object.z, def.color, 24);
+            } else if (object.type === "powerOrb") {
+              applyBuff("overcharge");
               state.score += 95;
-              setEventMessage("Rapid fire charged");
               spawnSparks(object.x, object.y, object.z, [1, 0.62, 0.35, 1], 24);
               logEvent("power_orb_collected", {});
             } else if (object.type === "crystal") {
@@ -2167,18 +2321,20 @@
               setEventMessage("Debris phased");
               spawnSparks(object.x, object.y, object.z, [1, 0.82, 0.28, 0.86], 20);
             } else {
-              state.hull -= 1;
-              state.hitShakeTime = 0.42;
-              state.hitShakeStrength = 1;
-              state.hitFlashTimer = 0.42;
-              hud.shell.classList.add("is-hit");
-              setEventMessage("Hull damaged");
-              spawnSparks(object.x, object.y, object.z, [1, 0.25, 0.34, 0.94], 26);
-              if (navigator.vibrate) {
-                navigator.vibrate([200, 100, 200]);
-              }
-              if (state.hull <= 0) {
-                handleGameOver();
+              if (!absorbHullHit()) {
+                state.hull -= 1;
+                state.hitShakeTime = 0.42;
+                state.hitShakeStrength = 1;
+                state.hitFlashTimer = 0.42;
+                hud.shell.classList.add("is-hit");
+                setEventMessage("Hull damaged");
+                spawnSparks(object.x, object.y, object.z, [1, 0.25, 0.34, 0.94], 26);
+                if (navigator.vibrate) {
+                  navigator.vibrate([200, 100, 200]);
+                }
+                if (state.hull <= 0) {
+                  handleGameOver();
+                }
               }
             }
             removeObject = true;
@@ -2225,7 +2381,7 @@
             objects[j] = objects[objects.length - 1];
             objects.pop();
             logEvent("debris_destroyed", {});
-            removeSpark = true;
+            removeSpark = !spark.pierce;
             break;
           }
           if (obj.type === "rangeTarget") {
@@ -2239,7 +2395,7 @@
               objects.pop();
               logEvent("range_target_destroyed", {});
             }
-            removeSpark = true;
+            removeSpark = !spark.pierce;
             break;
           }
           if (obj.type === "boss") {
@@ -2253,7 +2409,7 @@
               objects.pop();
               logEvent("boss_destroyed", { score: 320 });
             }
-            removeSpark = true;
+            removeSpark = !spark.pierce;
             break;
           }
         }
@@ -2261,21 +2417,23 @@
         if (Math.abs(player.z - spark.z) < 1.0 &&
             Math.hypot(player.x - spark.x, player.y - spark.y) < player.radius + 0.32) {
           if (player.dash <= 0) {
-            state.hull -= 1;
-            state.hitShakeTime = 0.42;
-            state.hitShakeStrength = 1;
-            state.hitFlashTimer = 0.42;
-            hud.shell.classList.add("is-hit");
-            setEventMessage("Boss hit!");
-            spawnSparks(spark.x, spark.y, spark.z, [1, 0.32, 0.46, 0.95], 18);
-            if (navigator.vibrate) {
-              navigator.vibrate([200, 100, 200]);
+            if (!absorbHullHit()) {
+              state.hull -= 1;
+              state.hitShakeTime = 0.42;
+              state.hitShakeStrength = 1;
+              state.hitFlashTimer = 0.42;
+              hud.shell.classList.add("is-hit");
+              setEventMessage("Boss hit!");
+              spawnSparks(spark.x, spark.y, spark.z, [1, 0.32, 0.46, 0.95], 18);
+              if (navigator.vibrate) {
+                navigator.vibrate([200, 100, 200]);
+              }
+              if (state.hull <= 0) {
+                handleGameOver();
+              }
             }
-            if (state.hull <= 0) {
-              handleGameOver();
-            }
+            removeSpark = true;
           }
-          removeSpark = true;
         }
       }
       if (removeSpark || spark.life <= 0) {
@@ -2312,6 +2470,7 @@
     state.targetFov = player.dash > 0 ? DASH_FOV : BASE_FOV;
     const fovEase = Math.min(1, dt * 10);
     state.currentFov += (state.targetFov - state.currentFov) * fovEase;
+    syncShellPlayState();
   }
 
   function bindMesh(mesh) {
@@ -2349,11 +2508,12 @@
     Mat4.translate(viewMatrix, viewMatrix, [shakeX - player.x * 0.018, shakeY - player.y * 0.016, 0]);
 
     const speedMultiplier = state.lastSpeedMultiplier || 1;
+    const speedT = Math.max(0, Math.min(1, (speedMultiplier - 1) / 3.5));
     const dangerLerp = speedMultiplier >= 2
       ? Math.max(0.48, Math.min(1, 0.48 + ((speedMultiplier - 2) / 0.8) * 0.52))
-      : 0;
-    const calm = [0.005, 0.007, 0.016];
-    const danger = [0.16, 0.02, 0.04];
+      : speedT * 0.35;
+    const calm = [0.01 + speedT * 0.04, 0.012 + speedT * 0.06, 0.022 + speedT * 0.08];
+    const danger = [0.22 + speedT * 0.12, 0.04 + speedT * 0.08, 0.12 + speedT * 0.18];
     const cr = calm[0] + (danger[0] - calm[0]) * dangerLerp;
     const cg = calm[1] + (danger[1] - calm[1]) * dangerLerp;
     const cb = calm[2] + (danger[2] - calm[2]) * dangerLerp;
@@ -2475,6 +2635,17 @@
           texture: crystalTexture,
           textureMix: 0.82,
           pulse: 0.55 + Math.sin(alphaTime * 8 + object.y) * 0.22
+        });
+      } else if (object.type === "buffOrb") {
+        const def = BUFF_DEFS[object.buffKind] || BUFF_DEFS.overcharge;
+        drawMesh(meshes.crystal, {
+          position: [object.x, object.y, object.z],
+          rotation: [object.rotX, object.rotY + alphaTime * 1.35, object.rotZ],
+          scale: [object.size * 1.15, object.size * 1.15, object.size * 1.15],
+          color: def.color,
+          texture: crystalTexture,
+          textureMix: 0.88,
+          pulse: 0.62 + Math.sin(alphaTime * 9 + object.x) * 0.28
         });
       } else if (object.type === "rangeTarget") {
         const hpRatio = Math.max(0.2, (object.hp || 2) / (object.maxHp || 2));
