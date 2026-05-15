@@ -56,3 +56,6 @@ Starfall Salvage is a raw-WebGL arcade runner built for the OpenGL/WebGL assignm
 - `Structure/2026-05-14 - Unified Device Ecosystem Case Study.md` - current-main proof for the unified PC/mobile gameplay ecosystem, desktop FIRE control, speed-color chrome, and Redmi-class layout audit.
 - Fresh resumed browser proof: `C:\Users\rkhol\AppData\Local\Temp\starfall-audit-20260514-resume-r1\report.json` with failures `[]`.
 - Fresh speed-color proof: `C:\Users\rkhol\AppData\Local\Temp\starfall-audit-20260514-resume-speed-r5\report.json` with `speedStrength=0.029`, `speedAccent=hsl(184 43% 39%)`, `speedValue=1.1x`, failures `[]`.
+- `Structure/2026-05-15 - Comfort Zoom Pass Case Study.md` - field-feedback proof for "zoom out / too much" comfort correction.
+- Comfort browser proof: `C:\Users\rkhol\AppData\Local\Temp\starfall-audit-20260515-comfort-r1\report.json` with failures `[]`.
+- Comfort speed proof: `C:\Users\rkhol\AppData\Local\Temp\starfall-audit-20260515-comfort-speed-r1\report.json` with failures `[]`.

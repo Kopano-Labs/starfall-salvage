@@ -6,7 +6,7 @@
 
 ## Last Updated
 
-2026-05-14
+2026-05-15
 
 ## Current Branch Proof
 
@@ -49,6 +49,15 @@
 - Existing buff system remains canonical: `overcharge`, `triad`, `aegis`, `prism`, plus legacy `powerOrb` bridge.
 - Speed-responsive chrome uses CSS variables (`--speed-strength`, `--speed-accent`) and brightens as speed rises.
 
+## Comfort Zoom Pass (2026-05-15)
+
+- Field feedback: "Zoom out" and "the problem is it's too much."
+- Mobile tall WebGL view is zoomed out with a wider FOV.
+- Touch camera follow is softened.
+- Mobile ready-state leaderboard/ecosystem panels are suppressed until game-over or non-ready states.
+- Speed color remains active but glow/saturation are toned down.
+- FIRE remains visible and touch-safe, with slower/smaller pulse.
+
 ## Not Yet Proven
 
 - Physical Redmi 13 recapture after this branch merges and Vercel redeploys production.
@@ -69,6 +78,8 @@
 - `git diff --check` passed on 2026-05-14 resume audit.
 - Browser layout proof passed across Redmi 393x873, narrow 360x800, and desktop 1280x720: `C:\Users\rkhol\AppData\Local\Temp\starfall-audit-20260514-resume-r1\report.json`.
 - Speed-color proof passed in deterministic browser run: `C:\Users\rkhol\AppData\Local\Temp\starfall-audit-20260514-resume-speed-r5\report.json`.
+- Comfort layout proof passed: `C:\Users\rkhol\AppData\Local\Temp\starfall-audit-20260515-comfort-r1\report.json`.
+- Comfort speed proof passed: `C:\Users\rkhol\AppData\Local\Temp\starfall-audit-20260515-comfort-speed-r1\report.json`.
 - `node --check src\game.js` passed.
 - `python -m py_compile backend\starfall_server.py tools\kc_starfall_watch.py` passed.
 - Backend `/api/health`, `/api/signin`, `/api/score`, and `/api/leaderboard` passed locally against SQLite.

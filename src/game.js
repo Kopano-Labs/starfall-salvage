@@ -109,6 +109,7 @@
     hud.shell.classList.toggle("is-playing", playing);
     hud.shell.classList.toggle("is-paused", state.mode === "paused");
     hud.shell.classList.toggle("is-ready", state.mode === "ready" || state.mode === "gameover");
+    hud.shell.classList.toggle("is-gameover", state.mode === "gameover");
   }
 
   function applyBuff(kind) {
@@ -153,9 +154,9 @@
     const palette = document.body.dataset.pilotPalette || "default";
     const paletteHue = palette === "blossom" ? 318 : palette === "ember" ? 28 : palette === "mono" ? 210 : 188;
     const t = Math.max(0, Math.min(1, (multiplier - 1) / 3.2));
-    const hue = Math.round(paletteHue - t * (palette === "mono" ? 24 : 148));
-    const sat = Math.round((palette === "mono" ? 8 : 42) + t * 38);
-    const light = Math.round(38 + t * 18);
+    const hue = Math.round(paletteHue - t * (palette === "mono" ? 18 : 112));
+    const sat = Math.round((palette === "mono" ? 8 : 38) + t * 30);
+    const light = Math.round(36 + t * 14);
     hud.shell.style.setProperty("--speed-hue", String(hue));
     hud.shell.style.setProperty("--speed-strength", t.toFixed(3));
     hud.shell.style.setProperty("--speed-accent", `hsl(${hue} ${sat}% ${light}%)`);
@@ -1353,7 +1354,7 @@
 
   function getCameraFollow() {
     if (isTouchCapable) {
-      return { x: 1, y: 1 };
+      return { x: 0.72, y: 0.72 };
     }
     return { x: 0.018, y: 0.016 };
   }
@@ -3161,7 +3162,7 @@
     const aspect = canvas.width / Math.max(1, canvas.height);
     let renderFov = state.currentFov;
     if (isTouchCapable && aspect < 0.92) {
-      renderFov *= 1.14;
+      renderFov *= 1.22;
     }
     Mat4.perspective(projectionMatrix, renderFov, aspect, 0.1, 120);
 
