@@ -1124,6 +1124,9 @@
       touchMaxTravel = 0;
       touchAxis.x = 0;
       touchAxis.y = 0;
+      player.targetX = mapTouchClientXToWorld(touch.clientX);
+      const startBounds = getPlayerBounds();
+      player.targetY = clamp(player.targetY, startBounds.yMin, startBounds.yMax);
     }, { passive: false });
 
     canvas.addEventListener("touchmove", (event) => {
@@ -1133,6 +1136,7 @@
       for (const touch of event.changedTouches) {
         if (touch.identifier === activeTouchId) {
           event.preventDefault();
+          player.targetX = mapTouchClientXToWorld(touch.clientX);
           applyTouchVector(touch);
           break;
         }
@@ -1311,10 +1315,14 @@
     window.location.reload();
   });
 
+  const POSITION_LERP_TOUCH = 0.18;
+  const POSITION_LERP_DESKTOP = 0.32;
   const player = {
     x: 0,
     y: -0.45,
     z: -7.8,
+    targetX: 0,
+    targetY: -0.45,
     vx: 0,
     vy: 0,
     radius: 0.62,
@@ -1353,9 +1361,17 @@
 
   function getCameraFollow() {
     if (isTouchCapable) {
-      return { x: 1, y: 1 };
+      // Partial follow + viewBiasY in renderScene keeps ship in lower viewport (runner baseline).
+      return { x: 0.88, y: 0.38 };
     }
     return { x: 0.018, y: 0.016 };
+  }
+
+  function mapTouchClientXToWorld(clientX) {
+    const rect = canvas.getBoundingClientRect();
+    const t = clamp((clientX - rect.left) / Math.max(1, rect.width), 0, 1);
+    const bounds = getPlayerBounds();
+    return bounds.xMin + t * (bounds.xMax - bounds.xMin);
   }
 
   function getViewportCssSize() {
@@ -1542,6 +1558,8 @@
     player.x = 0;
     player.y = -0.45;
     player.z = -7.8;
+    player.targetX = 0;
+    player.targetY = -0.45;
     player.vx = 0;
     player.vy = 0;
     player.dash = 0;
@@ -2862,8 +2880,24 @@
     player.vx = moveX * controlSpeed;
     player.vy = moveY * controlSpeed;
     const bounds = getPlayerBounds();
-    player.x = clamp(player.x + player.vx * dt, bounds.xMin, bounds.xMax);
-    player.y = clamp(player.y + player.vy * dt, bounds.yMin, bounds.yMax);
+    if (isTouchCapable && Math.hypot(touchAxis.x, touchAxis.y) > 0.02) {
+      player.targetX = clamp(
+        player.targetX + player.vx * dt,
+        bounds.xMin,
+        bounds.xMax
+      );
+      player.targetY = clamp(
+        player.targetY + player.vy * dt,
+        bounds.yMin,
+        bounds.yMax
+      );
+    } else {
+      player.targetX = clamp(player.targetX + player.vx * dt, bounds.xMin, bounds.xMax);
+      player.targetY = clamp(player.targetY + player.vy * dt, bounds.yMin, bounds.yMax);
+    }
+    const positionLerp = isTouchCapable ? POSITION_LERP_TOUCH : POSITION_LERP_DESKTOP;
+    player.x += (player.targetX - player.x) * positionLerp;
+    player.y += (player.targetY - player.y) * positionLerp;
 
     player.dash = Math.max(0, player.dash - dt);
     player.dashCooldown = Math.max(0, player.dashCooldown - dt);
@@ -3146,11 +3180,12 @@
     const shakeX = Math.sin(alphaTime * 82) * shakeAmount;
     const shakeY = Math.cos(alphaTime * 67) * shakeAmount * 0.72;
     const follow = getCameraFollow();
+    const viewBiasY = isTouchCapable ? -1.25 : 0;
     Mat4.identity(viewMatrix);
     Mat4.translate(
       viewMatrix,
       viewMatrix,
-      [shakeX - player.x * follow.x, shakeY - player.y * follow.y, 0]
+      [shakeX - player.x * follow.x, shakeY - player.y * follow.y + viewBiasY, 0]
     );
 
     const speedMultiplier = state.lastSpeedMultiplier || 1;
