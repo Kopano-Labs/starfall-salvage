@@ -167,18 +167,36 @@ textarea {
  padding: 12px 14px;
  overflow: hidden;
  border-radius: 8px;
+ position: relative;
+ z-index: 50;
+ pointer-events: auto;
 }
 
 .brand-logo {
- width: 118px;
- height: 48px;
+ display: flex;
+ align-items: center;
+ justify-content: center;
+ width: 132px;
+ height: 52px;
  flex: 0 0 auto;
- border-radius: 6px;
- background:
- rgba(255, 255, 255, 0.92)
- url("starfall-smoke.png?v=20260514-engage-swarm") center / cover no-repeat;
- padding: 4px;
- box-shadow: 0 0 22px rgba(59, 227, 255, 0.28);
+ border-radius: 8px;
+ background: radial-gradient(circle at 30% 20%, rgba(59, 227, 255, 0.18), transparent 62%),
+  linear-gradient(145deg, rgba(9, 18, 36, 0.96), rgba(4, 8, 16, 0.98));
+ padding: 4px 6px;
+ box-shadow:
+  inset 0 0 0 1px rgba(59, 227, 255, 0.22),
+  0 10px 28px rgba(0, 0, 0, 0.42);
+ overflow: hidden;
+}
+
+.brand-logo-img {
+ width: 100%;
+ height: 100%;
+ object-fit: contain;
+ object-position: left center;
+ display: block;
+ filter: drop-shadow(0 0 10px rgba(59, 227, 255, 0.25));
+ pointer-events: none;
 }
 
 .brand > div:last-child {
@@ -349,6 +367,118 @@ h1 {
 .kopano-ecosystem-links a {
  color: var(--cyan);
  font-weight: 800;
+}
+
+/* Sovereign 360° flight deck — C12 aesthetic */
+.ecosystem-360-head {
+ margin-bottom: 10px;
+}
+
+.ecosystem-360 {
+ border: 1px solid rgba(143, 110, 255, 0.28);
+ box-shadow:
+  0 14px 40px rgba(0, 0, 0, 0.45),
+  inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.kopano-ecosystem.ecosystem-360 {
+ width: min(680px, calc(100vw - 160px));
+}
+
+.ecos-360-grid {
+ display: grid;
+ grid-template-columns: repeat(auto-fill, minmax(194px, 1fr));
+ gap: 10px;
+ margin: 0;
+ padding: 0;
+ list-style: none;
+}
+
+.ecos-360-grid li {
+ margin: 0;
+ padding: 0;
+}
+
+.ecos-card {
+ display: flex;
+ flex-direction: column;
+ gap: 4px;
+ min-height: 108px;
+ padding: 10px 12px;
+ border-radius: 10px;
+ text-decoration: none;
+ color: inherit;
+ background:
+  linear-gradient(160deg, rgba(18, 32, 56, 0.92), rgba(6, 10, 20, 0.96)),
+  radial-gradient(circle at 12% -20%, rgba(59, 227, 255, 0.24), transparent 55%);
+ border: 1px solid rgba(59, 227, 255, 0.18);
+ box-shadow: 0 8px 20px rgba(0, 0, 0, 0.28);
+ transition: transform 140ms ease, border-color 160ms ease, box-shadow 200ms ease;
+}
+
+.ecos-card:hover,
+.ecos-card:focus-visible {
+ transform: translateY(-2px);
+ border-color: rgba(245, 166, 35, 0.45);
+ box-shadow:
+  0 12px 28px rgba(0, 0, 0, 0.4),
+  0 0 0 1px rgba(245, 166, 35, 0.16);
+ outline: none;
+}
+
+.ecos-card.is-core {
+ border-color: rgba(59, 227, 255, 0.42);
+ box-shadow:
+  inset 0 0 22px rgba(59, 227, 255, 0.08),
+  0 8px 26px rgba(0, 0, 0, 0.32);
+}
+
+.ecos-card.is-craft {
+ border-color: rgba(143, 95, 253, 0.35);
+}
+
+.ecos-card.is-game {
+ border-color: rgba(245, 166, 35, 0.42);
+ background:
+  linear-gradient(165deg, rgba(52, 32, 8, 0.55), rgba(8, 12, 24, 0.96)),
+  radial-gradient(circle at 80% -10%, rgba(245, 166, 35, 0.35), transparent 52%);
+}
+
+.ecos-card-kicker {
+ font-size: 0.61rem;
+ text-transform: uppercase;
+ letter-spacing: 0.16em;
+ color: rgba(186, 210, 255, 0.72);
+ font-weight: 850;
+}
+
+.ecos-card-title {
+ font-size: 0.95rem;
+ font-weight: 780;
+ letter-spacing: 0.02em;
+ color: #f1f5f9;
+ line-height: 1.18;
+}
+
+.ecos-card-desc {
+ font-size: 0.7rem;
+ line-height: 1.42;
+ color: var(--muted);
+ margin-top: auto;
+}
+
+.ecos-investor-foot {
+ margin: 12px 0 0;
+ padding-top: 10px;
+ border-top: 1px solid rgba(255, 255, 255, 0.09);
+ font-size: 0.68rem;
+ line-height: 1.42;
+ color: rgba(226, 232, 240, 0.75);
+ letter-spacing: 0.03em;
+}
+
+.ecos-investor-foot strong {
+ color: rgba(245, 166, 35, 0.95);
 }
 
 .ops-console-trigger {
@@ -699,7 +829,30 @@ h1 {
 
 .onboarding-actions {
  display: flex;
- justify-content: flex-end;
+ gap: 12px;
+ align-items: center;
+ justify-content: flex-start;
+ flex-wrap: wrap;
+}
+
+.onboarding-actions #onboardingContinueButton {
+ margin-left: auto;
+ min-width: 160px;
+}
+
+.onboarding-actions button.is-secondary {
+ min-width: auto;
+ padding: 0 16px;
+ border-color: rgba(255, 255, 255, 0.2);
+ background: rgba(22, 32, 48, 0.95);
+ color: var(--text);
+ font-weight: 700;
+ box-shadow: none;
+}
+
+.onboarding-actions button.is-secondary:focus-visible {
+ border-color: rgba(59, 227, 255, 0.55);
+ outline: none;
 }
 
 .onboarding-actions button {
@@ -755,15 +908,28 @@ h1 {
 }
 
 .account-logo {
- display: block;
+ display: flex;
+ align-items: center;
+ justify-content: flex-start;
  width: 168px;
  height: 72px;
- border-radius: 6px;
- background:
- rgba(255, 255, 255, 0.94)
- url("starfall-smoke.png?v=20260514-engage-swarm") center / cover no-repeat;
- padding: 6px;
+ border-radius: 8px;
+ padding: 4px;
  margin-bottom: 14px;
+ background: radial-gradient(circle at 18% 20%, rgba(59, 227, 255, 0.16), transparent 55%),
+  linear-gradient(135deg, rgba(10, 18, 32, 0.98), rgba(4, 8, 16, 0.99));
+ border: 1px solid rgba(59, 227, 255, 0.22);
+ box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+ overflow: hidden;
+}
+
+.account-logo-img {
+ width: 100%;
+ height: 100%;
+ object-fit: contain;
+ display: block;
+ object-position: left center;
+ pointer-events: none;
 }
 
 .account-card h2 {
@@ -1440,7 +1606,7 @@ h1 {
 
 .brand-anchor {
  position: relative;
- z-index: 6;
+ z-index: 50;
  pointer-events: auto;
  text-decoration: none;
  color: inherit;
@@ -1672,4 +1838,241 @@ select:focus {
 
 .stats strong#buffValue {
  color: var(--magenta);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   360° ECOSYSTEM PANEL — INVESTOR-GRADE GLASSMORPHIC CARDS
+   Protocol: C11 Audit Before Presentation · Offline-first links
+   ═══════════════════════════════════════════════════════════════════ */
+
+.ecosystem-360 {
+ width: min(640px, calc(100vw - 48px));
+ padding: 0;
+ border: 1px solid rgba(78, 240, 255, 0.18);
+ border-radius: 14px;
+ background:
+  radial-gradient(ellipse at 18% 22%, rgba(78, 240, 255, 0.08), transparent 52%),
+  radial-gradient(ellipse at 82% 78%, rgba(217, 107, 255, 0.06), transparent 48%),
+  rgba(7, 10, 18, 0.88);
+ backdrop-filter: blur(16px);
+ box-shadow:
+  0 24px 80px rgba(0, 0, 0, 0.55),
+  0 0 1px rgba(78, 240, 255, 0.25),
+  inset 0 1px 0 rgba(255, 255, 255, 0.06);
+ overflow: hidden;
+}
+
+.ecosystem-360-head {
+ padding: 18px 20px 14px;
+ border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.ecosystem-360-head .eyebrow {
+ color: var(--magenta);
+ letter-spacing: 0.18em;
+}
+
+.ecosystem-hero-copy {
+ display: block;
+ margin: 0;
+}
+
+.ecos-360-grid {
+ display: grid;
+ grid-template-columns: repeat(3, 1fr);
+ gap: 1px;
+ padding: 0;
+ margin: 0;
+ list-style: none;
+ background: rgba(255, 255, 255, 0.04);
+}
+
+.ecos-360-grid li {
+ display: contents;
+}
+
+.ecos-card {
+ position: relative;
+ display: flex;
+ flex-direction: column;
+ justify-content: center;
+ gap: 4px;
+ padding: 16px 14px;
+ min-height: 96px;
+ text-decoration: none;
+ color: var(--text);
+ background: rgba(9, 14, 24, 0.72);
+ border: none;
+ transition:
+  background 260ms ease,
+  box-shadow 260ms ease,
+  transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+ overflow: hidden;
+}
+
+.ecos-card::before {
+ content: "";
+ position: absolute;
+ inset: 0;
+ opacity: 0;
+ background:
+  radial-gradient(circle at 30% 20%, rgba(78, 240, 255, 0.12), transparent 55%),
+  radial-gradient(circle at 80% 80%, rgba(217, 107, 255, 0.08), transparent 50%);
+ transition: opacity 320ms ease;
+ pointer-events: none;
+}
+
+.ecos-card:hover::before,
+.ecos-card:focus-visible::before {
+ opacity: 1;
+}
+
+.ecos-card:hover,
+.ecos-card:focus-visible {
+ background: rgba(14, 22, 38, 0.92);
+ box-shadow:
+  0 8px 32px rgba(78, 240, 255, 0.12),
+  inset 0 0 0 1px rgba(78, 240, 255, 0.22);
+ transform: translateY(-2px);
+ z-index: 1;
+ outline: none;
+}
+
+.ecos-card-kicker {
+ display: block;
+ font-size: 0.62rem;
+ font-weight: 800;
+ text-transform: uppercase;
+ letter-spacing: 0.16em;
+ color: var(--cyan);
+ opacity: 0.78;
+}
+
+.ecos-card-title {
+ display: block;
+ font-size: 0.92rem;
+ font-weight: 800;
+ line-height: 1.2;
+ color: #f8fafc;
+}
+
+.ecos-card-desc {
+ display: block;
+ font-size: 0.68rem;
+ line-height: 1.35;
+ color: var(--muted);
+ margin-top: 2px;
+}
+
+/* Variant accents */
+.ecos-card.is-core .ecos-card-kicker { color: var(--amber); }
+.ecos-card.is-core:hover { box-shadow: 0 8px 32px rgba(255, 209, 102, 0.15), inset 0 0 0 1px rgba(255, 209, 102, 0.28); }
+.ecos-card.is-game .ecos-card-kicker { color: var(--green); }
+.ecos-card.is-game:hover { box-shadow: 0 8px 32px rgba(157, 255, 176, 0.12), inset 0 0 0 1px rgba(157, 255, 176, 0.22); }
+.ecos-card.is-craft .ecos-card-kicker { color: var(--magenta); }
+.ecos-card.is-craft:hover { box-shadow: 0 8px 32px rgba(217, 107, 255, 0.12), inset 0 0 0 1px rgba(217, 107, 255, 0.22); }
+
+/* Investor footer */
+.ecos-investor-foot {
+ margin: 0;
+ padding: 12px 20px 14px;
+ border-top: 1px solid rgba(255, 255, 255, 0.06);
+ color: var(--muted);
+ font-size: 0.68rem;
+ line-height: 1.5;
+ letter-spacing: 0.01em;
+}
+
+.ecos-investor-foot strong {
+ color: var(--green);
+}
+
+/* Logo stays visible while playing — override ui-chrome hide */
+.shell.is-playing .brand-anchor {
+ opacity: 1 !important;
+ transform: none !important;
+ filter: none !important;
+ pointer-events: auto !important;
+ animation: none !important;
+}
+
+/* On mobile, hide ecosystem during gameplay for canvas space */
+@media (max-width: 760px) {
+ .ecosystem-360 {
+  left: 8px;
+  right: 8px;
+  bottom: calc(168px + env(safe-area-inset-bottom, 0px));
+  width: auto;
+  max-width: none;
+  border-radius: 10px;
+ }
+
+ .ecosystem-360-head {
+  padding: 12px 14px 10px;
+ }
+
+ .ecosystem-hero-copy {
+  display: none;
+ }
+
+ .ecos-360-grid {
+  grid-template-columns: repeat(2, 1fr);
+ }
+
+ .ecos-card {
+  min-height: 72px;
+  padding: 10px 12px;
+ }
+
+ .ecos-card-desc {
+  display: none;
+ }
+
+ .ecos-investor-foot {
+  padding: 10px 14px;
+  font-size: 0.62rem;
+ }
+}
+
+@media (max-width: 400px) {
+ .ecos-360-grid {
+  grid-template-columns: 1fr 1fr;
+ }
+
+ .ecos-card {
+  min-height: 58px;
+  padding: 8px 10px;
+ }
+
+ .ecos-card-title {
+  font-size: 0.82rem;
+ }
+}
+
+/* Staggered card entrance */
+@keyframes ecosCardIn {
+ from {
+  opacity: 0;
+  transform: translateY(14px) scale(0.97);
+ }
+ to {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+ }
+}
+
+.ecos-360-grid li:nth-child(1) .ecos-card { animation: ecosCardIn 420ms 80ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.ecos-360-grid li:nth-child(2) .ecos-card { animation: ecosCardIn 420ms 140ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.ecos-360-grid li:nth-child(3) .ecos-card { animation: ecosCardIn 420ms 200ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.ecos-360-grid li:nth-child(4) .ecos-card { animation: ecosCardIn 420ms 260ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.ecos-360-grid li:nth-child(5) .ecos-card { animation: ecosCardIn 420ms 320ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.ecos-360-grid li:nth-child(6) .ecos-card { animation: ecosCardIn 420ms 380ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.ecos-360-grid li:nth-child(7) .ecos-card { animation: ecosCardIn 420ms 440ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.ecos-360-grid li:nth-child(8) .ecos-card { animation: ecosCardIn 420ms 500ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.ecos-360-grid li:nth-child(9) .ecos-card { animation: ecosCardIn 420ms 560ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+@media (prefers-reduced-motion: reduce) {
+ .ecos-360-grid li .ecos-card {
+  animation: none !important;
+ }
 }

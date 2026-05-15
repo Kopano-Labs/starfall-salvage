@@ -18,9 +18,9 @@
   <link rel="icon" href="data:,">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="starfall-smoke.png">
-  <link rel="stylesheet" href="styles.css?v=20260514-mobile-ux-b">
-  <script type="module" src="src/pwa-boot.js?v=20260514-mobile-ux-b"></script>
-  <script src="src/game.js?v=20260514-mobile-ux-b" defer></script>
+  <link rel="stylesheet" href="styles.css?v=20260516-flight-deck-live">
+  <script type="module" src="src/pwa-boot.js?v=20260516-flight-deck-live"></script>
+  <script src="src/game.js?v=20260516-flight-deck-live" defer></script>
 </head>
 <body>
   <main class="shell">
@@ -28,9 +28,11 @@
 
     <section class="hud" aria-live="polite">
       <a class="brand brand-anchor" href="https://kopanolabs.com/" target="_blank" rel="noopener" aria-label="Kopano Labs — open kopanolabs.com">
-        <div class="brand-logo" role="img" aria-label="Kopano Labs logo"></div>
+        <div class="brand-logo" role="img" aria-label="Kopano Labs logo">
+          <img class="brand-logo-img" src="kopano-flight-mark.svg" alt="" width="148" height="48" decoding="async" />
+        </div>
         <div>
-          <p class="eyebrow">WebGL Edition</p>
+          <p class="eyebrow">WebGL Edition · KC flight deck</p>
           <h1>Starfall Salvage</h1>
         </div>
       </a>
@@ -64,17 +66,92 @@
       <p class="desktop-fire-hint ui-chrome" id="desktopFireHint">Desktop: click canvas or hold F to fire</p>
     </section>
 
-    <section class="kopano-ecosystem ui-chrome" aria-label="Kopano Labs ecosystem">
-      <p class="eyebrow">Kopano Labs</p>
-      <h2 class="kopano-ecosystem-title">Township tech lane</h2>
-      <p class="kopano-ecosystem-copy">Starfall Salvage ships beside the rest of the Kopano flight deck &mdash; arena football, bookings, and community rails built for low-bandwidth, high-trust runs.</p>
-      <ul class="kopano-ecosystem-links">
-        <li><a href="https://fivesarena.com/" target="_blank" rel="noopener">Five&rsquo;s Arena</a> &mdash; gents football &amp; bookings</li>
-        <li><a href="https://news.fivesarena.com/" target="_blank" rel="noopener">Five&rsquo;s Arena News</a> &mdash; soccer bruus &amp; match intel</li>
-        <li><a href="https://kopanolabs.com/" target="_blank" rel="noopener">Kopano Labs</a> &mdash; township tech cloud</li>
-        <li><a href="https://github.com/Kopano-Labs" target="_blank" rel="noopener">Kopano-Labs on GitHub</a> &mdash; repos and CONTRIBUTING</li>
-        <li><a href="https://starfallsalvage.kopanolabs.com/" target="_blank" rel="noopener">Starfall Salvage (production)</a></li>
+    <section class="kopano-ecosystem ui-chrome ecosystem-360" aria-label="Kopano Labs ecosystem — sovereign 360 bridge">
+      <div class="ecosystem-360-head">
+        <p class="eyebrow">C12 Cross-ecosystem · live ring</p>
+        <h2 class="kopano-ecosystem-title">Kopano flight deck — township lane</h2>
+        <p class="kopano-ecosystem-copy ecosystem-hero-copy">Canonical nodes for auditors, pilots, and partners. Offline-first salvage here; sibling products stay one tap away.</p>
+      </div>
+      <ul class="ecos-360-grid" role="list">
+        <li>
+          <a class="ecos-card is-core" href="https://kopanolabs.com/" target="_blank" rel="noopener">
+            <span class="ecos-card-kicker">Core</span>
+            <span class="ecos-card-title">Kopano Labs</span>
+            <span class="ecos-card-desc">Sovereign product cloud &mdash; kopanolabs.com</span>
+          </a>
+        </li>
+        <li>
+          <a class="ecos-card" href="https://bookit5s.kopanolabs.com/" target="_blank" rel="noopener">
+            <span class="ecos-card-kicker">Bookings</span>
+            <span class="ecos-card-title">Bookit 5s Arena</span>
+            <span class="ecos-card-desc">Digital Five-a-side cockpit &mdash; Hellenic flight path</span>
+          </a>
+        </li>
+        <li>
+          <a class="ecos-card" href="https://blog.kopanolabs.com/" target="_blank" rel="noopener">
+            <span class="ecos-card-kicker">Editorial</span>
+            <span class="ecos-card-title">The 5s Blog</span>
+            <span class="ecos-card-desc">Arena stories + SEO halo for Bookit ecosystem</span>
+          </a>
+        </li>
+        <li>
+          <a class="ecos-card" href="https://kasilink.online/" target="_blank" rel="noopener">
+            <span class="ecos-card-kicker">Community</span>
+            <span class="ecos-card-title">KasiLink</span>
+            <span class="ecos-card-desc">Grassroots rails &mdash; network graph for township trust</span>
+          </a>
+        </li>
+        <li>
+          <a class="ecos-card is-craft" href="https://krrababalela.com/projects" target="_blank" rel="noopener">
+            <span class="ecos-card-kicker">Architect</span>
+            <span class="ecos-card-title">Chief portfolio</span>
+            <span class="ecos-card-desc">Chief Architect dossier — live references &amp; repos</span>
+          </a>
+        </li>
+        <li>
+          <a class="ecos-card" href="https://fivesarena.com/" target="_blank" rel="noopener">
+            <span class="ecos-card-kicker">Five&rsquo;s</span>
+            <span class="ecos-card-title">Five&rsquo;s Arena</span>
+            <span class="ecos-card-desc">Arena football bookings &mdash; cape cadence</span>
+          </a>
+        </li>
+        <li>
+          <a class="ecos-card" href="https://news.fivesarena.com/" target="_blank" rel="noopener">
+            <span class="ecos-card-kicker">Signals</span>
+            <span class="ecos-card-title">Arena News</span>
+            <span class="ecos-card-desc">Independent match intel RSS / SEO uplift</span>
+          </a>
+        </li>
+        <li>
+          <a class="ecos-card is-game" href="https://starfallsalvage.kopanolabs.com/" target="_blank" rel="noopener">
+            <span class="ecos-card-kicker">Hyper-casual</span>
+            <span class="ecos-card-title">Starfall (prod shell)</span>
+            <span class="ecos-card-desc">Canonical WebGL salvage mirror</span>
+          </a>
+        </li>
+        <li>
+          <a class="ecos-card" href="https://capecampass.kopanolabs.com/" target="_blank" rel="noopener">
+            <span class="ecos-card-kicker">Navigate</span>
+            <span class="ecos-card-title">Cape Compass</span>
+            <span class="ecos-card-desc">Township navigation &amp; route planner</span>
+          </a>
+        </li>
+        <li>
+          <a class="ecos-card" href="https://amaphu.kopanolabs.com/" target="_blank" rel="noopener">
+            <span class="ecos-card-kicker">Entertainment</span>
+            <span class="ecos-card-title">AMA-PHU</span>
+            <span class="ecos-card-desc">Creative studio &amp; content division</span>
+          </a>
+        </li>
+        <li>
+          <a class="ecos-card" href="https://github.com/Kopano-Labs" target="_blank" rel="noopener">
+            <span class="ecos-card-kicker">Open craft</span>
+            <span class="ecos-card-title">GitHub org</span>
+            <span class="ecos-card-desc">CONTRIBUTING &middot; issues &middot; audited releases</span>
+          </a>
+        </li>
       </ul>
+      <p class="ecos-investor-foot">Investor / audit stance: Every link above surfaces <strong>live</strong> Kopano Labs property &mdash; no phantom nodes. C11: Audit Before Presentation. Execution is currency (James&nbsp;2:26). <strong>11 sovereign products. One ecosystem. Zero dependencies.</strong></p>
     </section>
 
     <section class="leaderboard-panel ui-chrome" id="leaderboardPanel" aria-live="polite">
@@ -114,7 +191,7 @@
         <p><strong>What works now:</strong> Open this URL on a laptop or desktop &mdash; full game with onboarding, danger zone, shooting, and bosses.</p>
         <p><strong>Mobile is being rebuilt</strong> against the Asymmetric Edge Reality test (low-end Android, township infrastructure, zero-budget hardware). Re-open this page after the next deploy.</p>
         <p><strong>Got a mobile-perf fix or upgrade idea?</strong> Email <a href="mailto:rkholofelo@kopanolabs.com">rkholofelo@kopanolabs.com</a> &mdash; Sovereign Tech bounty applies (Tier 2, R500&ndash;R1500 ZAR via Yoco / PayFast / EFT).</p>
-        <p class="mobile-lockdown-meta">Build: 20260514-unified-flight &middot; Audit started: 2026-05-06 &middot; Repo: github.com/Kopano-Labs/starfall-salvage</p>
+        <p class="mobile-lockdown-meta">Gate: KC Protocol 13 · C12 audit hold &middot; Started: 2026-05-06 &middot; Repo: github.com/Kopano-Labs/starfall-salvage</p>
       </div>
     </section>
 
@@ -176,7 +253,8 @@
           <span>I understand the controls and the 2.0x danger threshold.</span>
         </label>
         <div class="onboarding-actions">
-          <button id="onboardingContinueButton" type="button" disabled>Continue</button>
+          <button id="onboardingSkipButton" type="button" class="is-secondary" data-testid="modal-back" aria-label="Go back — defer briefing">Back</button>
+          <button id="onboardingContinueButton" type="button" disabled>I understand — Continue</button>
         </div>
         <p class="onboarding-footnote">This briefing only shows once. Got an upgrade idea? Email <a href="mailto:rkholofelo@kopanolabs.com">rkholofelo@kopanolabs.com</a> &mdash; strong ideas earn a Sovereign Tech bounty.</p>
       </div>
@@ -184,7 +262,9 @@
 
     <section class="account-modal is-hidden" id="accountModal" aria-label="Pilot sign in">
       <div class="account-card">
-        <div class="account-logo" role="img" aria-label="Kopano Labs"></div>
+        <div class="account-logo" role="img" aria-label="Kopano Labs">
+          <img class="account-logo-img" src="kopano-flight-mark.svg" alt="" width="208" height="72" decoding="async" />
+        </div>
         <p class="eyebrow">Pilot Access</p>
         <h2>Kopano Labs Flight Deck</h2>
         <p class="account-copy">Create a local pilot profile for best scores and leaderboard practice. It works offline and upgrades to the local backend when the optional server is running.</p>
@@ -207,7 +287,7 @@
         <div class="account-actions">
           <button id="savePilotButton" type="button">Save Pilot</button>
           <button id="guestPilotButton" type="button">Guest</button>
-          <button id="closeAccountButton" type="button">Close</button>
+          <button id="closeAccountButton" type="button" data-testid="modal-back" aria-label="Go back">Close</button>
         </div>
         <div class="account-secondary-actions">
           <button id="resetPilotButton" type="button">Reset Pilot</button>
@@ -224,7 +304,7 @@
         <p class="guest-cta-score">Last run <strong id="guestCtaScore">0</strong></p>
         <div class="guest-cta-actions">
           <button id="guestCtaSaveButton" type="button">Save pilot stats / Squad up</button>
-          <button id="guestCtaDismissButton" type="button" class="is-secondary">Not now</button>
+          <button id="guestCtaDismissButton" type="button" class="is-secondary" data-testid="modal-back" aria-label="Go back — not now">Not now</button>
         </div>
       </div>
     </section>
@@ -238,7 +318,7 @@
         <p class="revive-progress">Caught <strong id="reviveProgress">0 / 3</strong></p>
         <div class="revive-arena" id="reviveArena" aria-label="Tap salvage cores"></div>
         <div class="revive-actions">
-          <button id="reviveSkipButton" type="button">Skip rescue</button>
+          <button id="reviveSkipButton" type="button" data-testid="modal-back" aria-label="Go back — skip rescue">Skip rescue</button>
         </div>
       </div>
     </section>
@@ -251,7 +331,7 @@
             <p class="eyebrow">Local monitor</p>
             <h2 id="opsConsoleTitle">Flight ops</h2>
           </div>
-          <button id="opsConsoleClose" type="button" class="ops-console-close">Close</button>
+          <button id="opsConsoleClose" type="button" class="ops-console-close" data-testid="modal-back" aria-label="Go back">Close</button>
         </header>
         <p class="ops-console-hint">JSON export of recent client events (callsign, score, mode). Live &ldquo;who logged in&rdquo; across phones needs an authenticated API &mdash; see repo <code>Structure/Blockers.md</code>.</p>
         <pre id="opsLog" class="ops-console-log" tabindex="0"></pre>
