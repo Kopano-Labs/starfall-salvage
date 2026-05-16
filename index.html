@@ -4,6 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover">
   <title>Starfall Salvage - WebGL Edition</title>
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("service-worker.js");
+      });
+    }
+  </script>
   <meta name="description" content="Raw WebGL salvage runner from Kopano Labs. Dodge debris, harvest cores, climb the SQLite leaderboard.">
   <meta name="theme-color" content="#07080e">
   <meta property="og:type" content="website">
@@ -220,6 +227,23 @@
       <div class="onboarding-card" role="dialog" aria-modal="true" aria-labelledby="onboardingTitle">
         <p class="eyebrow">Mission Briefing</p>
         <h2 id="onboardingTitle">How to Pilot Starfall Salvage</h2>
+        <div class="onboarding-icon-strip" aria-hidden="true">
+          <div class="onboarding-picto" title="Glide to steer">
+            <svg viewBox="0 0 48 48" width="40" height="40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <circle cx="24" cy="24" r="20" stroke="rgba(59,227,255,0.55)" stroke-width="1.5"/>
+              <path d="M14 24h20M24 14v20" stroke="rgba(255,255,255,0.85)" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M30 18l6-4M30 30l6 4" stroke="rgba(59,227,255,0.9)" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            <span>Glide</span>
+          </div>
+          <div class="onboarding-picto" title="Tap / F to fire">
+            <svg viewBox="0 0 48 48" width="40" height="40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <rect x="10" y="10" width="28" height="28" rx="6" stroke="rgba(255,99,132,0.65)" stroke-width="1.5"/>
+              <circle cx="24" cy="24" r="5" fill="rgba(255,99,132,0.9)"/>
+            </svg>
+            <span>Fire</span>
+          </div>
+        </div>
         <ul class="onboarding-controls">
           <li><strong>Desktop:</strong> WASD or Arrow Keys to fly. Space to phase-dash through danger.</li>
           <li><strong>Mobile:</strong> Drag the canvas to fly. Tap to start. Tap mid-flight to phase-dash.</li>
@@ -229,18 +253,21 @@
           <li><strong>Orange plates:</strong> Range targets take two hits; clear them for a score burst.</li>
           <li><strong>Gold orbs:</strong> Fly through them for a rapid-fire boost.</li>
         </ul>
-        <div class="onboarding-gender-select">
-          <p class="eyebrow">Select Pilot Biological Identity</p>
-          <div class="gender-options">
-            <label class="gender-option" id="genderMaleLabel">
-              <input type="radio" name="pilotGender" value="male" id="genderMale">
-              <span class="gender-symbol">♂</span>
-              <span class="gender-label">MALE (XY)</span>
+        <div class="onboarding-deck-tone">
+          <p class="eyebrow">HUD resonance (visual only)</p>
+          <p class="onboarding-deck-hint">Choose how the flight deck chrome glows. This is <strong>not</strong> medical or legal identity &mdash; optional aesthetic only.</p>
+          <div class="deck-tone-options">
+            <label class="deck-tone-option is-selected" id="deckToneIonLabel">
+              <input type="radio" name="deckTone" value="ion" id="deckToneIon" checked>
+              <span class="deck-tone-symbol">&#x269B;</span>
+              <span class="deck-tone-label">Ion lane</span>
+              <span class="deck-tone-sub">Cool cyan edge</span>
             </label>
-            <label class="gender-option" id="genderFemaleLabel">
-              <input type="radio" name="pilotGender" value="female" id="genderFemale">
-              <span class="gender-symbol">♀</span>
-              <span class="gender-label">FEMALE (XX)</span>
+            <label class="deck-tone-option" id="deckToneSolarLabel">
+              <input type="radio" name="deckTone" value="solar" id="deckToneSolar">
+              <span class="deck-tone-symbol">&#x2600;</span>
+              <span class="deck-tone-label">Solar lane</span>
+              <span class="deck-tone-sub">Warm ember edge</span>
             </label>
           </div>
         </div>
@@ -311,6 +338,24 @@
       </div>
     </section>
 
+    <section class="ecosystem-survey-modal is-hidden" id="ecosystemSurveyModal" role="dialog" aria-modal="true" aria-labelledby="ecosystemSurveyTitle">
+      <div class="ecosystem-survey-card">
+        <p class="eyebrow">Product discovery</p>
+        <h2 id="ecosystemSurveyTitle">One lane, one question</h2>
+        <p class="ecosystem-survey-copy">Where do you spend most of your Kopano time? (Anonymous preference &mdash; stored locally until the sovereign identity service lands.)</p>
+        <div class="ecosystem-survey-actions">
+          <button type="button" class="ecosystem-survey-pick" data-ecosystem="tech">Tech</button>
+          <button type="button" class="ecosystem-survey-pick" data-ecosystem="commerce">Commerce</button>
+          <button type="button" class="ecosystem-survey-pick" data-ecosystem="sports">Sports</button>
+        </div>
+        <label class="ecosystem-survey-never">
+          <input type="checkbox" id="ecosystemSurveyNever" />
+          <span>Don&rsquo;t ask again on this device</span>
+        </label>
+        <button type="button" id="ecosystemSurveyDismiss" class="is-secondary">Skip</button>
+      </div>
+    </section>
+
     <section class="guest-cta-modal is-hidden" id="guestCtaModal" role="dialog" aria-modal="true" aria-labelledby="guestCtaTitle">
       <div class="guest-cta-card">
         <p class="eyebrow">Pilot record</p>
@@ -327,7 +372,7 @@
     <section class="relaunch-hud is-hidden" id="relaunchHud" aria-live="assertive" aria-atomic="true">
       <div class="relaunch-hud-inner">
         <p class="eyebrow">Relaunch gate</p>
-        <p class="relaunch-hud-label">Back in the lane</p>
+        <p class="relaunch-hud-label" id="relaunchHudLabel">Back in the lane</p>
         <p class="relaunch-hud-count" id="relaunchCountdownValue">3</p>
       </div>
     </section>

@@ -1771,38 +1771,45 @@
   }
 
   function spawnReviveCores() {
-    if (!hud.reviveArena) {
-      return;
-    }
+    if (!hud.reviveArena) return;
     clearReviveArena();
     const rect = hud.reviveArena.getBoundingClientRect();
     const width = Math.max(rect.width, 280);
     const height = Math.max(rect.height, 200);
-    for (let i = 0; i < REVIVE_CORE_COUNT; i += 1) {
+    
+    let spawned = 0;
+    const spawnNext = () => {
+      if (state.mode !== "revive" || spawned >= REVIVE_CORE_COUNT) return;
+      
       const button = document.createElement("button");
       button.type = "button";
-      button.className = "revive-core";
-      button.style.left = `${randomRange(12, width - 12)}px`;
-      button.style.top = `${randomRange(12, height - 12)}px`;
-      button.setAttribute("aria-label", `Salvage core ${i + 1}`);
+      button.className = "revive-core reaction-tap";
+      button.style.left = `${randomRange(15, width - 45)}px`;
+      button.style.top = `${randomRange(15, height - 45)}px`;
+      button.setAttribute("aria-label", `Salvage core ${spawned + 1}`);
+      
       button.addEventListener("click", () => {
-        if (button.classList.contains("is-caught") || state.mode !== "revive") {
-          return;
-        }
+        if (button.classList.contains("is-caught") || state.mode !== "revive") return;
         button.classList.add("is-caught");
         reviveState.caught += 1;
         if (hud.reviveProgress) {
           hud.reviveProgress.textContent = `${reviveState.caught} / ${reviveState.need}`;
         }
-        if (navigator.vibrate) {
-          navigator.vibrate(18);
-        }
+        if (navigator.vibrate) navigator.vibrate(18);
         if (reviveState.caught >= reviveState.need) {
           completeRevive(true);
         }
       });
+      
       hud.reviveArena.append(button);
-    }
+      spawned++;
+      
+      // Sequential spawn with slight acceleration
+      const nextDelay = 800 - (spawned * 80);
+      setTimeout(spawnNext, Math.max(200, nextDelay));
+    };
+    
+    spawnNext();
   }
 
   function startReviveMiniGame() {
@@ -1828,24 +1835,18 @@
 
   function completeRevive(success) {
     detachModalBackTrap(MODAL_TRAP.revive, false);
-    if (hud.reviveModal) {
-      hud.reviveModal.classList.add("is-hidden");
-    }
+    if (hud.reviveModal) hud.reviveModal.classList.add("is-hidden");
     clearReviveArena();
     if (success) {
       state.hull = 1;
-      relaunchState.remain = RELAUNCH_COUNTDOWN_SECONDS;
-      state.mode = "relaunch";
-      if (hud.relaunchCountdownValue) {
-        hud.relaunchCountdownValue.textContent = String(Math.ceil(Math.max(0, relaunchState.remain)));
-      }
-      if (hud.relaunchHud) {
-        hud.relaunchHud.classList.remove("is-hidden");
-      }
-      setEventMessage("Relaunch gate — lane opens in 3…");
+      runCountdown(() => {
+        state.mode = "playing";
+        setEventMessage("Hull restored — keep flying!");
+        syncShellPlayState();
+        updateHud();
+        canvas.focus();
+      });
       logEvent("revive_success", { score: Math.floor(state.score) });
-      syncShellPlayState();
-      updateHud();
       return;
     }
     handleGameOver();
