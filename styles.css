@@ -1841,50 +1841,84 @@ select:focus {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   360° ECOSYSTEM PANEL — INVESTOR-GRADE GLASSMORPHIC CARDS
-   Protocol: C11 Audit Before Presentation · Offline-first links
+   360° ECOSYSTEM — COLLAPSIBLE STRIP (not a wall)
    ═══════════════════════════════════════════════════════════════════ */
 
 .ecosystem-360 {
- width: min(640px, calc(100vw - 48px));
+ width: min(380px, calc(100vw - 140px));
  padding: 0;
- border: 1px solid rgba(78, 240, 255, 0.18);
- border-radius: 14px;
- background:
-  radial-gradient(ellipse at 18% 22%, rgba(78, 240, 255, 0.08), transparent 52%),
-  radial-gradient(ellipse at 82% 78%, rgba(217, 107, 255, 0.06), transparent 48%),
-  rgba(7, 10, 18, 0.88);
- backdrop-filter: blur(16px);
- box-shadow:
-  0 24px 80px rgba(0, 0, 0, 0.55),
-  0 0 1px rgba(78, 240, 255, 0.25),
-  inset 0 1px 0 rgba(255, 255, 255, 0.06);
+ border-radius: 10px;
  overflow: hidden;
 }
 
-.ecosystem-360-head {
- padding: 18px 20px 14px;
- border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+/* Toggle bar — always visible when not playing */
+.ecosystem-360-toggle {
+ display: flex;
+ align-items: center;
+ gap: 8px;
+ width: 100%;
+ min-height: 40px;
+ padding: 0 14px;
+ border: none;
+ border-radius: 0;
+ background: rgba(9, 16, 28, 0.88);
+ backdrop-filter: blur(10px);
+ color: var(--text);
+ font-size: 0.78rem;
+ font-weight: 800;
+ cursor: pointer;
+ text-align: left;
+ letter-spacing: 0.02em;
+ transition: background 200ms ease;
 }
 
-.ecosystem-360-head .eyebrow {
- color: var(--magenta);
- letter-spacing: 0.18em;
+.ecosystem-360-toggle:hover {
+ background: rgba(14, 24, 42, 0.95);
+ border-color: transparent;
 }
 
-.ecosystem-hero-copy {
- display: block;
- margin: 0;
+.ecosystem-360-toggle-label {
+ flex: 1;
 }
 
+.ecosystem-360-toggle-count {
+ color: var(--cyan);
+ font-size: 0.68rem;
+ font-weight: 700;
+ opacity: 0.7;
+}
+
+.ecosystem-360-toggle-arrow {
+ font-size: 0.6rem;
+ color: var(--muted);
+ transition: transform 260ms ease;
+}
+
+.ecosystem-360:not(.is-collapsed) .ecosystem-360-toggle-arrow {
+ transform: rotate(180deg);
+}
+
+/* Body — hidden when collapsed */
+.ecosystem-360-body {
+ max-height: 380px;
+ overflow-y: auto;
+ transition: max-height 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ecosystem-360.is-collapsed .ecosystem-360-body {
+ max-height: 0;
+ overflow: hidden;
+}
+
+/* Card grid — compact 4-column */
 .ecos-360-grid {
  display: grid;
- grid-template-columns: repeat(3, 1fr);
+ grid-template-columns: repeat(4, 1fr);
  gap: 1px;
  padding: 0;
  margin: 0;
  list-style: none;
- background: rgba(255, 255, 255, 0.04);
+ background: rgba(255, 255, 255, 0.03);
 }
 
 .ecos-360-grid li {
@@ -1892,102 +1926,65 @@ select:focus {
 }
 
 .ecos-card {
- position: relative;
  display: flex;
  flex-direction: column;
  justify-content: center;
- gap: 4px;
- padding: 16px 14px;
- min-height: 96px;
+ gap: 2px;
+ padding: 8px 10px;
+ min-height: 52px;
  text-decoration: none;
  color: var(--text);
- background: rgba(9, 14, 24, 0.72);
- border: none;
- transition:
-  background 260ms ease,
-  box-shadow 260ms ease,
-  transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
- overflow: hidden;
-}
-
-.ecos-card::before {
- content: "";
- position: absolute;
- inset: 0;
- opacity: 0;
- background:
-  radial-gradient(circle at 30% 20%, rgba(78, 240, 255, 0.12), transparent 55%),
-  radial-gradient(circle at 80% 80%, rgba(217, 107, 255, 0.08), transparent 50%);
- transition: opacity 320ms ease;
- pointer-events: none;
-}
-
-.ecos-card:hover::before,
-.ecos-card:focus-visible::before {
- opacity: 1;
+ background: rgba(9, 14, 24, 0.78);
+ transition: background 180ms ease;
 }
 
 .ecos-card:hover,
 .ecos-card:focus-visible {
- background: rgba(14, 22, 38, 0.92);
- box-shadow:
-  0 8px 32px rgba(78, 240, 255, 0.12),
-  inset 0 0 0 1px rgba(78, 240, 255, 0.22);
- transform: translateY(-2px);
- z-index: 1;
+ background: rgba(20, 32, 52, 0.95);
  outline: none;
 }
 
 .ecos-card-kicker {
  display: block;
- font-size: 0.62rem;
+ font-size: 0.56rem;
  font-weight: 800;
  text-transform: uppercase;
- letter-spacing: 0.16em;
+ letter-spacing: 0.14em;
  color: var(--cyan);
- opacity: 0.78;
+ opacity: 0.65;
 }
 
 .ecos-card-title {
  display: block;
- font-size: 0.92rem;
+ font-size: 0.74rem;
  font-weight: 800;
- line-height: 1.2;
- color: #f8fafc;
+ line-height: 1.15;
+ color: #f0f4fa;
 }
 
 .ecos-card-desc {
- display: block;
- font-size: 0.68rem;
- line-height: 1.35;
- color: var(--muted);
- margin-top: 2px;
+ display: none;
 }
 
 /* Variant accents */
 .ecos-card.is-core .ecos-card-kicker { color: var(--amber); }
-.ecos-card.is-core:hover { box-shadow: 0 8px 32px rgba(255, 209, 102, 0.15), inset 0 0 0 1px rgba(255, 209, 102, 0.28); }
 .ecos-card.is-game .ecos-card-kicker { color: var(--green); }
-.ecos-card.is-game:hover { box-shadow: 0 8px 32px rgba(157, 255, 176, 0.12), inset 0 0 0 1px rgba(157, 255, 176, 0.22); }
 .ecos-card.is-craft .ecos-card-kicker { color: var(--magenta); }
-.ecos-card.is-craft:hover { box-shadow: 0 8px 32px rgba(217, 107, 255, 0.12), inset 0 0 0 1px rgba(217, 107, 255, 0.22); }
 
-/* Investor footer */
 .ecos-investor-foot {
  margin: 0;
- padding: 12px 20px 14px;
- border-top: 1px solid rgba(255, 255, 255, 0.06);
+ padding: 8px 12px;
+ border-top: 1px solid rgba(255, 255, 255, 0.04);
  color: var(--muted);
- font-size: 0.68rem;
- line-height: 1.5;
- letter-spacing: 0.01em;
+ font-size: 0.6rem;
+ line-height: 1.4;
 }
 
 .ecos-investor-foot strong {
  color: var(--green);
 }
 
-/* Logo stays visible while playing — override ui-chrome hide */
+/* Logo stays visible while playing */
 .shell.is-playing .brand-anchor {
  opacity: 1 !important;
  transform: none !important;
@@ -1996,83 +1993,23 @@ select:focus {
  animation: none !important;
 }
 
-/* On mobile, hide ecosystem during gameplay for canvas space */
 @media (max-width: 760px) {
  .ecosystem-360 {
   left: 8px;
   right: 8px;
-  bottom: calc(168px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(96px + env(safe-area-inset-bottom, 0px));
   width: auto;
   max-width: none;
-  border-radius: 10px;
- }
-
- .ecosystem-360-head {
-  padding: 12px 14px 10px;
- }
-
- .ecosystem-hero-copy {
-  display: none;
  }
 
  .ecos-360-grid {
-  grid-template-columns: repeat(2, 1fr);
- }
-
- .ecos-card {
-  min-height: 72px;
-  padding: 10px 12px;
- }
-
- .ecos-card-desc {
-  display: none;
- }
-
- .ecos-investor-foot {
-  padding: 10px 14px;
-  font-size: 0.62rem;
+  grid-template-columns: repeat(3, 1fr);
  }
 }
 
 @media (max-width: 400px) {
  .ecos-360-grid {
-  grid-template-columns: 1fr 1fr;
- }
-
- .ecos-card {
-  min-height: 58px;
-  padding: 8px 10px;
- }
-
- .ecos-card-title {
-  font-size: 0.82rem;
+  grid-template-columns: repeat(2, 1fr);
  }
 }
 
-/* Staggered card entrance */
-@keyframes ecosCardIn {
- from {
-  opacity: 0;
-  transform: translateY(14px) scale(0.97);
- }
- to {
-  opacity: 1;
-  transform: translateY(0) scale(1);
- }
-}
-
-.ecos-360-grid li:nth-child(1) .ecos-card { animation: ecosCardIn 420ms 80ms cubic-bezier(0.22, 1, 0.36, 1) both; }
-.ecos-360-grid li:nth-child(2) .ecos-card { animation: ecosCardIn 420ms 140ms cubic-bezier(0.22, 1, 0.36, 1) both; }
-.ecos-360-grid li:nth-child(3) .ecos-card { animation: ecosCardIn 420ms 200ms cubic-bezier(0.22, 1, 0.36, 1) both; }
-.ecos-360-grid li:nth-child(4) .ecos-card { animation: ecosCardIn 420ms 260ms cubic-bezier(0.22, 1, 0.36, 1) both; }
-.ecos-360-grid li:nth-child(5) .ecos-card { animation: ecosCardIn 420ms 320ms cubic-bezier(0.22, 1, 0.36, 1) both; }
-.ecos-360-grid li:nth-child(6) .ecos-card { animation: ecosCardIn 420ms 380ms cubic-bezier(0.22, 1, 0.36, 1) both; }
-.ecos-360-grid li:nth-child(7) .ecos-card { animation: ecosCardIn 420ms 440ms cubic-bezier(0.22, 1, 0.36, 1) both; }
-.ecos-360-grid li:nth-child(8) .ecos-card { animation: ecosCardIn 420ms 500ms cubic-bezier(0.22, 1, 0.36, 1) both; }
-.ecos-360-grid li:nth-child(9) .ecos-card { animation: ecosCardIn 420ms 560ms cubic-bezier(0.22, 1, 0.36, 1) both; }
-
-@media (prefers-reduced-motion: reduce) {
- .ecos-360-grid li .ecos-card {
-  animation: none !important;
- }
-}
