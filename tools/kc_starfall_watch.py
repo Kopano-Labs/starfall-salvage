@@ -73,6 +73,7 @@ def check_required_files() -> dict[str, Any]:
         "CONTRIBUTING.md",
         "docs/MAINTAINER-MAP.md",
         "docs/MAO-Starfall-Lane.md",
+        "docs/KEYBOARD-MAP.md",
         "Structure/Starfall Salvage - Index.md",
         "Structure/KC Dev Lane.md",
         "Structure/KC Student-Teacher Curriculum.md",
@@ -305,6 +306,8 @@ def check_kopano_upgrade_features() -> dict[str, Any]:
         and "docs/MAO-Starfall-Lane.md" in _read_text("docs/MAINTAINER-MAP.md"),
         "optional_playwright_script": "mobile:stress:pw" in _read_text("package.json")
         and "flightMenuToggle" in _read_text("tools/playwright_mobile_audit.js"),
+        "keyboard_map_doc": "flightMenuToggle" in _read_text("docs/KEYBOARD-MAP.md"),
+        "hot_path_audit_script": (ROOT / "tools/hot_path_audit.py").exists(),
     }
     missing = [name for name, ok in proofs.items() if not ok]
     return {

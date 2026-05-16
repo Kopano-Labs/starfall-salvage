@@ -1913,7 +1913,9 @@
     buffKind: "",
     buffTimer: 0,
     aegisHits: 0,
-    weaponMode: readWeaponModeFromStorage()
+    weaponMode: readWeaponModeFromStorage(),
+    viewPitch: 0,
+    viewRoll: 0
   };
 
   function setWeaponMode(mode) {
@@ -2056,6 +2058,10 @@
 
   function clamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
+  }
+
+  function lerp(a, b, t) {
+    return a + (b - a) * t;
   }
 
   function resizeCanvas() {
@@ -3851,9 +3857,11 @@
     }
 
     const laneWidth = 2.2;
+    const bounds = getPlayerBounds();
     player.targetX = player.targetLane * laneWidth;
-    
+
     if (!isTouchCapable) {
+      let moveY = 0;
       if (keys.has("w") || keys.has("arrowup")) moveY += 1;
       if (keys.has("s") || keys.has("arrowdown")) moveY -= 1;
       player.vy = moveY * 7.2;
@@ -3881,8 +3889,8 @@
     const dx = player.x - oldX;
     player.vx = dx / dt; // Capture instantaneous horizontal velocity
     player.vy = (player.targetY - player.y) / dt;
-    player.viewRoll = THREE.MathUtils.lerp(player.viewRoll || 0, dx * 0.72, 0.18);
-    player.viewPitch = THREE.MathUtils.lerp(player.viewPitch || 0, (state.speed - 20) * 0.002, 0.12);
+    player.viewRoll = lerp(player.viewRoll || 0, dx * 0.72, 0.18);
+    player.viewPitch = lerp(player.viewPitch || 0, (state.speed - 20) * 0.002, 0.12);
 
     player.dash = Math.max(0, player.dash - dt);
     player.dashCooldown = Math.max(0, player.dashCooldown - dt);
@@ -4571,6 +4579,7 @@
     }
     updatePilotBadge();
     resetGame();
+    syncFlightWeaponButtons();
     if (!isOnboardingDone()) {
       showOnboardingModal();
     }

@@ -27,7 +27,7 @@
 | C06 | `#glCanvas` has `touch-action: none`. | PASS |
 | C07 | HUD/chrome uses `env(safe-area-inset-*)` for notch / home bar. | PASS |
 | C08 | Playing hot loop: no mandatory network I/O. | PASS |
-| C09 | Hot path audit: no `new` / no unbounded `push` per frame in steady `updateGame` + `renderScene`. | FAIL |
+| C09 | Hot path audit: no `new` / no unbounded `push` per frame in steady `updateGame` + `renderScene`. | PASS |
 | C10 | p99 frame ≤ 32 ms on a named low-tier reference device (attach capture + device id). | FAIL |
 | C10b | **Static mobile stress** ≥ 80% on `mobile_stress_static` (KC gate) — layout, touch, PWA, resize paths. | PASS |
 | C10c | **MAO flight-lane pack** in `docs/MAO-Starfall-Lane.md` — Architect / Business / Forensic Sociology mapped to repo artefacts + evidence; multitask/weapons lane table present. | PASS |
@@ -35,9 +35,9 @@
 | C12 | Optional analytics: consent + categories + privacy URL before any send. | FAIL |
 | C13 | IARC (or equivalent) filed; descriptors match shipped build. | FAIL |
 | C14 | Release binary: production cert + timestamp (no test cert). | FAIL |
-| C15 | Store accessibility fields backed by in-repo keyboard map + contrast evidence. | FAIL |
+| C15 | Store accessibility fields backed by in-repo keyboard map + contrast evidence. | PASS |
 
-**Commandment rollup:** **10 / 16** PASS. Target **16 / 16** before submission.
+**Commandment rollup:** **12 / 16** PASS. Target **16 / 16** before submission.
 
 ## Audit
 
@@ -45,3 +45,4 @@
 |-----|------|
 | 2026-05-16 | C10c: MAO in-repo lane pack (`docs/MAO-Starfall-Lane.md`); commandments table extended. |
 | 2026-05-16 | P4 PASS: `docs/MAINTAINER-MAP.md`; optional `npm run mobile:stress:pw` (Playwright, not in gate). |
+| 2026-05-16 | C09/C15 PASS: `tools/hot_path_audit.py` in gate; `docs/KEYBOARD-MAP.md`; fixed `THREE`/`bounds`/`moveY` runtime bugs. |
