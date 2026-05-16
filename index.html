@@ -18,18 +18,54 @@
   <link rel="icon" href="data:,">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="starfall-smoke.png">
-  <link rel="stylesheet" href="styles.css?v=20260516-flight-deck-live">
-  <script type="module" src="src/pwa-boot.js?v=20260516-flight-deck-live"></script>
-  <script src="src/game.js?v=20260516-flight-deck-live" defer></script>
+  <link rel="stylesheet" href="styles.css?v=20260516-p13-grounded">
+  <script type="module" src="src/pwa-boot.js?v=20260516-p13-grounded"></script>
+  <script src="src/game.js?v=20260516-p13-grounded" defer></script>
 </head>
 <body>
   <main class="shell">
     <canvas id="glCanvas" tabindex="0" aria-label="Starfall Salvage WebGL game canvas"></canvas>
 
+    <!-- Protocol 13 — Sovereign menu / pause (360° hub lives here, not on the canvas) -->
+    <div class="sovereign-scrim" id="sovereignScrim" hidden aria-hidden="true">
+      <div class="sovereign-scrim-inner">
+        <p class="sovereign-eyebrow">Kopano Labs · WebGL</p>
+        <h2 class="sovereign-title">STARFALL SALVAGE</h2>
+        <p class="sovereign-sub" id="sovereignSubline">Tap to fly</p>
+        <button type="button" class="sovereign-cta" id="sovereignPrimaryCta">Fly</button>
+        <nav class="sovereign-eco" aria-label="Kopano ecosystem quick links">
+          <a href="https://kopanolabs.com/" target="_blank" rel="noopener">Hub</a>
+          <a href="https://bookit5s.kopanolabs.com/" target="_blank" rel="noopener">Bookit 5s</a>
+          <a href="https://blog.kopanolabs.com/" target="_blank" rel="noopener">5s Blog</a>
+          <a href="https://kasilink.online/" target="_blank" rel="noopener">KasiLink</a>
+          <a href="https://fivesarena.com/" target="_blank" rel="noopener">Five&rsquo;s Arena</a>
+          <a href="https://github.com/Kopano-Labs" target="_blank" rel="noopener">GitHub</a>
+        </nav>
+      </div>
+    </div>
+
+    <header class="playing-minimal-hud" id="playingMinimalHud" hidden aria-hidden="true">
+      <div class="pmh-score"><span class="pmh-label">Score</span><strong id="pmhScore">0</strong></div>
+      <button type="button" class="pmh-pause" id="pauseMinimalButton" aria-label="Pause">||</button>
+      <div class="pmh-speed"><strong id="pmhSpeed">1.0x</strong></div>
+    </header>
+
+    <section class="game-over-sovereign" id="gameOverSovereign" hidden aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="gameOverTitle">
+      <div class="game-over-sovereign-inner">
+        <h2 id="gameOverTitle">Mission Failed</h2>
+        <p class="game-over-scores">Run <strong id="gameOverFinal">0</strong> · Best <strong id="gameOverBest">0</strong></p>
+        <div class="game-over-actions">
+          <button type="button" id="gameOverFlyAgain" class="is-primary">Fly Again</button>
+          <button type="button" id="gameOverLeaderboard" class="is-secondary">Leaderboard</button>
+          <button type="button" id="gameOverHub" class="is-tertiary">Kopano Hub</button>
+        </div>
+      </div>
+    </section>
+
     <section class="hud" aria-live="polite">
       <a class="brand brand-anchor" href="https://kopanolabs.com/" target="_blank" rel="noopener" aria-label="Kopano Labs — open kopanolabs.com">
         <div class="brand-logo" role="img" aria-label="Kopano Labs logo">
-          <img class="brand-logo-img" src="kopano-flight-mark.svg" alt="" width="148" height="48" decoding="async" />
+          <img class="brand-logo-img" src="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20420%2096%22%20fill%3D%22none%22%20role%3D%22img%22%20aria-labelledby%3D%22kopano-flight-title%22%3E%0A%20%20%3Ctitle%20id%3D%22kopano-flight-title%22%3EKopano%20Labs%3C%2Ftitle%3E%0A%20%20%3Cdefs%3E%0A%20%20%20%20%3ClinearGradient%20id%3D%22klNodeGrad%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%231a6fb5%22%2F%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%230d4a7a%22%2F%3E%0A%20%20%20%20%3C%2FlinearGradient%3E%0A%20%20%20%20%3ClinearGradient%20id%3D%22klLineGrad%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%232a9d8f%22%2F%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D%2250%25%22%20stop-color%3D%22%231a6fb5%22%2F%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%23264653%22%2F%3E%0A%20%20%20%20%3C%2FlinearGradient%3E%0A%20%20%20%20%3ClinearGradient%20id%3D%22klArrowGrad%22%20x1%3D%220%25%22%20y1%3D%22100%25%22%20x2%3D%22100%25%22%20y2%3D%220%25%22%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%232a9d8f%22%2F%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%234ecdc4%22%2F%3E%0A%20%20%20%20%3C%2FlinearGradient%3E%0A%20%20%20%20%3ClinearGradient%20id%3D%22klLeafGrad%22%20x1%3D%220%25%22%20y1%3D%22100%25%22%20x2%3D%22100%25%22%20y2%3D%220%25%22%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%232a9d8f%22%2F%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%236ec6a0%22%2F%3E%0A%20%20%20%20%3C%2FlinearGradient%3E%0A%20%20%20%20%3ClinearGradient%20id%3D%22klTextGrad%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%220%25%22%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%232a9d8f%22%2F%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%234ecdc4%22%2F%3E%0A%20%20%20%20%3C%2FlinearGradient%3E%0A%20%20%3C%2Fdefs%3E%0A%0A%20%20%3C!--%20Network%20Graph%20-%205%20nodes%20with%20connecting%20lines%20--%3E%0A%20%20%3C!--%20Bottom-left%20node%20--%3E%0A%20%20%3Ccircle%20cx%3D%2218%22%20cy%3D%2272%22%20r%3D%226.5%22%20fill%3D%22url(%23klNodeGrad)%22%20stroke%3D%22%231a6fb5%22%20stroke-width%3D%221.5%22%2F%3E%0A%20%20%3C!--%20Bottom-center%20node%20--%3E%0A%20%20%3Ccircle%20cx%3D%2246%22%20cy%3D%2268%22%20r%3D%225.5%22%20fill%3D%22url(%23klNodeGrad)%22%20stroke%3D%22%231a6fb5%22%20stroke-width%3D%221.5%22%2F%3E%0A%20%20%3C!--%20Bottom-right%20node%20--%3E%0A%20%20%3Ccircle%20cx%3D%2272%22%20cy%3D%2274%22%20r%3D%226%22%20fill%3D%22url(%23klNodeGrad)%22%20stroke%3D%22%231a6fb5%22%20stroke-width%3D%221.5%22%2F%3E%0A%20%20%3C!--%20Mid-left%20node%20--%3E%0A%20%20%3Ccircle%20cx%3D%2228%22%20cy%3D%2244%22%20r%3D%225%22%20fill%3D%22url(%23klNodeGrad)%22%20stroke%3D%22%231a6fb5%22%20stroke-width%3D%221.5%22%2F%3E%0A%20%20%3C!--%20Mid-right%20node%20--%3E%0A%20%20%3Ccircle%20cx%3D%2262%22%20cy%3D%2242%22%20r%3D%225.5%22%20fill%3D%22url(%23klNodeGrad)%22%20stroke%3D%22%231a6fb5%22%20stroke-width%3D%221.5%22%2F%3E%0A%0A%20%20%3C!--%20Connecting%20lines%20(mesh)%20--%3E%0A%20%20%3Cline%20x1%3D%2218%22%20y1%3D%2272%22%20x2%3D%2246%22%20y2%3D%2268%22%20stroke%3D%22url(%23klLineGrad)%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%2F%3E%0A%20%20%3Cline%20x1%3D%2246%22%20y1%3D%2268%22%20x2%3D%2272%22%20y2%3D%2274%22%20stroke%3D%22url(%23klLineGrad)%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%2F%3E%0A%20%20%3Cline%20x1%3D%2218%22%20y1%3D%2272%22%20x2%3D%2228%22%20y2%3D%2244%22%20stroke%3D%22url(%23klLineGrad)%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%2F%3E%0A%20%20%3Cline%20x1%3D%2228%22%20y1%3D%2244%22%20x2%3D%2262%22%20y2%3D%2242%22%20stroke%3D%22url(%23klLineGrad)%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%2F%3E%0A%20%20%3Cline%20x1%3D%2262%22%20y1%3D%2242%22%20x2%3D%2272%22%20y2%3D%2274%22%20stroke%3D%22url(%23klLineGrad)%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%2F%3E%0A%20%20%3Cline%20x1%3D%2246%22%20y1%3D%2268%22%20x2%3D%2228%22%20y2%3D%2244%22%20stroke%3D%22url(%23klLineGrad)%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20opacity%3D%220.6%22%2F%3E%0A%20%20%3Cline%20x1%3D%2246%22%20y1%3D%2268%22%20x2%3D%2262%22%20y2%3D%2242%22%20stroke%3D%22url(%23klLineGrad)%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20opacity%3D%220.6%22%2F%3E%0A%20%20%3Cline%20x1%3D%2218%22%20y1%3D%2272%22%20x2%3D%2272%22%20y2%3D%2274%22%20stroke%3D%22url(%23klLineGrad)%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20opacity%3D%220.4%22%2F%3E%0A%0A%20%20%3C!--%20Upward%20arrow%20from%20top-right%20of%20network%20--%3E%0A%20%20%3Cpath%20d%3D%22M56%2038%20L56%2012%20L48%2022%20M56%2012%20L64%2022%22%20stroke%3D%22url(%23klArrowGrad)%22%20stroke-width%3D%223%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20fill%3D%22none%22%2F%3E%0A%0A%20%20%3C!--%20Leaf%20element%20(bottom-right%20of%20network)%20--%3E%0A%20%20%3Cpath%20d%3D%22M68%2054%20C74%2044%2C%2082%2042%2C%2084%2048%20C86%2054%2C%2078%2058%2C%2068%2054Z%22%20fill%3D%22url(%23klLeafGrad)%22%20opacity%3D%220.85%22%2F%3E%0A%20%20%3Cpath%20d%3D%22M70%2054%20C74%2048%2C%2080%2046%2C%2082%2050%22%20stroke%3D%22%232a9d8f%22%20stroke-width%3D%221%22%20fill%3D%22none%22%20opacity%3D%220.5%22%2F%3E%0A%0A%20%20%3C!--%20KOPANO%20text%20--%3E%0A%20%20%3Ctext%20x%3D%22100%22%20y%3D%2252%22%20fill%3D%22url(%23klTextGrad)%22%20font-family%3D%22system-ui%2C%20-apple-system%2C%20'Segoe%20UI'%2C%20sans-serif%22%20font-size%3D%2232%22%20font-weight%3D%22800%22%20letter-spacing%3D%221%22%3EKOPANO%3C%2Ftext%3E%0A%0A%20%20%3C!--%20LABS%20text%20--%3E%0A%20%20%3Ctext%20x%3D%22100%22%20y%3D%2278%22%20fill%3D%22%231a4a6b%22%20font-family%3D%22system-ui%2C%20-apple-system%2C%20'Segoe%20UI'%2C%20sans-serif%22%20font-size%3D%2228%22%20font-weight%3D%22700%22%20letter-spacing%3D%222%22%3ELABS%3C%2Ftext%3E%0A%3C%2Fsvg%3E%0A" alt="" width="148" height="48" decoding="async" />
         </div>
         <div>
           <p class="eyebrow">WebGL Edition · KC flight deck</p>
@@ -73,6 +109,10 @@
         <span class="ecosystem-360-toggle-arrow" aria-hidden="true">&#x25BC;</span>
       </button>
       <div class="ecosystem-360-body" id="ecosystemBody">
+        <div class="ecosystem-360-head">
+          <p class="ecosystem-360-head-label">360&deg; ring</p>
+          <button id="ecosystemClose" type="button" class="ecosystem-360-close" data-testid="modal-back" aria-label="Close ecosystem menu">Back</button>
+        </div>
         <ul class="ecos-360-grid" role="list">
           <li><a class="ecos-card is-core" href="https://kopanolabs.com/" target="_blank" rel="noopener"><span class="ecos-card-kicker">Core</span><span class="ecos-card-title">Kopano Labs</span></a></li>
           <li><a class="ecos-card" href="https://bookit5s.kopanolabs.com/" target="_blank" rel="noopener"><span class="ecos-card-kicker">Bookings</span><span class="ecos-card-title">Bookit 5s Arena</span></a></li>
@@ -97,6 +137,7 @@
           <h2>Top Runs</h2>
         </div>
         <div class="leaderboard-actions">
+          <button id="leaderboardSheetClose" type="button" class="is-secondary" aria-label="Close leaderboard">Back</button>
           <button id="shareWhatsappButton" type="button" class="is-hidden" aria-label="Share score on WhatsApp">Share</button>
           <button id="refreshLeaderboardButton" type="button">Refresh</button>
         </div>
@@ -199,7 +240,7 @@
     <section class="account-modal is-hidden" id="accountModal" aria-label="Pilot sign in">
       <div class="account-card">
         <div class="account-logo" role="img" aria-label="Kopano Labs">
-          <img class="account-logo-img" src="kopano-flight-mark.svg" alt="" width="208" height="72" decoding="async" />
+          <img class="account-logo-img" src="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20420%2096%22%20fill%3D%22none%22%20role%3D%22img%22%20aria-labelledby%3D%22kopano-flight-title%22%3E%0A%20%20%3Ctitle%20id%3D%22kopano-flight-title%22%3EKopano%20Labs%3C%2Ftitle%3E%0A%20%20%3Cdefs%3E%0A%20%20%20%20%3ClinearGradient%20id%3D%22klNodeGrad%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%231a6fb5%22%2F%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%230d4a7a%22%2F%3E%0A%20%20%20%20%3C%2FlinearGradient%3E%0A%20%20%20%20%3ClinearGradient%20id%3D%22klLineGrad%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%232a9d8f%22%2F%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D%2250%25%22%20stop-color%3D%22%231a6fb5%22%2F%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%23264653%22%2F%3E%0A%20%20%20%20%3C%2FlinearGradient%3E%0A%20%20%20%20%3ClinearGradient%20id%3D%22klArrowGrad%22%20x1%3D%220%25%22%20y1%3D%22100%25%22%20x2%3D%22100%25%22%20y2%3D%220%25%22%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%232a9d8f%22%2F%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%234ecdc4%22%2F%3E%0A%20%20%20%20%3C%2FlinearGradient%3E%0A%20%20%20%20%3ClinearGradient%20id%3D%22klLeafGrad%22%20x1%3D%220%25%22%20y1%3D%22100%25%22%20x2%3D%22100%25%22%20y2%3D%220%25%22%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%232a9d8f%22%2F%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%236ec6a0%22%2F%3E%0A%20%20%20%20%3C%2FlinearGradient%3E%0A%20%20%20%20%3ClinearGradient%20id%3D%22klTextGrad%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%220%25%22%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%232a9d8f%22%2F%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%234ecdc4%22%2F%3E%0A%20%20%20%20%3C%2FlinearGradient%3E%0A%20%20%3C%2Fdefs%3E%0A%0A%20%20%3C!--%20Network%20Graph%20-%205%20nodes%20with%20connecting%20lines%20--%3E%0A%20%20%3C!--%20Bottom-left%20node%20--%3E%0A%20%20%3Ccircle%20cx%3D%2218%22%20cy%3D%2272%22%20r%3D%226.5%22%20fill%3D%22url(%23klNodeGrad)%22%20stroke%3D%22%231a6fb5%22%20stroke-width%3D%221.5%22%2F%3E%0A%20%20%3C!--%20Bottom-center%20node%20--%3E%0A%20%20%3Ccircle%20cx%3D%2246%22%20cy%3D%2268%22%20r%3D%225.5%22%20fill%3D%22url(%23klNodeGrad)%22%20stroke%3D%22%231a6fb5%22%20stroke-width%3D%221.5%22%2F%3E%0A%20%20%3C!--%20Bottom-right%20node%20--%3E%0A%20%20%3Ccircle%20cx%3D%2272%22%20cy%3D%2274%22%20r%3D%226%22%20fill%3D%22url(%23klNodeGrad)%22%20stroke%3D%22%231a6fb5%22%20stroke-width%3D%221.5%22%2F%3E%0A%20%20%3C!--%20Mid-left%20node%20--%3E%0A%20%20%3Ccircle%20cx%3D%2228%22%20cy%3D%2244%22%20r%3D%225%22%20fill%3D%22url(%23klNodeGrad)%22%20stroke%3D%22%231a6fb5%22%20stroke-width%3D%221.5%22%2F%3E%0A%20%20%3C!--%20Mid-right%20node%20--%3E%0A%20%20%3Ccircle%20cx%3D%2262%22%20cy%3D%2242%22%20r%3D%225.5%22%20fill%3D%22url(%23klNodeGrad)%22%20stroke%3D%22%231a6fb5%22%20stroke-width%3D%221.5%22%2F%3E%0A%0A%20%20%3C!--%20Connecting%20lines%20(mesh)%20--%3E%0A%20%20%3Cline%20x1%3D%2218%22%20y1%3D%2272%22%20x2%3D%2246%22%20y2%3D%2268%22%20stroke%3D%22url(%23klLineGrad)%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%2F%3E%0A%20%20%3Cline%20x1%3D%2246%22%20y1%3D%2268%22%20x2%3D%2272%22%20y2%3D%2274%22%20stroke%3D%22url(%23klLineGrad)%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%2F%3E%0A%20%20%3Cline%20x1%3D%2218%22%20y1%3D%2272%22%20x2%3D%2228%22%20y2%3D%2244%22%20stroke%3D%22url(%23klLineGrad)%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%2F%3E%0A%20%20%3Cline%20x1%3D%2228%22%20y1%3D%2244%22%20x2%3D%2262%22%20y2%3D%2242%22%20stroke%3D%22url(%23klLineGrad)%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%2F%3E%0A%20%20%3Cline%20x1%3D%2262%22%20y1%3D%2242%22%20x2%3D%2272%22%20y2%3D%2274%22%20stroke%3D%22url(%23klLineGrad)%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%2F%3E%0A%20%20%3Cline%20x1%3D%2246%22%20y1%3D%2268%22%20x2%3D%2228%22%20y2%3D%2244%22%20stroke%3D%22url(%23klLineGrad)%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20opacity%3D%220.6%22%2F%3E%0A%20%20%3Cline%20x1%3D%2246%22%20y1%3D%2268%22%20x2%3D%2262%22%20y2%3D%2242%22%20stroke%3D%22url(%23klLineGrad)%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20opacity%3D%220.6%22%2F%3E%0A%20%20%3Cline%20x1%3D%2218%22%20y1%3D%2272%22%20x2%3D%2272%22%20y2%3D%2274%22%20stroke%3D%22url(%23klLineGrad)%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20opacity%3D%220.4%22%2F%3E%0A%0A%20%20%3C!--%20Upward%20arrow%20from%20top-right%20of%20network%20--%3E%0A%20%20%3Cpath%20d%3D%22M56%2038%20L56%2012%20L48%2022%20M56%2012%20L64%2022%22%20stroke%3D%22url(%23klArrowGrad)%22%20stroke-width%3D%223%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20fill%3D%22none%22%2F%3E%0A%0A%20%20%3C!--%20Leaf%20element%20(bottom-right%20of%20network)%20--%3E%0A%20%20%3Cpath%20d%3D%22M68%2054%20C74%2044%2C%2082%2042%2C%2084%2048%20C86%2054%2C%2078%2058%2C%2068%2054Z%22%20fill%3D%22url(%23klLeafGrad)%22%20opacity%3D%220.85%22%2F%3E%0A%20%20%3Cpath%20d%3D%22M70%2054%20C74%2048%2C%2080%2046%2C%2082%2050%22%20stroke%3D%22%232a9d8f%22%20stroke-width%3D%221%22%20fill%3D%22none%22%20opacity%3D%220.5%22%2F%3E%0A%0A%20%20%3C!--%20KOPANO%20text%20--%3E%0A%20%20%3Ctext%20x%3D%22100%22%20y%3D%2252%22%20fill%3D%22url(%23klTextGrad)%22%20font-family%3D%22system-ui%2C%20-apple-system%2C%20'Segoe%20UI'%2C%20sans-serif%22%20font-size%3D%2232%22%20font-weight%3D%22800%22%20letter-spacing%3D%221%22%3EKOPANO%3C%2Ftext%3E%0A%0A%20%20%3C!--%20LABS%20text%20--%3E%0A%20%20%3Ctext%20x%3D%22100%22%20y%3D%2278%22%20fill%3D%22%231a4a6b%22%20font-family%3D%22system-ui%2C%20-apple-system%2C%20'Segoe%20UI'%2C%20sans-serif%22%20font-size%3D%2228%22%20font-weight%3D%22700%22%20letter-spacing%3D%222%22%3ELABS%3C%2Ftext%3E%0A%3C%2Fsvg%3E%0A" alt="" width="208" height="72" decoding="async" />
         </div>
         <p class="eyebrow">Pilot Access</p>
         <h2>Kopano Labs Flight Deck</h2>
@@ -274,13 +315,5 @@
       </div>
     </div>
   </main>
-  <script>
-    // Ecosystem toggle
-    document.getElementById('ecosystemToggle').addEventListener('click', function() {
-      var panel = document.getElementById('ecosystemPanel');
-      panel.classList.toggle('is-collapsed');
-      this.setAttribute('aria-expanded', !panel.classList.contains('is-collapsed'));
-    });
-  </script>
 </body>
 </html>

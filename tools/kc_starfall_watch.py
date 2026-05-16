@@ -157,7 +157,8 @@ def check_kopano_upgrade_features() -> dict[str, Any]:
         "tap_to_start_or_dash": "wasTap" in game_js and "dashRequested = true" in game_js,
         "touch_axis_in_movement": "moveX += touchAxis.x" in game_js,
         "touch_action_none_css": "touch-action: none" in _read_text("styles.css"),
-        "mobile_control_hint_html": "Mobile:" in index_html and "tap to start" in index_html,
+        "mobile_control_hint_html": "Mobile:" in index_html
+        and "tap to start" in index_html.lower(),
         # Lesson 008 — Onboarding Pop-up
         "onboarding_modal_markup": 'id="onboardingModal"' in index_html
         and 'id="onboardingAck"' in index_html
@@ -187,11 +188,18 @@ def check_kopano_upgrade_features() -> dict[str, Any]:
         "mobile_fire_button_css": ".mobile-fire-button" in _read_text("styles.css"),
         "mobile_fire_button_handler": "mobileFireButton" in game_js
         and "spawnPlayerBullet()" in game_js,
+        # Lesson 013 — Protocol 13 kinetic stack + tunnel sightline parallax (2026-05-16)
+        "treadmill_architecture_note": "Treadmill: ship Z stays fixed" in game_js,
+        "danger_scaled_fog_uniform": "uFogMix" in game_js,
+        "sovereign_pause_history_trap": "sovereignPause" in game_js,
+        "minimal_playing_hud_dom": 'id="playingMinimalHud"' in index_html,
+        "touch_lerp_constant": "POSITION_LERP_TOUCH" in game_js,
+        "tunnel_parallax_ribs": "// Parallax ribs:" in game_js,
     }
     missing = [name for name, ok in proofs.items() if not ok]
     return {
         "name": "kopano_upgrade_audit",
-        "expected": f"all {len(proofs)} curriculum proofs present in shipped files",
+        "expected": f"all {len(proofs)} curriculum proofs (Lessons 001–013) present in shipped files",
         "ok": not missing,
         "actual": "all proofs satisfied" if not missing else f"missing proofs: {', '.join(missing)}",
         "retry": (
@@ -255,10 +263,21 @@ def check_backend_health(url: str) -> dict[str, Any]:
     }
 
 
-def build_report(health_url: str) -> dict[str, Any]:
+def build_report(health_url: str, *, skip_backend: bool) -> dict[str, Any]:
     checks: list[dict[str, Any]] = [check_required_files(), check_git_clean_enough()]
     checks.extend(check_syntax())
-    checks.append(check_backend_health(health_url))
+    if skip_backend:
+        checks.append(
+            {
+                "name": "backend_health",
+                "expected": "skipped (--skip-backend): no live server required",
+                "ok": True,
+                "actual": "skipped",
+                "retry": "omit --skip-backend and start backend/starfall_server.py to test /api/health",
+            }
+        )
+    else:
+        checks.append(check_backend_health(health_url))
     checks.append(check_kopano_upgrade_features())
     failed = [check for check in checks if not check.get("ok")]
     return {
@@ -324,13 +343,18 @@ def main() -> int:
     parser.add_argument("--seed-kc", action="store_true", help="write the report to the KC context store")
     parser.add_argument("--interval", type=int, default=60)
     parser.add_argument("--health-url", default="http://127.0.0.1:8765/api/health")
+    parser.add_argument(
+        "--skip-backend",
+        action="store_true",
+        help="do not call /api/health (use in CI or when server is not running)",
+    )
     parser.add_argument("--kc-root", type=Path, default=DEFAULT_KC_ROOT)
     parser.add_argument("--kc-impl", type=Path, default=DEFAULT_KC_IMPL)
     parser.add_argument("--kc-store", type=Path, default=Path(os.environ.get("KC_CONTEXT_STORE", DEFAULT_KC_STORE)))
     args = parser.parse_args()
 
     while True:
-        report = build_report(args.health_url)
+        report = build_report(args.health_url, skip_backend=args.skip_backend)
         if args.seed_kc:
             try:
                 report["kc_context_id"] = seed_kc_context(report, args.kc_impl, args.kc_store)

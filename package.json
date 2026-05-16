@@ -17,7 +17,13 @@
     "twa:build": "npm run build --workspace=@starfall/twa",
     "twa:validate": "npm run validate --workspace=@starfall/twa",
     "twa:verify-assetlinks": "npm run verify-assetlinks --workspace=@starfall/twa",
-    "vault:check": "node --input-type=module < src/kopano-vault.js"
+    "vault:check": "node --input-type=module < src/kopano-vault.js",
+    "verify:syntax": "node --check src/game.js && python -m py_compile backend/starfall_server.py",
+    "kc:audit": "python tools/kc_starfall_watch.py --once --skip-backend",
+    "kc:audit:full": "python tools/kc_starfall_watch.py --once",
+    "kc:audit:seed": "python tools/kc_starfall_watch.py --once --skip-backend --seed-kc",
+    "kc:watch": "python tools/kc_starfall_watch.py --interval 60 --skip-backend",
+    "gate": "npm run verify:syntax && npm run kc:audit"
   },
   "devDependencies": {
     "turbo": "^2.0.0",

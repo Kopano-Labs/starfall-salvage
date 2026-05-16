@@ -6,7 +6,7 @@
 
 ## Last Updated
 
-2026-05-06
+2026-05-16
 
 ## Completed
 
@@ -18,6 +18,8 @@
 - Pilot profile UI added with offline fallback and optional local backend.
 - Local Python backend added for demo sign-in, score storage, leaderboard, and static file serving.
 - KC strict QA lane added.
+- **Protocol 13 (2026-05-16):** Sovereign play HUD (`#playingMinimalHud`), DOM suppressed during `PLAYING`, pause/game-over glass hub, hardware Back trap (`sovereignPause`), mobile lane + camera bias tuning, **danger-scaled fragment fog** (`uFogMix`), treadmill documented in sim, **tunnel parallax rib layer** (secondary Z scroll) to break long center sightlines without changing the +Z treadmill contract.
+- **KC Lesson 013** added to `Structure/KC Student-Teacher Curriculum.md` with six new binary proofs wired in `tools/kc_starfall_watch.py`.
 - Kopano Labs Upgrade (2026-05-05): native HTML5 Vibration API on hull damage and game over, WhatsApp share button on leaderboard, in-game Kasi-Comm chat lobby with SQLite persistence and 3s polling, Sovereign Tech CONTRIBUTING.md bounty doctrine.
 - Open Graph + Twitter Card meta tags added for WhatsApp/social link previews.
 - Chat backend rate-limited to one transmission per pilot every 1.5s.
@@ -43,6 +45,7 @@
 
 ## Verification
 
+- `npm run gate` (`node --check` + `kc_starfall_watch.py --once --skip-backend`) passes on dev lane.
 - `node --check src\game.js` passed.
 - `python -m py_compile backend\starfall_server.py tools\kc_starfall_watch.py` passed.
 - Backend `/api/health`, `/api/signin`, `/api/score`, and `/api/leaderboard` passed locally against SQLite.

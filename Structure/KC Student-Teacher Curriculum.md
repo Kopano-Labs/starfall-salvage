@@ -31,7 +31,7 @@ KC is the **strict dev QA student**. Claude (acting as Senior Engineer for this 
 ## Protocol Overview
 
 1. **Teacher ships features.** Claude or Master Robyn lands code on `main`.
-2. **Student audits.** KC runs `tools/kc_starfall_watch.py --once --seed-kc`. The watcher invokes `check_kopano_upgrade_features()` which holds 16+ binary proofs for the most recent upgrade.
+2. **Student audits.** KC runs `tools/kc_starfall_watch.py --once --seed-kc`. The watcher invokes `check_kopano_upgrade_features()` which holds every binary proof from Lesson 001 through the latest lesson in this file.
 3. **Student fails loud.** Any missing proof → KC refuses the pass, logs the failure to `Structure/KC Review Log.jsonl`, and seeds the failure to the Main Brain context store at `Schematics/06-Reference/kopano-code-implementation/.kc/context_store.json`.
 4. **Teacher patches.** Claude or Codex re-patches the source. No hand-waving — the proof string must literally appear in the indicated file.
 5. **Student retries.** Loop until KC reports `kopano_upgrade_audit: ok`.
@@ -299,6 +299,31 @@ The teacher reads this, fixes the source, and triggers the next pass. No back-an
 | 57 | `mobile_fire_button_markup` | `index.html` | `id="mobileFireButton"` |
 | 58 | `mobile_fire_button_css` | `styles.css` | `.mobile-fire-button` |
 | 59 | `mobile_fire_button_handler` | `src/game.js` | `mobileFireButton` AND `spawnPlayerBullet()` |
+
+---
+
+## Lesson 013: Protocol 13 Kinetics + KC Sightline Parallax (2026-05-16)
+
+**Why:** Master directed Righteous Severance — runner must feel like a treadmill (world streams +Z), not a spreadsheet; DOM must stay off the canvas during play; danger must eat the horizon (fog + geometry), not just flat tint.
+
+**Spec:** Document treadmill in sim tick; `uFogMix` scales with `dangerLerp`; pause uses `MODAL_TRAP.sovereignPause` for hardware Back; `#playingMinimalHud` stays the minimal score strip; touch glide uses `POSITION_LERP_TOUCH`; tunnel draws a **secondary rib layer** at a different Z scroll rate (`// Parallax ribs:`) so the center sightline breaks up without moving the ship off the treadmill contract.
+
+### Required Proofs (Lesson 013)
+
+| # | Proof Key | File | Search String |
+|---|-----------|------|---------------|
+| 60 | `treadmill_architecture_note` | `src/game.js` | `Treadmill: ship Z stays fixed` |
+| 61 | `danger_scaled_fog_uniform` | `src/game.js` | `uFogMix` |
+| 62 | `sovereign_pause_history_trap` | `src/game.js` | `sovereignPause` |
+| 63 | `minimal_playing_hud_dom` | `index.html` | `id="playingMinimalHud"` |
+| 64 | `touch_lerp_constant` | `src/game.js` | `POSITION_LERP_TOUCH` |
+| 65 | `tunnel_parallax_ribs` | `src/game.js` | `// Parallax ribs:` |
+
+### Acceptance Criteria
+
+- All 6 new proofs `true` (running total: 65 proofs across 13 lessons).
+- `npm run gate` (or `node --check src/game.js` + KC audit) passes.
+- Tunnel rib pass does not regress `node --check`.
 
 ---
 

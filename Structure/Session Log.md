@@ -1,5 +1,10 @@
 # Session Log
 
+## 2026-05-16
+
+- **Kinetic:** Danger-scaled `uFogMix` fog; tunnel **parallax rib** pass (secondary Z drift vs primary shell) for Temple-style sightline breakup; treadmill contract unchanged (scrap still streams +Z).
+- **KC / apprenticeship:** `Structure/KC Student-Teacher Curriculum.md` **Lesson 013** added; `tools/kc_starfall_watch.py` extended with six proofs (`treadmill_architecture_note`, `danger_scaled_fog_uniform`, `sovereign_pause_history_trap`, `minimal_playing_hud_dom`, `touch_lerp_constant`, `tunnel_parallax_ribs`). Run `python tools/kc_starfall_watch.py --once --skip-backend` after every ship; append-only log at `Structure/KC Review Log.jsonl`. Optional Main Brain sync: same command with `--seed-kc` when the KC store path is available.
+
 ## 2026-05-05
 
 - Starfall project moved to `C:\Users\rkhol\Starfall Salvage`.

@@ -383,7 +383,7 @@ h1 {
 }
 
 .kopano-ecosystem.ecosystem-360 {
- width: min(680px, calc(100vw - 160px));
+ width: min(380px, calc(100vw - 160px));
 }
 
 .ecos-360-grid {
@@ -1776,10 +1776,6 @@ select:focus {
  50% { box-shadow: 0 0 18px rgba(78, 240, 255, 0.35); }
 }
 
-.shell.is-playing .stats {
- animation: hudPulse 2.4s ease-in-out infinite;
-}
-
 @media (prefers-reduced-motion: reduce) {
  .ui-chrome,
  .revive-modal,
@@ -1790,7 +1786,8 @@ select:focus {
  animation: none !important;
  transition: none !important;
  }
-}/* ═══════════════════════════════════════════════════════════════════
+}
+/* ═══════════════════════════════════════════════════════════════════
    RIGHTEOUS SEVERANCE — SOVEREIGN GAME STATES
    Protocol 13 · Commandment 10 · Alto's Odyssey HUD Pattern
    PLAYING  = 99% canvas. Score + speed only.
@@ -1799,52 +1796,45 @@ select:focus {
    ═══════════════════════════════════════════════════════════════════ */
 
 /* ── STATE: PLAYING ─────────────────────────────────────────────── */
-/* Kill ALL chrome during gameplay */
+/* Kill chrome during gameplay — prefer opacity over display toggles (less layout thrash) */
 .shell.is-playing .ui-chrome {
  opacity: 0 !important;
+ visibility: hidden !important;
  pointer-events: none !important;
- transform: translateY(-20px) scale(0.96) !important;
- filter: blur(4px) !important;
- transition: opacity 300ms ease, transform 300ms ease, filter 300ms ease;
+ transform: translateY(-12px) scale(0.98) !important;
+ filter: blur(3px) !important;
+ transition: opacity 240ms ease, visibility 240ms ease, transform 240ms ease, filter 240ms ease;
 }
 
-/* Score bar ONLY — the single exception */
+/* Legacy stat grid hidden during play (minimal HUD only) */
 .shell.is-playing .stats {
- opacity: 1 !important;
- transform: none !important;
- filter: none !important;
- pointer-events: none !important;
- transition: none !important;
- animation: none !important;
+ display: none !important;
 }
 
-/* Brand logo stays — Kopano identity is non-negotiable */
+/* Brand / flight deck — hidden during active play only (Alto benchmark) */
 .shell.is-playing .brand-anchor {
- opacity: 0.7 !important;
- transform: scale(0.85) !important;
- filter: none !important;
- pointer-events: auto !important;
- animation: none !important;
- transition: opacity 400ms ease !important;
-}
-.shell.is-playing .brand-anchor:hover {
- opacity: 1 !important;
+ opacity: 0 !important;
+ visibility: hidden !important;
+ pointer-events: none !important;
 }
 
-/* Force-kill everything else during play — no exceptions */
+/* Panels off-canvas during play — no interaction, minimal compositor work */
 .shell.is-playing .kopano-ecosystem,
 .shell.is-playing .leaderboard-panel,
 .shell.is-playing .kasi-comm,
 .shell.is-playing .status-panel,
 .shell.is-playing .hud-actions {
- display: none !important;
+ opacity: 0 !important;
+ visibility: hidden !important;
+ pointer-events: none !important;
 }
 
 /* ── STATE: GAMEOVER ────────────────────────────────────────────── */
-/* Kill ecosystem + chat on gameover — only mission report */
-.shell.is-gameover .kopano-ecosystem,
+/* Kasi-Comm off during game over — 360 hub = ecosystem strip + sovereign links */
 .shell.is-gameover .kasi-comm {
- display: none !important;
+ opacity: 0 !important;
+ visibility: hidden !important;
+ pointer-events: none !important;
 }
 
 /* Clean gameover: status panel centered, no wall of text */
@@ -1864,9 +1854,23 @@ select:focus {
  display: none;
 }
 
-/* Leaderboard: compact on gameover, right side */
-.shell.is-gameover .leaderboard-panel {
- max-height: min(38vh, 280px);
+/* Leaderboard: hidden on game over until player opens sheet */
+.shell.is-gameover:not(.leaderboard-overlay) .leaderboard-panel {
+ display: none !important;
+}
+
+/* Anti-pattern 5: keep Kopano mark visible on game over; strip heavy chrome */
+.shell.is-gameover .stats,
+.shell.is-gameover .hud-actions {
+ display: none !important;
+}
+
+/* 360° strip on game over (collapsed toggle) — above scrim, below mission card */
+.shell.is-gameover .kopano-ecosystem {
+ z-index: 36;
+ opacity: 1 !important;
+ visibility: visible !important;
+ pointer-events: auto !important;
 }
 
 /* ── STATE: READY / PAUSED ──────────────────────────────────────── */
@@ -1912,7 +1916,9 @@ select:focus {
 
  .shell.is-playing .kopano-ecosystem,
  .shell.is-playing .leaderboard-panel {
- display: none !important;
+ opacity: 0 !important;
+ visibility: hidden !important;
+ pointer-events: none !important;
  }
 }
 
@@ -2064,13 +2070,264 @@ select:focus {
  color: var(--green);
 }
 
-/* Logo stays visible while playing */
-.shell.is-playing .brand-anchor {
+/* ═══════════════════════════════════════════════════════════════════
+   Protocol 13 — Sovereign scrim, minimal play HUD, game-over sheet
+   ═══════════════════════════════════════════════════════════════════ */
+
+.sovereign-scrim {
+ position: fixed;
+ inset: 0;
+ z-index: 24;
+ display: grid;
+ place-items: center;
+ padding: 24px 18px calc(24px + env(safe-area-inset-bottom, 0px));
+ background: rgba(9, 9, 11, 0.82);
+ backdrop-filter: blur(14px);
+ -webkit-backdrop-filter: blur(14px);
+ pointer-events: auto;
+}
+
+.sovereign-scrim[hidden] {
+ display: none !important;
+}
+
+.sovereign-scrim--backdrop-only .sovereign-scrim-inner {
+ opacity: 0;
+ visibility: hidden;
+ pointer-events: none;
+ max-height: 0;
+ overflow: hidden;
+ margin: 0;
+ padding: 0;
+ border: none;
+}
+
+.sovereign-scrim--backdrop-only {
+ background: rgba(9, 9, 11, 0.88);
+}
+
+.sovereign-scrim-inner {
+ width: min(520px, 100%);
+ text-align: center;
+}
+
+.sovereign-eyebrow {
+ margin: 0 0 8px;
+ font-size: 0.72rem;
+ letter-spacing: 0.16em;
+ text-transform: uppercase;
+ color: var(--cyan);
+ opacity: 0.85;
+}
+
+.sovereign-title {
+ margin: 0 0 10px;
+ font-size: clamp(1.6rem, 5vw, 2.4rem);
+ font-weight: 900;
+ letter-spacing: 0.06em;
+}
+
+.sovereign-sub {
+ margin: 0 0 22px;
+ color: var(--muted);
+ font-size: 0.95rem;
+}
+
+.sovereign-cta {
+ min-width: min(320px, 100%);
+ min-height: 52px;
+ font-size: 1.05rem;
+ letter-spacing: 0.08em;
+ border-radius: 10px;
+ background: linear-gradient(135deg, rgba(59, 227, 255, 0.22), rgba(217, 107, 255, 0.18));
+ border-color: rgba(255, 255, 255, 0.22);
+}
+
+.sovereign-eco {
+ display: flex;
+ flex-wrap: wrap;
+ justify-content: center;
+ gap: 10px 14px;
+ margin-top: 28px;
+ padding-top: 18px;
+ border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sovereign-eco a {
+ font-size: 0.78rem;
+ font-weight: 700;
+ letter-spacing: 0.04em;
+ color: var(--muted);
+ text-decoration: none;
+ border-bottom: 1px solid transparent;
+ padding: 4px 2px;
+}
+
+.sovereign-eco a:hover,
+.sovereign-eco a:focus-visible {
+ color: var(--text);
+ border-color: rgba(59, 227, 255, 0.45);
+ outline: none;
+}
+
+.playing-minimal-hud {
+ position: fixed;
+ top: 0;
+ left: 0;
+ right: 0;
+ z-index: 30;
+ display: flex;
+ align-items: flex-start;
+ justify-content: space-between;
+ gap: 12px;
+ padding: calc(12px + env(safe-area-inset-top, 0px)) 16px 0;
+ pointer-events: none;
+}
+
+.playing-minimal-hud[hidden] {
+ display: none !important;
+}
+
+.playing-minimal-hud > * {
+ pointer-events: auto;
+}
+
+.pmh-score {
+ flex: 1;
+ text-align: center;
+ padding-top: 4px;
+}
+
+.pmh-label {
+ display: block;
+ font-size: 0.58rem;
+ letter-spacing: 0.18em;
+ text-transform: uppercase;
+ color: var(--muted);
+}
+
+.pmh-score strong {
+ font-size: clamp(1.1rem, 3.4vw, 1.45rem);
+ font-weight: 900;
+ letter-spacing: 0.04em;
+}
+
+.pmh-pause {
+ min-width: 48px;
+ min-height: 44px;
+ padding: 0;
+ border-radius: 10px;
+ font-size: 1rem;
+ line-height: 1;
+ letter-spacing: 0.02em;
+ background: rgba(8, 12, 22, 0.72);
+ border-color: rgba(255, 255, 255, 0.14);
+}
+
+.pmh-speed {
+ flex: 0 0 auto;
+ min-width: 64px;
+ text-align: right;
+ padding-top: 6px;
+ font-size: 0.95rem;
+ font-weight: 800;
+ color: var(--cyan);
+}
+
+.game-over-sovereign {
+ position: fixed;
+ inset: 0;
+ z-index: 40;
+ display: grid;
+ place-items: center;
+ padding: 24px 18px calc(110px + env(safe-area-inset-bottom, 0px));
+ background: rgba(3, 5, 10, 0.78);
+ backdrop-filter: blur(14px);
+ -webkit-backdrop-filter: blur(14px);
+ pointer-events: auto;
+}
+
+.game-over-sovereign[hidden] {
+ display: none !important;
+}
+
+.game-over-sovereign-inner {
+ width: min(440px, 100%);
+ text-align: center;
+ padding: 28px 22px;
+ border-radius: 14px;
+ border: 1px solid rgba(255, 255, 255, 0.12);
+ background: var(--panel-strong);
+ box-shadow: 0 28px 72px rgba(0, 0, 0, 0.55);
+}
+
+.game-over-sovereign-inner h2 {
+ margin: 0 0 12px;
+ font-size: clamp(1.35rem, 4vw, 1.85rem);
+ letter-spacing: 0.04em;
+}
+
+.game-over-scores {
+ margin: 0 0 22px;
+ color: var(--muted);
+ font-size: 0.95rem;
+}
+
+.game-over-actions {
+ display: flex;
+ flex-direction: column;
+ gap: 10px;
+}
+
+.game-over-actions button.is-primary {
+ min-height: 48px;
+ font-size: 1rem;
+}
+
+.game-over-actions button.is-secondary,
+.game-over-actions button.is-tertiary {
+ min-height: 42px;
+ font-size: 0.9rem;
+}
+
+.game-over-actions button.is-tertiary {
+ background: transparent;
+ border-color: rgba(255, 255, 255, 0.1);
+ color: var(--muted);
+}
+
+.shell.leaderboard-overlay::before {
+ content: "";
+ position: fixed;
+ inset: 0;
+ z-index: 33;
+ background: rgba(0, 0, 0, 0.55);
+ backdrop-filter: blur(6px);
+ -webkit-backdrop-filter: blur(6px);
+ pointer-events: none;
+}
+
+.shell.leaderboard-overlay .leaderboard-panel {
+ position: fixed !important;
+ left: 50% !important;
+ top: 50% !important;
+ right: auto !important;
+ bottom: auto !important;
+ transform: translate(-50%, -50%) !important;
+ width: min(520px, calc(100vw - 28px)) !important;
+ max-height: min(72vh, 520px) !important;
+ z-index: 38 !important;
+ display: flex !important;
+ flex-direction: column;
  opacity: 1 !important;
- transform: none !important;
- filter: none !important;
  pointer-events: auto !important;
- animation: none !important;
+ filter: none !important;
+}
+
+.shell.leaderboard-overlay .leaderboard-list {
+ flex: 1 1 auto;
+ min-height: 0;
+ overflow-y: auto;
 }
 
 @media (max-width: 760px) {

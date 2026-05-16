@@ -25,6 +25,7 @@
     leaderboardList: document.getElementById("leaderboardList"),
     leaderboardStatus: document.getElementById("leaderboardStatus"),
     refreshLeaderboardButton: document.getElementById("refreshLeaderboardButton"),
+    leaderboardSheetClose: document.getElementById("leaderboardSheetClose"),
     shareWhatsappButton: document.getElementById("shareWhatsappButton"),
     accountModal: document.getElementById("accountModal"),
     accountSummary: document.getElementById("accountSummary"),
@@ -66,7 +67,24 @@
     guestCtaModal: document.getElementById("guestCtaModal"),
     guestCtaScore: document.getElementById("guestCtaScore"),
     guestCtaSaveButton: document.getElementById("guestCtaSaveButton"),
-    guestCtaDismissButton: document.getElementById("guestCtaDismissButton")
+    guestCtaDismissButton: document.getElementById("guestCtaDismissButton"),
+    ecosystemPanel: document.getElementById("ecosystemPanel"),
+    ecosystemToggle: document.getElementById("ecosystemToggle"),
+    ecosystemClose: document.getElementById("ecosystemClose"),
+    leaderboardPanel: document.getElementById("leaderboardPanel"),
+    sovereignScrim: document.getElementById("sovereignScrim"),
+    sovereignSubline: document.getElementById("sovereignSubline"),
+    sovereignPrimaryCta: document.getElementById("sovereignPrimaryCta"),
+    playingMinimalHud: document.getElementById("playingMinimalHud"),
+    pmhScore: document.getElementById("pmhScore"),
+    pmhSpeed: document.getElementById("pmhSpeed"),
+    pauseMinimalButton: document.getElementById("pauseMinimalButton"),
+    gameOverSovereign: document.getElementById("gameOverSovereign"),
+    gameOverFinal: document.getElementById("gameOverFinal"),
+    gameOverBest: document.getElementById("gameOverBest"),
+    gameOverFlyAgain: document.getElementById("gameOverFlyAgain"),
+    gameOverLeaderboard: document.getElementById("gameOverLeaderboard"),
+    gameOverHub: document.getElementById("gameOverHub")
   };
 
   // Mobile: playable by default (touch + FIRE). Append ?strictMobile=1 to show the audit lockdown wall again.
@@ -107,9 +125,107 @@
 
   function syncShellPlayState() {
     const playing = state.mode === "playing";
+    const gameover = state.mode === "gameover";
     hud.shell.classList.toggle("is-playing", playing);
     hud.shell.classList.toggle("is-paused", state.mode === "paused");
-    hud.shell.classList.toggle("is-ready", state.mode === "ready" || state.mode === "gameover");
+    hud.shell.classList.toggle("is-ready", state.mode === "ready");
+    hud.shell.classList.toggle("is-gameover", gameover);
+    hud.shell.dataset.uiState = state.mode;
+    syncSovereignPresentation();
+  }
+
+  function isOnboardingBlockingReady() {
+    return Boolean(hud.onboardingModal && !hud.onboardingModal.classList.contains("is-hidden"));
+  }
+
+  function syncSovereignPresentation() {
+    const mode = state.mode;
+    const scrim = hud.sovereignScrim;
+    const playHud = hud.playingMinimalHud;
+    const go = hud.gameOverSovereign;
+    if (!scrim || !playHud || !go) {
+      return;
+    }
+    scrim.classList.remove("sovereign-scrim--backdrop-only");
+    const blockMenu = isOnboardingBlockingReady() || isAccountModalOpen() || isGuestCtaModalOpen();
+
+    if (mode === "gameover") {
+      scrim.hidden = false;
+      scrim.setAttribute("aria-hidden", "false");
+      scrim.classList.add("sovereign-scrim--backdrop-only");
+      playHud.hidden = true;
+      playHud.setAttribute("aria-hidden", "true");
+      go.hidden = false;
+      go.setAttribute("aria-hidden", "false");
+      return;
+    }
+
+    go.hidden = true;
+    go.setAttribute("aria-hidden", "true");
+
+    if (mode === "playing") {
+      scrim.hidden = true;
+      scrim.setAttribute("aria-hidden", "true");
+      playHud.hidden = false;
+      playHud.setAttribute("aria-hidden", "false");
+      return;
+    }
+
+    playHud.hidden = true;
+    playHud.setAttribute("aria-hidden", "true");
+    if (blockMenu) {
+      scrim.hidden = true;
+      scrim.setAttribute("aria-hidden", "true");
+      return;
+    }
+    scrim.hidden = false;
+    scrim.setAttribute("aria-hidden", "false");
+    if (hud.sovereignSubline) {
+      hud.sovereignSubline.textContent = mode === "paused" ? "Paused — salvage lane on hold" : "Tap to fly — sovereign lane";
+    }
+    if (hud.sovereignPrimaryCta) {
+      hud.sovereignPrimaryCta.textContent = mode === "paused" ? "Resume" : "Tap to fly";
+    }
+  }
+
+  function closeLeaderboardOverlay() {
+    if (hud.shell) {
+      hud.shell.classList.remove("leaderboard-overlay");
+    }
+  }
+
+  function openLeaderboardOverlay() {
+    if (hud.shell) {
+      hud.shell.classList.add("leaderboard-overlay");
+    }
+    refreshLeaderboard();
+  }
+
+  function isEcosystemFlyoutExpanded() {
+    return Boolean(hud.ecosystemPanel && !hud.ecosystemPanel.classList.contains("is-collapsed"));
+  }
+
+  function collapseEcosystemFlyout() {
+    if (!hud.ecosystemPanel || !hud.ecosystemToggle) {
+      return;
+    }
+    hud.ecosystemPanel.classList.add("is-collapsed");
+    hud.ecosystemToggle.setAttribute("aria-expanded", "false");
+  }
+
+  function toggleEcosystemFlyout() {
+    if (!hud.ecosystemPanel || !hud.ecosystemToggle) {
+      return;
+    }
+    const willExpand = hud.ecosystemPanel.classList.contains("is-collapsed");
+    if (willExpand && hud.kasiComm && !hud.kasiComm.classList.contains("is-collapsed")) {
+      hud.kasiComm.classList.add("is-collapsed");
+      hud.kasiCommToggle.setAttribute("aria-expanded", "false");
+      stopChatPolling();
+    }
+    hud.ecosystemPanel.classList.toggle("is-collapsed");
+    const collapsed = hud.ecosystemPanel.classList.contains("is-collapsed");
+    hud.ecosystemToggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
   }
 
   function applyBuff(kind) {
@@ -205,6 +321,7 @@
     uniform vec3 uLightDirection;
     uniform float uAmbientLight;
     uniform float uDiffuseStrength;
+    uniform float uFogMix;
 
     varying vec3 vNormal;
     varying vec2 vTexCoord;
@@ -218,7 +335,7 @@
       vec4 textureColor = texture2D(uTexture, vTexCoord);
       vec4 base = mix(uColor, uColor * textureColor, uTextureMix);
       vec3 fog = vec3(0.012, 0.016, 0.036);
-      vec3 lit = mix(base.rgb * light, fog, vDepth * 0.62);
+      vec3 lit = mix(base.rgb * light, fog, min(1.0, vDepth * uFogMix));
       gl_FragColor = vec4(lit + base.rgb * uPulse * 0.24, base.a);
     }
   `;
@@ -265,7 +382,8 @@
     pulse: gl.getUniformLocation(program, "uPulse"),
     lightDirection: gl.getUniformLocation(program, "uLightDirection"),
     ambientLight: gl.getUniformLocation(program, "uAmbientLight"),
-    diffuseStrength: gl.getUniformLocation(program, "uDiffuseStrength")
+    diffuseStrength: gl.getUniformLocation(program, "uDiffuseStrength"),
+    fogMix: gl.getUniformLocation(program, "uFogMix")
   };
 
   const BASE_FOV = Math.PI / 3.1;
@@ -297,7 +415,8 @@
     guestCta: "guestCta",
     onboarding: "onboarding",
     revive: "revive",
-    ops: "ops"
+    ops: "ops",
+    sovereignPause: "sovereignPause"
   };
   const modalBackTraps = new Map();
 
@@ -576,7 +695,12 @@
     forceBossSpawn: false,
     sectorIndex: 1,
     sectorLabel: "Approach",
-    reviveUsedThisRun: false
+    reviveUsedThisRun: false,
+    smoothCamX: 0,
+    smoothCamY: 0,
+    viewRoll: 0,
+    lastHudScore: -1,
+    lastHudSpeedLabel: ""
   };
 
   const Mat4 = {
@@ -945,6 +1069,16 @@
       }
       return;
     }
+    if (event.key === "Escape" && isEcosystemFlyoutExpanded()) {
+      event.preventDefault();
+      collapseEcosystemFlyout();
+      return;
+    }
+    if (event.key === "Escape" && hud.shell?.classList.contains("leaderboard-overlay")) {
+      event.preventDefault();
+      closeLeaderboardOverlay();
+      return;
+    }
     const key = event.key.toLowerCase();
     if (blockingKeys.has(key)) {
       event.preventDefault();
@@ -1025,6 +1159,14 @@
     }
   }
 
+  function hideOnboardingModal() {
+    if (!hud.onboardingModal) {
+      return;
+    }
+    hud.onboardingModal.classList.add("is-hidden");
+    syncSovereignPresentation();
+  }
+
   function showOnboardingModal() {
     if (!hud.onboardingModal) {
       return;
@@ -1038,13 +1180,7 @@
     }
     attachModalBackTrap(MODAL_TRAP.onboarding, hideOnboardingModal);
     logEvent("onboarding_open", {});
-  }
-
-  function hideOnboardingModal() {
-    if (!hud.onboardingModal) {
-      return;
-    }
-    hud.onboardingModal.classList.add("is-hidden");
+    syncSovereignPresentation();
   }
 
   function deferOnboardingBriefing() {
@@ -1184,6 +1320,46 @@
   }
 
   hud.startButton.addEventListener("click", startGame);
+  if (hud.sovereignPrimaryCta) {
+    hud.sovereignPrimaryCta.addEventListener("click", () => {
+      if (state.mode === "paused") {
+        togglePause();
+      } else if (state.mode === "ready") {
+        startGame();
+      }
+    });
+  }
+  if (hud.pauseMinimalButton) {
+    hud.pauseMinimalButton.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (state.mode === "playing") {
+        togglePause();
+      }
+    });
+  }
+  if (hud.gameOverFlyAgain) {
+    hud.gameOverFlyAgain.addEventListener("click", () => {
+      closeLeaderboardOverlay();
+      resetGame();
+      startGame();
+    });
+  }
+  if (hud.gameOverLeaderboard) {
+    hud.gameOverLeaderboard.addEventListener("click", () => {
+      openLeaderboardOverlay();
+    });
+  }
+  if (hud.gameOverHub) {
+    hud.gameOverHub.addEventListener("click", () => {
+      window.open("https://kopanolabs.com/", "_blank", "noopener,noreferrer");
+    });
+  }
+  if (hud.leaderboardSheetClose) {
+    hud.leaderboardSheetClose.addEventListener("click", () => {
+      closeLeaderboardOverlay();
+    });
+  }
   hud.pauseButton.addEventListener("click", togglePause);
   hud.resetButton.addEventListener("click", () => {
     resetGame();
@@ -1237,6 +1413,14 @@
     shareScoreToWhatsapp();
   });
   hud.kasiCommToggle.addEventListener("click", toggleKasiComm);
+  if (hud.ecosystemToggle) {
+    hud.ecosystemToggle.addEventListener("click", toggleEcosystemFlyout);
+  }
+  if (hud.ecosystemClose) {
+    hud.ecosystemClose.addEventListener("click", () => {
+      collapseEcosystemFlyout();
+    });
+  }
   hud.kasiCommForm.addEventListener("submit", (event) => {
     event.preventDefault();
     sendChatMessage();
@@ -1331,9 +1515,9 @@
   });
 
   const POSITION_LERP_TOUCH = 0.42;
-  const POSITION_LERP_DESKTOP = 0.38;
+  const POSITION_LERP_DESKTOP = 0.28;
   /** Locked runner lane height on touch devices (paired with camera viewBias — execution ledger baseline). */
-  const MOBILE_LANE_TARGET_Y = -0.58;
+  const MOBILE_LANE_TARGET_Y = -0.68;
   const player = {
     x: 0,
     y: isTouchCapable ? MOBILE_LANE_TARGET_Y : -0.45,
@@ -1543,6 +1727,8 @@
   }
 
   function resetGame() {
+    detachModalBackTrap(MODAL_TRAP.sovereignPause, false);
+    closeLeaderboardOverlay();
     state.mode = "ready";
     state.time = 0;
     state.score = 0;
@@ -1572,6 +1758,11 @@
     state.sectorIndex = 1;
     state.sectorLabel = "Approach";
     state.reviveUsedThisRun = false;
+    state.smoothCamX = 0;
+    state.smoothCamY = 0;
+    state.viewRoll = 0;
+    state.lastHudScore = -1;
+    state.lastHudSpeedLabel = "";
     player.x = 0;
     const laneY = isTouchCapable ? MOBILE_LANE_TARGET_Y : -0.45;
     player.y = laneY;
@@ -1603,9 +1794,12 @@
   }
 
   function startGame() {
+    detachModalBackTrap(MODAL_TRAP.sovereignPause, false);
     if (state.mode === "gameover") {
       resetGame();
     }
+    closeLeaderboardOverlay();
+    collapseEcosystemFlyout();
     state.mode = "playing";
     hud.pauseButton.textContent = "Pause";
     setStatus("", "", true);
@@ -1618,7 +1812,18 @@
       state.mode = "paused";
       hud.pauseButton.textContent = "Resume";
       setStatus("Paused", "The salvage drone is holding position.", false);
+      attachModalBackTrap(MODAL_TRAP.sovereignPause, () => {
+        if (state.mode !== "paused") {
+          return;
+        }
+        state.mode = "playing";
+        hud.pauseButton.textContent = "Pause";
+        setStatus("", "", true);
+        syncShellPlayState();
+        canvas.focus();
+      });
     } else if (state.mode === "paused") {
+      detachModalBackTrap(MODAL_TRAP.sovereignPause, false);
       state.mode = "playing";
       hud.pauseButton.textContent = "Pause";
       setStatus("", "", true);
@@ -1895,6 +2100,7 @@
     if (hud.guestCtaModal) {
       hud.guestCtaModal.classList.add("is-hidden");
     }
+    syncSovereignPresentation();
   }
 
   function dismissGuestSignUpCta() {
@@ -1937,6 +2143,7 @@
       window.requestAnimationFrame(() => hud.guestCtaSaveButton.focus());
     }
     logEvent("guest_cta_shown", { score: finalScore });
+    syncSovereignPresentation();
   }
 
   function openAccountModal() {
@@ -1957,11 +2164,13 @@
     hud.accountModal.classList.remove("is-hidden");
     attachModalBackTrap(MODAL_TRAP.account, hideAccountModalUi);
     hud.callsignInput.focus();
+    syncSovereignPresentation();
   }
 
   function hideAccountModalUi() {
     hud.accountModal.classList.add("is-hidden");
     canvas.focus();
+    syncSovereignPresentation();
   }
 
   function closeAccountModal() {
@@ -2309,6 +2518,7 @@
     const collapsed = hud.kasiComm.classList.toggle("is-collapsed");
     hud.kasiCommToggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
     if (!collapsed) {
+      collapseEcosystemFlyout();
       refreshChatMessages();
       startChatPolling();
       window.setTimeout(() => hud.kasiCommInput.focus(), 30);
@@ -2535,7 +2745,14 @@
     }
     const finalScore = Math.floor(state.score);
     const bestScore = Math.max(pilotProfile.bestScore || 0, finalScore);
-    setStatus("Mission Failed", `Pilot: ${pilotProfile.callsign} | Final score: ${finalScore} | Best: ${bestScore} | Cores: ${state.cores} | Time: ${state.time.toFixed(1)}s. Invite friends or sign in to save your lane. Reset to fly again.`, false);
+    setStatus("", "", true);
+    if (hud.gameOverFinal) {
+      hud.gameOverFinal.textContent = String(finalScore);
+    }
+    if (hud.gameOverBest) {
+      hud.gameOverBest.textContent = String(bestScore);
+    }
+    collapseEcosystemFlyout();
     submitScore();
     persistRunReceipt(finalScore);
     revealShareButton(finalScore);
@@ -2545,15 +2762,43 @@
   }
 
   function updateHud() {
-    hud.score.textContent = Math.floor(state.score).toString();
+    const playing = state.mode === "playing";
+    const scoreInt = Math.floor(state.score);
+    const speedLabel = `${(state.speed / 18).toFixed(1)}x`;
+
+    if (playing) {
+      if (scoreInt !== state.lastHudScore) {
+        state.lastHudScore = scoreInt;
+        if (hud.pmhScore) {
+          hud.pmhScore.textContent = String(scoreInt);
+        }
+      }
+      if (speedLabel !== state.lastHudSpeedLabel) {
+        state.lastHudSpeedLabel = speedLabel;
+        if (hud.pmhSpeed) {
+          hud.pmhSpeed.textContent = speedLabel;
+        }
+      }
+      return;
+    }
+
+    state.lastHudScore = scoreInt;
+    state.lastHudSpeedLabel = speedLabel;
+    hud.score.textContent = String(scoreInt);
     hud.hull.textContent = state.hull.toString();
     hud.cores.textContent = state.cores.toString();
     hud.dash.textContent = player.dashCooldown <= 0 ? "Ready" : `${player.dashCooldown.toFixed(1)}s`;
-    hud.speed.textContent = `${(state.speed / 18).toFixed(1)}x`;
+    hud.speed.textContent = speedLabel;
     if (hud.buff) {
       hud.buff.textContent = activeBuffLabel();
     }
     hud.fps.textContent = state.fps ? Math.round(state.fps).toString() : "--";
+    if (hud.pmhScore) {
+      hud.pmhScore.textContent = String(scoreInt);
+    }
+    if (hud.pmhSpeed) {
+      hud.pmhSpeed.textContent = speedLabel;
+    }
   }
 
   function spawnBossEntity(mult) {
@@ -2941,6 +3186,7 @@
 
     for (let i = objects.length - 1; i >= 0; i--) {
       const object = objects[i];
+      // Treadmill: ship Z stays fixed; scrap streams toward the camera (+Z), then pools out past z>8.
       object.z += state.speed * dt * (object.type === "boss" ? 0.55 : 1);
       object.rotX += object.spinX * dt;
       object.rotY += object.spinY * dt;
@@ -3201,19 +3447,26 @@
     const shakeX = Math.sin(alphaTime * 82) * shakeAmount;
     const shakeY = Math.cos(alphaTime * 67) * shakeAmount * 0.72;
     const follow = getCameraFollow();
-    const viewBiasY = isTouchCapable ? -1.25 : 0;
+    const viewBiasY = isTouchCapable ? -1.38 : 0;
+    const camTrackX = isTouchCapable ? 0.42 : follow.x;
+    const targetCamX = shakeX - player.x * camTrackX;
+    const targetCamY = shakeY - player.y * follow.y + viewBiasY;
+    const camLerp = 0.1;
+    state.smoothCamX += (targetCamX - state.smoothCamX) * camLerp;
+    state.smoothCamY += (targetCamY - state.smoothCamY) * camLerp;
+    const targetRoll = -player.x * 0.05;
+    state.viewRoll += (targetRoll - state.viewRoll) * camLerp;
     Mat4.identity(viewMatrix);
-    Mat4.translate(
-      viewMatrix,
-      viewMatrix,
-      [shakeX - player.x * follow.x, shakeY - player.y * follow.y + viewBiasY, 0]
-    );
+    Mat4.rotateZ(viewMatrix, viewMatrix, state.viewRoll);
+    Mat4.translate(viewMatrix, viewMatrix, [state.smoothCamX, state.smoothCamY, 0]);
 
     const speedMultiplier = state.lastSpeedMultiplier || 1;
     const speedT = Math.max(0, Math.min(1, (speedMultiplier - 1) / 3.5));
     const dangerLerp = speedMultiplier >= 2
       ? Math.max(0.48, Math.min(1, 0.48 + ((speedMultiplier - 2) / 0.8) * 0.52))
       : speedT * 0.35;
+    const fogMix = 0.62 + dangerLerp * 0.28;
+    gl.uniform1f(locations.fogMix, fogMix);
     const calm = [0.01 + speedT * 0.04, 0.012 + speedT * 0.06, 0.022 + speedT * 0.08];
     const danger = [0.22 + speedT * 0.12, 0.04 + speedT * 0.08, 0.12 + speedT * 0.18];
     const cr = calm[0] + (danger[0] - calm[0]) * dangerLerp;
@@ -3299,6 +3552,24 @@
         texture: colorTexture,
         textureMix: 0.65,
         uvScale: [1, 7],
+        pulse
+      });
+    }
+    // Parallax ribs: secondary Z scroll + interior occlusion (breaks long dead-center sightlines; treadmill-safe).
+    const mult = state.lastSpeedMultiplier || 1;
+    const ribDrift = 0.74 + Math.min(0.22, Math.max(0, (mult - 1) * 0.045));
+    const ribSpacing = spacing * 1.2;
+    const offsetRibs = (state.time * state.speed * ribDrift + ribSpacing * 0.41) % ribSpacing;
+    for (let z = -9.2 + offsetRibs; z > -76; z -= ribSpacing) {
+      const pulse = 0.035 + Math.sin(alphaTime * 1.7 + z * 0.31) * 0.028;
+      drawMesh(meshes.cube, {
+        position: [0, 2.62, z],
+        rotation: [0, 0, 0],
+        scale: [7.35, 0.06, 0.58],
+        color: [0.07, 0.2, 0.34, 1],
+        texture: colorTexture,
+        textureMix: 0.52,
+        uvScale: [8, 1],
         pulse
       });
     }
