@@ -2545,3 +2545,71 @@ select:focus {
   --magenta: #db2777;
   --border-glow-premium: linear-gradient(to bottom right, #f472b6, #db2777);
 }
+
+/* -- DISCOVERY SURVEY -------------------------------------------- */
+.survey-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(7, 8, 14, 0.8);
+  backdrop-filter: blur(12px);
+  padding: 20px;
+  transition: opacity 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.survey-modal.is-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.survey-card {
+  width: 100%;
+  max-width: 440px;
+  padding: 32px;
+  border-radius: var(--radius-lg);
+  text-align: center;
+  animation: surveySlideIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes surveySlideIn {
+  from { transform: translateY(40px) scale(0.9); opacity: 0; }
+  to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+.survey-card h3 {
+  margin: 12px 0 24px;
+  font-size: 1.5rem;
+  line-height: 1.2;
+}
+
+.survey-options {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.survey-option-btn {
+  padding: 14px 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-md);
+  color: var(--text);
+  font-weight: 600;
+  text-align: left;
+  transition: all 0.2s ease;
+}
+
+.survey-option-btn:hover {
+  background: rgba(78, 240, 255, 0.1);
+  border-color: var(--cyan);
+  transform: translateX(4px);
+}
+
+.survey-actions {
+  display: flex;
+  justify-content: center;
+}

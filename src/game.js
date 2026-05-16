@@ -91,10 +91,14 @@
     gameOverHub: document.getElementById("gameOverHub"),
     countdownOverlay: document.getElementById("countdownOverlay"),
     countdownNumber: document.getElementById("countdownNumber"),
-    genderMale: document.getElementById("genderMale"),
-    genderFemale: document.getElementById("genderFemale"),
-    genderMaleLabel: document.getElementById("genderMaleLabel"),
-    genderFemaleLabel: document.getElementById("genderFemaleLabel")
+    deckToneIon: document.getElementById("deckToneIon"),
+    deckToneSolar: document.getElementById("deckToneSolar"),
+    deckToneIonLabel: document.getElementById("deckToneIonLabel"),
+    deckToneSolarLabel: document.getElementById("deckToneSolarLabel"),
+    ecosystemSurveyModal: document.getElementById("ecosystemSurveyModal"),
+    ecosystemSurveyDismiss: document.getElementById("ecosystemSurveyDismiss"),
+    ecosystemSurveyNever: document.getElementById("ecosystemSurveyNever"),
+    relaunchHudLabel: document.getElementById("relaunchHudLabel")
   };
 
   // Mobile: playable by default (touch + FIRE). Append ?strictMobile=1 to show the audit lockdown wall again.
@@ -405,13 +409,10 @@
   const PROFILE_STORAGE_KEY = "starfallSalvagePilotProfile";
   const SCORES_STORAGE_KEY = "starfallSalvageLocalScores";
   const ONBOARDING_STORAGE_KEY = "starfallSalvageOnboardingComplete";
-  const GENDER_STORAGE_KEY = "starfallSalvagePilotGender";
-  const pilotProfile = {
-    mode: "guest",
-    callsign: "Guest Pilot",
-    id: null,
-    gender: "male" // Default
-  };
+  /** HUD accent lane — not biological metadata (Commandment 8 / Store inclusion). */
+  const HUD_RESONANCE_STORAGE_KEY = "starfallSalvageHudResonance";
+  const LEGACY_GENDER_STORAGE_KEY = "starfallSalvagePilotGender";
+  const ECOSYSTEM_SURVEY_STORAGE_KEY = "starfallSalvageEcosystemSurveyDone";
   const GUEST_CTA_SEEN_KEY = "starfall:guest_cta_seen_v1";
   const GUEST_CTA_SEEN_LEGACY_KEYS = ["starfallSalvageGuestCtaSeen"];
   const EVENTS_STORAGE_KEY = "starfallSalvageEventLog";
@@ -428,6 +429,24 @@
   const REVIVE_TIME_SECONDS = 8;
   const REVIVE_CORES_NEEDED = 3;
   const REVIVE_CORE_COUNT = 6;
+  const SURVEY_PLAY_THRESHOLD = 5; // Show survey every 5 plays
+  
+  const discoveryQuestions = [
+    {
+      q: "What should we build next?",
+      o: ["More 3D mini-games", "Squad mode / multiplayer", "Weapon upgrades", "Deeper lore/missions"]
+    },
+    {
+      q: "How did you find Starfall?",
+      o: ["WhatsApp/Social", "Search engine", "Kopano Ecosystem", "Other"]
+    },
+    {
+      q: "Best part of the flight?",
+      o: ["Visuals/Aesthetics", "Smooth movement", "Combat/Shooting", "Score chasing"]
+    }
+  ];
+  
+  let playCountSinceSurvey = 0;
   const RELAUNCH_COUNTDOWN_SECONDS = 3;
   const MODAL_TRAP = {
     account: "account",
@@ -435,7 +454,8 @@
     onboarding: "onboarding",
     revive: "revive",
     ops: "ops",
-    sovereignPause: "sovereignPause"
+    sovereignPause: "sovereignPause",
+    survey: "survey"
   };
   const modalBackTraps = new Map();
 
@@ -1190,6 +1210,37 @@
     }
     hud.onboardingModal.classList.add("is-hidden");
     syncSovereignPresentation();
+  }
+
+  function showSurvey() {
+    if (!hud.surveyModal || !hud.surveyQuestion || !hud.surveyOptions) return;
+    
+    const index = Math.floor(Math.random() * discoveryQuestions.length);
+    const item = discoveryQuestions[index];
+    
+    hud.surveyQuestion.textContent = item.q;
+    hud.surveyOptions.innerHTML = "";
+    
+    item.o.forEach(opt => {
+      const btn = document.createElement("button");
+      btn.className = "survey-option-btn";
+      btn.textContent = opt;
+      btn.onclick = () => {
+        logEvent("survey_answer", { question: item.q, answer: opt });
+        hideSurvey();
+      };
+      hud.surveyOptions.appendChild(btn);
+    });
+    
+    hud.surveyModal.classList.remove("is-hidden");
+    attachModalBackTrap(MODAL_TRAP.survey, hideSurvey);
+    logEvent("survey_open", { question: item.q });
+  }
+
+  function hideSurvey() {
+    if (hud.surveyModal) hud.surveyModal.classList.add("is-hidden");
+    detachModalBackTrap(MODAL_TRAP.survey, false);
+    playCountSinceSurvey = 0;
   }
 
   function showOnboardingModal() {
@@ -2918,6 +2969,11 @@
     logEvent("game_over", { score: finalScore, cores: state.cores, time: Number(state.time.toFixed(2)) });
     syncShellPlayState();
     maybeShowGuestSignUpCta(finalScore);
+    
+    playCountSinceSurvey++;
+    if (playCountSinceSurvey >= SURVEY_PLAY_THRESHOLD) {
+      setTimeout(showSurvey, 1200);
+    }
   }
 
   function updateHud() {
@@ -3914,7 +3970,9 @@
     if (!isOnboardingDone()) {
       showOnboardingModal();
     }
-    refreshLeaderboard({ quiet: true });
+    if (hud.surveySkip) {
+      hud.surveySkip.onclick = hideSurvey;
+    }
     requestAnimationFrame(frame);
   }
 
