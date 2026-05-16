@@ -29,6 +29,7 @@
 | C08 | Playing hot loop: no mandatory network I/O. | PASS |
 | C09 | Hot path audit: no `new` / no unbounded `push` per frame in steady `updateGame` + `renderScene`. | FAIL |
 | C10 | p99 frame ≤ 32 ms on a named low-tier reference device (attach capture + device id). | FAIL |
+| C10b | **Static mobile stress** ≥ 80% on `mobile_stress_static` (KC gate) — layout, touch, PWA, resize paths. | PASS |
 | C11 | Microsoft Store commerce / IAP integrated and policy-reviewed. | FAIL |
 | C12 | Optional analytics: consent + categories + privacy URL before any send. | FAIL |
 | C13 | IARC (or equivalent) filed; descriptors match shipped build. | FAIL |

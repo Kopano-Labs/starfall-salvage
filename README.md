@@ -42,6 +42,6 @@ The pilot sign-in is demo-safe. If the Python backend is running, the game store
 - `styles.css`: responsive full-screen game layout
 - `src/game.js`: raw WebGL renderer, matrix transforms, game loop, collision, input, procedural textures
 - `backend/starfall_server.py`: optional local SQLite backend for pilot profiles and scores
-- `tools/kc_starfall_watch.py`: KC hard-QA watcher for pass/fail/retry logs
+- `tools/kc_starfall_watch.py`: KC hard-QA watcher for pass/fail/retry logs (includes **mobile static stress ≥ 80%** before `npm run gate` passes)
 - `DEPLOYMENT.md`: subdomain and hosting runbook
 - `PROJECT_DOCUMENTATION.md`: assignment-style documentation

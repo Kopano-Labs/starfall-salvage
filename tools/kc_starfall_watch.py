@@ -96,6 +96,81 @@ def _read_text(relative: str) -> str:
         return ""
 
 
+def check_mobile_stress_score(*, min_pass_pct: int = 80) -> dict[str, Any]:
+    """Static mobile-readiness stress score (layout, touch, PWA, resize paths).
+
+    Real-device p99 frame time (microsoft-readiness C10) still requires a physical
+    capture; this gate blocks obvious mobile gaps before ship.
+    """
+    index_html = _read_text("index.html")
+    styles_css = _read_text("styles.css")
+    game_js = _read_text("src/game.js")
+    manifest_json = _read_text("manifest.webmanifest")
+
+    proofs: dict[str, bool] = {
+        "m_viewport_device_width": "width=device-width" in index_html,
+        "m_viewport_fit_cover": "viewport-fit=cover" in index_html,
+        "m_viewport_no_zoom": "user-scalable=0" in index_html
+        and "maximum-scale=1" in index_html,
+        "m_theme_color": 'name="theme-color"' in index_html,
+        "m_manifest_linked": 'rel="manifest"' in index_html,
+        "m_apple_touch_icon": 'rel="apple-touch-icon"' in index_html,
+        "m_gl_canvas": 'id="glCanvas"' in index_html,
+        "m_mobile_fire_markup": 'id="mobileFireButton"' in index_html,
+        "m_shell_dvh": "100dvh" in styles_css,
+        "m_glcanvas_touch_action_none": "#glCanvas" in styles_css
+        and "touch-action: none" in styles_css,
+        "m_mobile_fire_min_target": "width: 84px" in styles_css
+        and "height: 84px" in styles_css
+        and ".mobile-fire-button" in styles_css,
+        "m_mobile_fire_tap_highlight": "-webkit-tap-highlight-color: transparent"
+        in styles_css,
+        "m_safe_area_shell": "env(safe-area-inset-bottom" in styles_css
+        or "env(safe-area-inset-top" in styles_css,
+        "m_visual_viewport_resize": "visualViewport" in game_js
+        and "visualViewport.addEventListener" in game_js,
+        "m_orientation_change": "orientationchange" in game_js,
+        "m_resize_canvas_fn": "function resizeCanvas" in game_js
+        or "resizeCanvas()" in game_js,
+        "m_passive_touchend": "touchend" in game_js and "{ passive: true }" in game_js,
+        "m_touch_axis": "touchAxis" in game_js and "activeTouchId" in game_js,
+        "m_pwa_display_standalone": '"display": "standalone"' in manifest_json,
+        "m_pwa_lang_za": '"lang": "en-ZA"' in manifest_json,
+        "m_playing_minimal_hud": 'id="playingMinimalHud"' in index_html,
+        "m_sovereign_menu": 'id="sovereignPrimaryCta"' in index_html,
+        "m_game_over_modal": 'id="gameOverSovereign"' in index_html,
+        "m_hud_responsive_clamp": "clamp(" in styles_css,
+        "m_min_vw_constraints": "min(560px" in styles_css or "min(520px" in styles_css,
+        "m_overscroll_or_body": "overscroll-behavior" in styles_css
+        or "overscroll-behavior" in index_html,
+        "m_kasi_toggle_min_touch": "min-height: 44px" in styles_css
+        and ".kasi-comm-toggle" in styles_css,
+        "m_position_lerp_touch": "POSITION_LERP_TOUCH" in game_js,
+        "m_vibrate_optional": "navigator.vibrate" in game_js,
+        "m_onboarding_modal": 'id="onboardingModal"' in index_html,
+    }
+
+    passed = sum(1 for ok in proofs.values() if ok)
+    total = len(proofs)
+    pct = round(100 * passed / total) if total else 0
+    ok = pct >= min_pass_pct
+    missing = [name for name, hit in proofs.items() if not hit]
+    return {
+        "name": "mobile_stress_static",
+        "expected": f">= {min_pass_pct}% of static mobile stress proofs pass ({total} checks)",
+        "ok": ok,
+        "actual": f"{pct}% ({passed}/{total})"
+        + ("" if ok else f" — missing: {', '.join(missing[:12])}"
+           + ("…" if len(missing) > 12 else "")),
+        "retry": (
+            "close each missing proof in index.html, styles.css, src/game.js, or "
+            "manifest.webmanifest; rerun npm run gate"
+        ),
+        "proofs": proofs,
+        "score_pct": pct,
+    }
+
+
 def check_kopano_upgrade_features() -> dict[str, Any]:
     """Student check: prove the 2026-05-05 Kopano Labs Upgrade actually shipped."""
     game_js = _read_text("src/game.js")
@@ -285,17 +360,23 @@ def build_report(health_url: str, *, skip_backend: bool) -> dict[str, Any]:
     else:
         checks.append(check_backend_health(health_url))
     checks.append(check_kopano_upgrade_features())
+    checks.append(check_mobile_stress_score(min_pass_pct=80))
     failed = [check for check in checks if not check.get("ok")]
+    summary: dict[str, Any] = {
+        "ok": not failed,
+        "checks": len(checks),
+        "failures": len(failed),
+    }
+    for check in checks:
+        if check.get("name") == "mobile_stress_static" and "score_pct" in check:
+            summary["mobile_stress_pct"] = check["score_pct"]
+            break
     return {
         "timestamp": utc_now(),
         "project": "Starfall Salvage",
         "root": str(ROOT),
         "kc_role": "strict_dev_qa_lane",
-        "summary": {
-            "ok": not failed,
-            "checks": len(checks),
-            "failures": len(failed),
-        },
+        "summary": summary,
         "checks": checks,
     }
 

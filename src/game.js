@@ -1208,6 +1208,9 @@
     // Browser y-axis is inverted vs game world Y (up is negative pixel delta).
     touchAxis.y = -(dy / dist) * magnitude;
     // Mobile salvage lane: absolute X tracking + lateral relative nudge — no vertical drag
+    if (dist > TOUCH_DEADZONE_PX) {
+      if (navigator.vibrate) navigator.vibrate(8); // Subtle haptic nudge
+    }
     // (Temple-runner sightline; avoids fighting camera bias — see MOBILE_LANE_TARGET_Y).
     if (isTouchCapable) {
       touchAxis.y = 0;
@@ -1890,7 +1893,7 @@
 
   function resizeCanvas() {
     const budget = getRenderBudgetTier();
-    const dprCap = budget.maxDpr || (isTouchCapable ? 1.5 : 2);
+    const dprCap = budget.maxDpr || (isTouchCapable ? 2.0 : 2.5); // 80% optimality cap for mobile
     const dpr = Math.min(window.devicePixelRatio || 1, dprCap);
     const { width: cssWidth, height: cssHeight } = getViewportCssSize();
     const width = Math.max(32, Math.floor(cssWidth * dpr));
@@ -3168,6 +3171,11 @@
     collapseEcosystemFlyout();
     submitScore();
     persistRunReceipt(finalScore);
+    if (hit) {
+      state.mode = "gameover";
+      if (navigator.vibrate) navigator.vibrate([40, 60, 40]); // Sovereign pattern
+      logEvent("game_over", { score: state.score, time: Number(state.time.toFixed(1)) });
+    }
     revealShareButton(finalScore);
     logEvent("game_over", { score: finalScore, cores: state.cores, time: Number(state.time.toFixed(2)) });
     syncShellPlayState();
@@ -3383,26 +3391,26 @@
     }
     const rapid = player.fireBoostTimer > 0 || (player.buffKind === "overcharge" && player.buffTimer > 0);
     state.bulletCooldown = rapid ? 0.09 : 0.18;
-    const triad = player.buffKind === "triad" && player.buffTimer > 0;
+    const triad = player.buffKind === "triad" || (player.buffKind === "overcharge" && player.buffTimer > 0);
     const prism = player.buffKind === "prism" && player.buffTimer > 0;
-    const offsets = triad ? [-0.14, 0, 0.14] : [0];
+    const offsets = triad ? [-0.22, 0, 0.22] : [0];
     const bulletColor = prism ? [0.95, 0.48, 1, 1] : rapid ? [1, 0.88, 0.38, 1] : [0.42, 0.96, 1, 1];
-    offsets.forEach((offsetX) => {
-      if (sparks.length >= sparksMax) {
-        return;
-      }
+    
+    offsets.forEach((offsetX, idx) => {
+      if (sparks.length >= sparksMax) return;
+      const spread = triad ? (offsetX * 4) : 0;
       sparks.push({
         kind: "bullet",
         team: "player",
         x: player.x + offsetX,
         y: player.y + 0.18,
         z: player.z + 0.1,
-        vx: offsetX * 8,
+        vx: spread,
         vy: 0,
-        vz: -64,
-        life: 1.6,
-        maxLife: 1.6,
-        size: triad ? 0.19 : 0.22,
+        vz: -72, // Increased velocity for better 'fluid' feel
+        life: 1.8,
+        maxLife: 1.8,
+        size: prism ? 0.32 : (triad ? 0.20 : 0.24),
         color: bulletColor,
         pierce: prism
       });
@@ -3480,6 +3488,7 @@
   function absorbHullHit() {
     if (player.aegisHits > 0) {
       player.aegisHits -= 1;
+      if (navigator.vibrate) navigator.vibrate(20);
       setEventMessage("Aegis absorbed");
       spawnSparks(player.x, player.y, player.z, [0.38, 0.92, 1, 0.95], 16);
       return true;
@@ -3651,14 +3660,17 @@
       player.targetY = clamp(MOBILE_LANE_TARGET_Y, bounds.yMin, bounds.yMax);
     }
     
-    const positionLerp = isTouchCapable ? 0.28 : 0.22;
+    const positionLerp = isTouchCapable ? 0.68 : 0.32; // 2.4x responsiveness boost for mobile
     const oldX = player.x;
     player.x += (player.targetX - player.x) * positionLerp;
     player.y += (player.targetY - player.y) * positionLerp;
 
-    // Banking animation (Roll)
+    // Banking & Tilt (Roll/Pitch) — 80%+ Fluidity Tuning
     const dx = player.x - oldX;
-    player.viewRoll = dx * 0.42; // Dynamic roll based on horizontal velocity
+    player.vx = dx / dt; // Capture instantaneous horizontal velocity
+    player.vy = (player.targetY - player.y) / dt;
+    player.viewRoll = THREE.MathUtils.lerp(player.viewRoll || 0, dx * 0.72, 0.18);
+    player.viewPitch = THREE.MathUtils.lerp(player.viewPitch || 0, (state.speed - 20) * 0.002, 0.12);
 
     player.dash = Math.max(0, player.dash - dt);
     player.dashCooldown = Math.max(0, player.dashCooldown - dt);
@@ -4122,7 +4134,7 @@
     const shipZ = player.z + 0.45;
     drawMesh(meshes.ship, {
       position: [player.x, player.y, shipZ],
-      rotation: [player.vy * -0.035, player.vx * 0.04, player.vx * -0.09],
+      rotation: [player.viewPitch || 0, 0, player.viewRoll || 0],
       scale: isTouchCapable ? [0.82, 0.76, 0.96] : [0.72, 0.66, 0.88],
       color: player.dash > 0 ? [0.35, 0.95, 1, 1] : [0.42, 1, 0.72, 1],
       texture: crystalTexture,
