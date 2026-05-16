@@ -1790,40 +1790,88 @@ select:focus {
  animation: none !important;
  transition: none !important;
  }
-}
+}/* ═══════════════════════════════════════════════════════════════════
+   RIGHTEOUS SEVERANCE — SOVEREIGN GAME STATES
+   Protocol 13 · Commandment 10 · Alto's Odyssey HUD Pattern
+   PLAYING  = 99% canvas. Score + speed only.
+   GAMEOVER = Clean mission report. Score + buttons.
+   READY/PAUSED = Ecosystem + menus visible.
+   ═══════════════════════════════════════════════════════════════════ */
 
+/* ── STATE: PLAYING ─────────────────────────────────────────────── */
+/* Kill ALL chrome during gameplay */
 .shell.is-playing .ui-chrome {
- animation: uiDropOut 460ms cubic-bezier(0.55, 0, 0.9, 0.38) forwards;
- opacity: 0;
- transform: translateY(-36px) scale(0.92);
- filter: blur(6px);
- pointer-events: none;
+ opacity: 0 !important;
+ pointer-events: none !important;
+ transform: translateY(-20px) scale(0.96) !important;
+ filter: blur(4px) !important;
+ transition: opacity 300ms ease, transform 300ms ease, filter 300ms ease;
 }
 
-/* During gameplay: ONLY score bar visible (Alto’s Odyssey pattern) */
+/* Score bar ONLY — the single exception */
 .shell.is-playing .stats {
- animation: none;
- opacity: 1;
- transform: none;
- filter: none;
- pointer-events: none;
+ opacity: 1 !important;
+ transform: none !important;
+ filter: none !important;
+ pointer-events: none !important;
+ transition: none !important;
+ animation: none !important;
 }
 
-/* Force-hide panels that should NEVER show during gameplay or gameover */
+/* Brand logo stays — Kopano identity is non-negotiable */
+.shell.is-playing .brand-anchor {
+ opacity: 0.7 !important;
+ transform: scale(0.85) !important;
+ filter: none !important;
+ pointer-events: auto !important;
+ animation: none !important;
+ transition: opacity 400ms ease !important;
+}
+.shell.is-playing .brand-anchor:hover {
+ opacity: 1 !important;
+}
+
+/* Force-kill everything else during play — no exceptions */
 .shell.is-playing .kopano-ecosystem,
 .shell.is-playing .leaderboard-panel,
-.shell.is-playing .kasi-comm {
+.shell.is-playing .kasi-comm,
+.shell.is-playing .status-panel,
+.shell.is-playing .hud-actions {
  display: none !important;
 }
 
+/* ── STATE: GAMEOVER ────────────────────────────────────────────── */
+/* Kill ecosystem + chat on gameover — only mission report */
 .shell.is-gameover .kopano-ecosystem,
 .shell.is-gameover .kasi-comm {
  display: none !important;
 }
 
+/* Clean gameover: status panel centered, no wall of text */
+.shell.is-gameover .status-panel {
+ bottom: auto;
+ top: 50%;
+ transform: translateX(-50%) translateY(-50%);
+ max-width: min(480px, calc(100vw - 32px));
+ background: rgba(5, 8, 16, 0.92);
+ border: 1px solid rgba(78, 240, 255, 0.2);
+ backdrop-filter: blur(14px);
+ box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+}
+
+/* Hide the verbose control instructions on gameover */
+.shell.is-gameover .control-line {
+ display: none;
+}
+
+/* Leaderboard: compact on gameover, right side */
+.shell.is-gameover .leaderboard-panel {
+ max-height: min(38vh, 280px);
+}
+
+/* ── STATE: READY / PAUSED ──────────────────────────────────────── */
 .shell.is-paused .ui-chrome,
-.shell.is-ready .ui-chrome,
-.shell.is-gameover .ui-chrome {
+.shell.is-ready .ui-chrome {
  animation: uiDropIn 560ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
  opacity: 1;
  transform: translateY(0) scale(1);
@@ -1831,19 +1879,13 @@ select:focus {
  pointer-events: auto;
 }
 
-/* Post-run: keep leaderboard readable without full-wall stack */
-.shell.is-gameover .leaderboard-panel {
- max-height: min(38vh, 280px);
-}
-
-.shell.is-gameover .leaderboard-share-row {
- flex-wrap: wrap;
- gap: 4px;
-}
-
-.shell.is-gameover .leaderboard-share-row button {
- padding: 4px 8px;
- font-size: 0.68rem;
+/* Gameover: bring back stats + actions + status + leaderboard only */
+.shell.is-gameover .ui-chrome {
+ opacity: 1;
+ transform: none;
+ filter: none;
+ pointer-events: auto;
+ animation: uiDropIn 480ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 .desktop-fire-hint {
