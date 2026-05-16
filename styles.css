@@ -331,14 +331,15 @@ h1 {
  left: 18px;
  bottom: 118px;
  z-index: 2;
- width: min(420px, calc(100vw - 140px));
- padding: 12px 14px;
- border-radius: 8px;
+ width: min(380px, calc(100vw - 140px));
+ padding: 0;
+ border-radius: 10px;
  background: var(--panel);
  border: 1px solid rgba(59, 227, 255, 0.2);
  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
  backdrop-filter: blur(10px);
  pointer-events: auto;
+ overflow: hidden;
 }
 
 .kopano-ecosystem-title {
