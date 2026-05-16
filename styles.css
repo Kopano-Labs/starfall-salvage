@@ -127,6 +127,11 @@ textarea {
  border-color: rgba(255, 82, 107, 0.82);
 }
 
+.shell.is-revive-slow #glCanvas {
+ filter: saturate(0.82) brightness(0.9) contrast(1.06);
+ transition: filter 280ms ease;
+}
+
 #glCanvas {
  width: 100%;
  height: 100%;
@@ -432,11 +437,19 @@ h1 {
  outline: none;
 }
 
+.ecos-card.is-game {
+  border-color: rgba(255, 0, 150, 0.3);
+  box-shadow: 0 0 15px rgba(255, 0, 150, 0.1);
+}
+
 .ecos-card.is-core {
- border-color: rgba(59, 227, 255, 0.42);
- box-shadow:
-  inset 0 0 22px rgba(59, 227, 255, 0.08),
-  0 8px 26px rgba(0, 0, 0, 0.32);
+  border-color: var(--cyan);
+  box-shadow: 0 0 20px rgba(0, 242, 255, 0.15);
+}
+
+.ecos-card.is-discovery {
+  border-color: rgba(255, 170, 0, 0.4);
+  box-shadow: 0 0 20px rgba(255, 170, 0, 0.15);
 }
 
 .ecos-card.is-craft {
@@ -2132,7 +2145,10 @@ select:focus {
 
 /* Variant accents */
 .ecos-card.is-core .ecos-card-kicker { color: var(--amber); }
-.ecos-card.is-game .ecos-card-kicker { color: var(--green); }
+.ecos-card.is-game .ecos-card-kicker { color: var(--magenta); }
+.ecos-card.is-core .ecos-card-kicker { color: var(--cyan); }
+.ecos-card.is-discovery .ecos-card-kicker { color: #ffaa00; }
+.ecos-card.is-craft .ecos-card-kicker { color: var(--green); }
 .ecos-card.is-craft .ecos-card-kicker { color: var(--magenta); }
 
 .ecos-investor-foot {
@@ -2484,14 +2500,227 @@ select:focus {
   pointer-events: none;
 }
 
-/* -- GENDER ECOSYSTEM --------------------------------------------- */
-.onboarding-gender-select {
+/* -- DECK RESONANCE (HUD accent lane — not biological identity) -- */
+.onboarding-deck-tone {
   margin: 20px 0;
   padding: 16px;
   background: rgba(255, 255, 255, 0.03);
   border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+.onboarding-deck-hint {
+  margin: 0 0 12px;
+  font-size: 0.85rem;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.deck-tone-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.deck-tone-option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.deck-tone-option:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.deck-tone-option.is-selected {
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 1px rgba(78, 240, 255, 0.35), 0 0 22px rgba(78, 240, 255, 0.12);
+}
+
+.deck-tone-symbol {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.deck-tone-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.deck-tone-sub {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.shell[data-deck="ion"] {
+  --cyan: #4ecdc4;
+  --magenta: #1a6fb5;
+  --border-glow-premium: linear-gradient(to bottom right, #4ecdc4, #1a6fb5);
+}
+
+.shell[data-deck="solar"] {
+  --cyan: #fbbf24;
+  --magenta: #ea580c;
+  --border-glow-premium: linear-gradient(to bottom right, #fbbf24, #ea580c);
+}
+
+.game-over-sovereign-inner h2 {
+ margin: 0 0 12px;
+ font-size: clamp(1.35rem, 4vw, 1.85rem);
+ letter-spacing: 0.04em;
+}
+
+.game-over-scores {
+ margin: 0 0 22px;
+ color: var(--muted);
+ font-size: 0.95rem;
+}
+
+.game-over-actions {
+ display: flex;
+ flex-direction: column;
+ gap: 10px;
+}
+
+.game-over-actions button.is-primary {
+ min-height: 48px;
+ font-size: 1rem;
+}
+
+.game-over-actions button.is-secondary,
+.game-over-actions button.is-tertiary {
+ min-height: 42px;
+ font-size: 0.9rem;
+}
+
+.game-over-actions button.is-tertiary {
+ background: transparent;
+ border-color: rgba(255, 255, 255, 0.1);
+ color: var(--muted);
+}
+
+.shell.leaderboard-overlay::before {
+ content: "";
+ position: fixed;
+ inset: 0;
+ z-index: 33;
+ background: rgba(0, 0, 0, 0.55);
+ backdrop-filter: blur(6px);
+ -webkit-backdrop-filter: blur(6px);
+ pointer-events: none;
+}
+
+.shell.leaderboard-overlay .leaderboard-panel {
+ position: fixed !important;
+ left: 50% !important;
+ top: 50% !important;
+ right: auto !important;
+ bottom: auto !important;
+ transform: translate(-50%, -50%) !important;
+ width: min(520px, calc(100vw - 28px)) !important;
+ max-height: min(72vh, 520px) !important;
+ z-index: 38 !important;
+ display: flex !important;
+ flex-direction: column;
+ opacity: 1 !important;
+ pointer-events: auto !important;
+ filter: none !important;
+}
+
+.shell.leaderboard-overlay .leaderboard-list {
+ flex: 1 1 auto;
+ min-height: 0;
+ overflow-y: auto;
+}
+
+@media (max-width: 760px) {
+ .ecosystem-360 {
+  left: 8px;
+  right: 8px;
+  bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+  width: auto;
+  max-width: none;
+ }
+
+ .ecos-360-grid {
+  grid-template-columns: repeat(3, 1fr);
+ }
+}
+
+@media (max-width: 400px) {
+ .ecos-360-grid {
+  grid-template-columns: repeat(2, 1fr);
+ }
+}
+
+/* ── COUNTDOWN OVERLAY ─────────────────────────────────────────── */
+.countdown-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(7, 8, 14, 0.4);
+  backdrop-filter: blur(8px);
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.countdown-overlay.is-hidden {
+  opacity: 0;
+}
+
+.countdown-number {
+  font-size: 8rem;
+  font-weight: 900;
+  color: var(--text);
+  text-shadow: 0 0 40px var(--cyan), 0 0 80px var(--magenta);
+  font-family: 'Outfit', sans-serif;
+  animation: countdownPulse 1s ease-out infinite;
+}
+
+@keyframes countdownPulse {
+  0% { transform: scale(2); opacity: 0; }
+  20% { transform: scale(1); opacity: 1; }
+  80% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(0.8); opacity: 0; }
+}
+
+/* ── PREMIUM UI BORDERS ────────────────────────────────────────── */
+.ui-chrome, .onboarding-card, .status-panel, .kopano-ecosystem, .leaderboard-panel {
+  position: relative;
+  border: none !important;
+  background: var(--panel) !important;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+}
+
+.ui-chrome::before, .onboarding-card::before, .status-panel::before, .kopano-ecosystem::before, .leaderboard-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  border-radius: inherit;
+  background: var(--border-glow-premium);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* -- GENDER ECOSYSTEM --------------------------------------------- */
 .gender-options {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -2500,50 +2729,108 @@ select:focus {
 }
 
 .gender-option {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 12px;
+  padding: 16px;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--radius-md);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.23, 1, 0.32, 1);
+  overflow: hidden;
 }
 
-.gender-option:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: var(--cyan);
+.gender-symbol {
+  font-size: 1.8rem;
+  font-weight: 900;
+  margin-bottom: 4px;
+  font-family: 'Outfit', sans-serif;
+  letter-spacing: 2px;
+}
+
+.gender-label {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  opacity: 0.7;
 }
 
 .gender-option.is-selected {
   background: rgba(78, 240, 255, 0.1);
   border-color: var(--cyan);
-  box-shadow: 0 0 15px rgba(78, 240, 255, 0.2);
+  box-shadow: 0 0 20px rgba(78, 240, 255, 0.15);
 }
 
-.gender-symbol {
-  font-size: 2rem;
-  margin-bottom: 4px;
+.gender-option.is-selected::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--cyan);
+  box-shadow: 0 0 15px var(--cyan);
+  animation: neuralScan 2s linear infinite;
+  opacity: 0.6;
 }
 
-.gender-label {
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
+@keyframes neuralScan {
+  0% { transform: translateY(-10px); opacity: 0; }
+  10% { opacity: 0.8; }
+  90% { opacity: 0.8; }
+  100% { transform: translateY(100px); opacity: 0; }
 }
 
 /* Theme Overrides */
 .shell[data-gender='male'] {
-  --cyan: #3b82f6;
-  --magenta: #1d4ed8;
-  --border-glow-premium: linear-gradient(to bottom right, #3b82f6, #1d4ed8);
+  --cyan: #00f2ff;
+  --magenta: #0066ff;
+  --border-glow-premium: linear-gradient(to bottom right, #00f2ff, #0066ff);
 }
 
 .shell[data-gender='female'] {
-  --cyan: #f472b6;
-  --magenta: #db2777;
-  --border-glow-premium: linear-gradient(to bottom right, #f472b6, #db2777);
+  --cyan: #ff00ea;
+  --magenta: #ff0055;
+  --border-glow-premium: linear-gradient(to bottom right, #ff00ea, #ff0055);
+}
+
+
+/* Premium modal chrome (survey / account) */
+
+/* -- PREMIUM BORDERS ---------------------------------------------- */
+.modal-content, .survey-card, .onboarding-card {
+  position: relative;
+  background: rgba(10, 15, 25, 0.9);
+  backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modal-content::before, .survey-card::before, .onboarding-card::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px; 
+  background: conic-gradient(from var(--border-angle), transparent 20%, var(--cyan) 50%, transparent 80%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: borderRotate 4s linear infinite;
+  pointer-events: none;
+}
+
+@property --border-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes borderRotate {
+  from { --border-angle: 0deg; }
+  to { --border-angle: 360deg; }
 }
 
 /* -- DISCOVERY SURVEY -------------------------------------------- */
@@ -2612,4 +2899,84 @@ select:focus {
 .survey-actions {
   display: flex;
   justify-content: center;
+}
+
+/* -- REVIVE CALIBRATION RING ------------------------------------ */
+.revive-core.reaction-tap {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  background: var(--cyan);
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 0 20px var(--cyan);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.revive-calibration-ring {
+  position: absolute;
+  inset: -20px;
+  border: 2px solid var(--cyan);
+  border-radius: 50%;
+  opacity: 0.6;
+  animation: calibrationCollapse 1.2s cubic-bezier(0.23, 1, 0.32, 1) infinite;
+  pointer-events: none;
+}
+
+@keyframes calibrationCollapse {
+  0% { transform: scale(1.5); opacity: 0; }
+  20% { opacity: 0.8; }
+  100% { transform: scale(0.6); opacity: 0; }
+}
+
+.revive-core.reaction-tap.is-caught {
+  transform: scale(0);
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.survey-ecosystem-pick {
+  padding: 14px 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  color: var(--text);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.survey-ecosystem-pick:hover {
+  border-color: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.survey-ecosystem-pick:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+
+.survey-never {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0 0 16px;
+  text-align: left;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.survey-never input {
+  margin-top: 3px;
+}
+
+.countdown-overlay.is-engage .countdown-number {
+  font-size: clamp(2.5rem, 11vw, 5.5rem);
+  letter-spacing: 0.12em;
 }

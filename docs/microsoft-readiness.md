@@ -1,42 +1,44 @@
-# Microsoft / Azure / Store readiness ledger
+# Microsoft Store / mobile — binary acceptance
 
-**Project:** Starfall Salvage (Kopano)  
-**Scope:** Partner Center, packaging, identity wrapper (future), privacy/consent  
-**Protocol:** P13 · 5 pillars · 15 commandments (acceptance)
-
----
+**Product:** Starfall Salvage  
+**Format:** PASS or FAIL per row only.
 
 ## 5 pillars
 
-- [x] **Alignment:** Core loop runs offline; no cloud dependency for playability.
-- [x] **Community:** Mobile-first controls; 90° yaw + swipe/bracket input paths in WebGL build.
-- [x] **Infrastructure:** `node --check` / repo gate green; bounded render loop.
-- [ ] **Apprenticeship:** In-repo handoff docs for AI-assisted maintenance (module map, build, test). **PENDING**
-- [ ] **Service:** Next.js 15 wrapper + Kopano hub nav + unified auth/session (360 loop). **PENDING**
+| ID | Test | Result |
+|----|------|--------|
+| P1 | Core loop runs with network disabled (static bundle + local open). | PASS |
+| P2 | Junction turn: touch horizontal swipe at `pendingCorner` and `[` / `]` invoke the same `queueTurn(±1)` path. | PASS |
+| P3 | `node --check src/game.js` exit 0 **and** `npm run gate` exit 0 **and** build id traceable (`GAME_BUILD` / package version). | PASS |
+| P4 | In-repo maintainer map (entrypoints, gate command, run instructions) ≤1 page. | FAIL |
+| P5 | Store ops: ship channel chosen (MSIX/PWA/hosted) **and** Partner Center seller/payout **and** listing assets (privacy URL, support, screenshots) **and** documented auth deep-link (no secrets in static files). | FAIL |
 
----
+**Pillar rollup:** P1∧P2∧P3∧P4∧P5 → **FAIL** (P4–P5 open).
 
-## 15 commandments (acceptance)
+## 15 commandments
 
-- [ ] **C1** **Deep link / auth handoff:** `kopanolabs.com` (or chosen root) → game shell with token/session contract documented (no secrets in static HTML).
-- [ ] **C2** **Publisher identity:** Partner Center org, seller verification, payout/tax profile complete.
-- [x] **C3** **Grounded truth:** Revive countdown uses wall-clock `timer -= dt` (no CSS-only timer spoof).
-- [x] **C4** **Minimal DOM (play):** Active play: score + pause + essential HUD only; modals gated.
-- [ ] **C5** **Ship channel:** MSIX vs PWA vs hosted path chosen; CI produces reproducible artifact + version stamp.
-- [ ] **C6** **Monetization:** Store IAP / additive commerce; policy-compliant copy; no predatory loops. **PENDING**
-- [ ] **C7** **Telemetry:** If enabled: consent surface, documented categories, retention, region; privacy URL in listing.
-- [x] **C8** **Extraction:** No server identity or PII pipeline in vanilla WebGL; local-only until explicit NextAuth + scoped APIs.
-- [ ] **C9** **Content rating:** IARC questionnaire; descriptors match shipped gameplay.
-- [x] **C10** **Movement:** `queueTurn(±1)` + `tickTurnAnimation` (smoothstep) = true 90° yaw path.
-- [ ] **C11** **Accessibility:** Store questionnaire answers backed by keyboard/touch, contrast, text scaling notes.
-- [x] **C12** **Offline-first:** Playable with no live API when run from local/static bundle.
-- [x] **C13** **State hygiene:** `resetLaneTurnState()` on run start / reset to avoid turn/revive state collisions.
-- [ ] **C14** **Signing:** Release cert / Publisher trust; timestamp; no test cert in Store submission.
-- [ ] **C15** **Listing assets:** Required screenshots (per Store size matrix), short + long description, privacy policy URL, support contact.
+| ID | Test | Result |
+|----|------|--------|
+| C01 | Revive timer decrements by wall-clock `dt` only. | PASS |
+| C02 | Revive: exactly `REVIVE_TAPS_NEEDED` pointerdowns on modal; skip excluded. | PASS |
+| C03 | Turn animation wall time matches `TURN_DURATION_SEC` within one frame at 60 Hz. | PASS |
+| C04 | View matrix applies `cameraYaw` every `renderScene` while the canvas draws gameplay. | PASS |
+| C05 | `resetLaneTurnState()` on `resetGame` and on ENGAGE (`startGame` countdown complete). | PASS |
+| C06 | `#glCanvas` has `touch-action: none`. | PASS |
+| C07 | HUD/chrome uses `env(safe-area-inset-*)` for notch / home bar. | PASS |
+| C08 | Playing hot loop: no mandatory network I/O. | PASS |
+| C09 | Hot path audit: no `new` / no unbounded `push` per frame in steady `updateGame` + `renderScene`. | FAIL |
+| C10 | p99 frame ≤ 32 ms on a named low-tier reference device (attach capture + device id). | FAIL |
+| C11 | Microsoft Store commerce / IAP integrated and policy-reviewed. | FAIL |
+| C12 | Optional analytics: consent + categories + privacy URL before any send. | FAIL |
+| C13 | IARC (or equivalent) filed; descriptors match shipped build. | FAIL |
+| C14 | Release binary: production cert + timestamp (no test cert). | FAIL |
+| C15 | Store accessibility fields backed by in-repo keyboard map + contrast evidence. | FAIL |
 
----
+**Commandment rollup:** **8 / 15** PASS. Target **15 / 15** before submission.
 
-## Active blockers
+## Audit
 
-1. **Identity wrapper:** Next.js 15 + MongoDB Atlas + NextAuth (or chosen IdP) + `WelcomeModal.tsx` + ecosystem survey persistence.
-2. **Post-auth UI chrome:** Product-defined deck / accent (Ion/Solar or other); biological XY/XX UI **only** if explicitly re-approved for Store policy—defer until wrapper exists.
+| UTC | Note |
+|-----|------|
+| 2026-05-16 | Binary-only tables; P4–P5 and C09–C15 FAIL until closed with evidence or code. |

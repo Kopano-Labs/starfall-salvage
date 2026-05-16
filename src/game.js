@@ -2,6 +2,10 @@
   "use strict";
 
   const canvas = document.getElementById("glCanvas");
+  if (!canvas) {
+    console.error("starfall: #glCanvas missing — abort");
+    return;
+  }
   const gl = canvas.getContext("webgl", { antialias: true });
 
   const hud = {
@@ -95,10 +99,12 @@
     deckToneSolar: document.getElementById("deckToneSolar"),
     deckToneIonLabel: document.getElementById("deckToneIonLabel"),
     deckToneSolarLabel: document.getElementById("deckToneSolarLabel"),
-    ecosystemSurveyModal: document.getElementById("ecosystemSurveyModal"),
-    ecosystemSurveyDismiss: document.getElementById("ecosystemSurveyDismiss"),
-    ecosystemSurveyNever: document.getElementById("ecosystemSurveyNever"),
-    relaunchHudLabel: document.getElementById("relaunchHudLabel")
+    relaunchHudLabel: document.getElementById("relaunchHudLabel"),
+    surveyModal: document.getElementById("surveyModal"),
+    surveyQuestion: document.getElementById("surveyQuestion"),
+    surveyOptions: document.getElementById("surveyOptions"),
+    surveySkip: document.getElementById("surveySkip"),
+    surveyNeverAgain: document.getElementById("surveyNeverAgain")
   };
 
   // Mobile: playable by default (touch + FIRE). Append ?strictMobile=1 to show the audit lockdown wall again.
@@ -412,7 +418,7 @@
   /** HUD accent lane — not biological metadata (Commandment 8 / Store inclusion). */
   const HUD_RESONANCE_STORAGE_KEY = "starfallSalvageHudResonance";
   const LEGACY_GENDER_STORAGE_KEY = "starfallSalvagePilotGender";
-  const ECOSYSTEM_SURVEY_STORAGE_KEY = "starfallSalvageEcosystemSurveyDone";
+  const DISCOVERY_SURVEY_RECORD_KEY = "starfallSalvageDiscoverySurveyV1";
   const GUEST_CTA_SEEN_KEY = "starfall:guest_cta_seen_v1";
   const GUEST_CTA_SEEN_LEGACY_KEYS = ["starfallSalvageGuestCtaSeen"];
   const EVENTS_STORAGE_KEY = "starfallSalvageEventLog";
@@ -426,26 +432,16 @@
   const PUBLIC_REPO_URL = "https://github.com/Kopano-Labs/starfall-salvage";
   const GAME_BUILD = "20260516-fluid-ship";
   const PILOT_PALETTES = ["default", "blossom", "ember", "mono"];
-  const REVIVE_TIME_SECONDS = 8;
-  const REVIVE_CORES_NEEDED = 3;
-  const REVIVE_CORE_COUNT = 6;
-  const SURVEY_PLAY_THRESHOLD = 5; // Show survey every 5 plays
-  
-  const discoveryQuestions = [
-    {
-      q: "What should we build next?",
-      o: ["More 3D mini-games", "Squad mode / multiplayer", "Weapon upgrades", "Deeper lore/missions"]
-    },
-    {
-      q: "How did you find Starfall?",
-      o: ["WhatsApp/Social", "Search engine", "Kopano Ecosystem", "Other"]
-    },
-    {
-      q: "Best part of the flight?",
-      o: ["Visuals/Aesthetics", "Smooth movement", "Combat/Shooting", "Score chasing"]
-    }
-  ];
-  
+  const REVIVE_TIME_SECONDS = 3;
+  const REVIVE_TAPS_NEEDED = 5;
+  const REVIVE_WORLD_TIME_SCALE = 0.1;
+  const TURN_DURATION_SEC = 0.3;
+  const TURN_ANGLE = Math.PI / 2;
+  const CORNER_INTERVAL_SEC = 16;
+  const SWIPE_TURN_WINDOW_SEC = 0.55;
+  const SWIPE_TURN_MIN_PX = 42;
+  const SURVEY_PLAY_THRESHOLD = 5; // Show survey every N completed runs (non-extractive discovery)
+
   let playCountSinceSurvey = 0;
   const RELAUNCH_COUNTDOWN_SECONDS = 3;
   const MODAL_TRAP = {
@@ -738,6 +734,14 @@
     smoothCamX: 0,
     smoothCamY: 0,
     viewRoll: 0,
+    cameraYaw: 0,
+    turnAnimActive: false,
+    turnAnimFrom: 0,
+    turnAnimTo: 0,
+    turnAnimElapsed: 0,
+    cornerTimer: CORNER_INTERVAL_SEC,
+    swipeTurnWindow: 0,
+    pendingCorner: false,
     lastHudScore: -1,
     lastHudSpeedLabel: ""
   };
@@ -1051,6 +1055,24 @@
     ]);
   }
 
+  function createSalvageMesh() {
+    // Stable "Shattered" Shard geometry
+    const pts = [
+      [0.2, 0.4, 0.1], [-0.3, 0.2, -0.2], [0.1, -0.4, 0.3], 
+      [-0.2, -0.3, -0.1], [0, 0.75, 0], [0, -0.75, 0]
+    ];
+    return createFaceMesh([
+      [pts[0], pts[1], pts[4]],
+      [pts[1], pts[2], pts[4]],
+      [pts[2], pts[3], pts[4]],
+      [pts[3], pts[0], pts[4]],
+      [pts[1], pts[0], pts[5]],
+      [pts[2], pts[1], pts[5]],
+      [pts[3], pts[2], pts[5]],
+      [pts[0], pts[3], pts[5]]
+    ]);
+  }
+
   function createShipMesh() {
     const nose = [0, 0, -0.9];
     const rearTop = [0, 0.42, 0.62];
@@ -1070,6 +1092,7 @@
   const meshes = {
     cube: createCubeMesh(),
     crystal: createOctahedronMesh(),
+    shard: createSalvageMesh(),
     ship: createShipMesh()
   };
 
@@ -1092,6 +1115,7 @@
     "ontouchstart" in window || (navigator.maxTouchPoints && navigator.maxTouchPoints > 0)
   );
   let pilotProfile = loadPilotProfile();
+  applyDeckResonance(pilotProfile.deckResonance);
   let wasPlayingBeforeHidden = false;
   let contextLost = false;
 
@@ -1123,6 +1147,14 @@
       event.preventDefault();
     }
     keys.add(key);
+    if (event.code === "BracketLeft" && state.mode === "playing" && state.pendingCorner && !event.repeat) {
+      event.preventDefault();
+      queueTurn(-1);
+    }
+    if (event.code === "BracketRight" && state.mode === "playing" && state.pendingCorner && !event.repeat) {
+      event.preventDefault();
+      queueTurn(1);
+    }
     if (key === " ") {
       dashRequested = true;
     }
@@ -1212,35 +1244,106 @@
     syncSovereignPresentation();
   }
 
+  function normalizeDeckTone(raw) {
+    if (raw === "ion" || raw === "solar") {
+      return raw;
+    }
+    if (raw === "male") {
+      return "ion";
+    }
+    if (raw === "female") {
+      return "solar";
+    }
+    return "ion";
+  }
+
+  function applyDeckResonance(tone) {
+    const deck = normalizeDeckTone(tone);
+    if (hud.shell) {
+      hud.shell.dataset.deck = deck;
+    }
+    return deck;
+  }
+
+  function syncDeckToneRadiosFromProfile() {
+    const tone = normalizeDeckTone(pilotProfile.deckResonance);
+    if (hud.deckToneIon) {
+      hud.deckToneIon.checked = tone === "ion";
+    }
+    if (hud.deckToneSolar) {
+      hud.deckToneSolar.checked = tone === "solar";
+    }
+    if (hud.deckToneIonLabel) {
+      hud.deckToneIonLabel.classList.toggle("is-selected", tone === "ion");
+    }
+    if (hud.deckToneSolarLabel) {
+      hud.deckToneSolarLabel.classList.toggle("is-selected", tone === "solar");
+    }
+  }
+
+  function getDiscoverySurveyRecord() {
+    try {
+      const raw = window.localStorage.getItem(DISCOVERY_SURVEY_RECORD_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function isDiscoverySurveySilenced() {
+    const rec = getDiscoverySurveyRecord();
+    if (!rec || typeof rec !== "object") {
+      return false;
+    }
+    if (rec.never) {
+      return true;
+    }
+    return Boolean(rec.answered);
+  }
+
   function showSurvey() {
-    if (!hud.surveyModal || !hud.surveyQuestion || !hud.surveyOptions) return;
-    
-    const index = Math.floor(Math.random() * discoveryQuestions.length);
-    const item = discoveryQuestions[index];
-    
-    hud.surveyQuestion.textContent = item.q;
-    hud.surveyOptions.innerHTML = "";
-    
-    item.o.forEach(opt => {
-      const btn = document.createElement("button");
-      btn.className = "survey-option-btn";
-      btn.textContent = opt;
-      btn.onclick = () => {
-        logEvent("survey_answer", { question: item.q, answer: opt });
-        hideSurvey();
-      };
-      hud.surveyOptions.appendChild(btn);
-    });
-    
+    if (isDiscoverySurveySilenced()) {
+      return;
+    }
+    if (!hud.surveyModal || !hud.surveyQuestion) {
+      return;
+    }
+    hud.surveyQuestion.textContent = "What is your primary ecosystem?";
+    if (hud.surveyNeverAgain) {
+      hud.surveyNeverAgain.checked = false;
+    }
     hud.surveyModal.classList.remove("is-hidden");
     attachModalBackTrap(MODAL_TRAP.survey, hideSurvey);
-    logEvent("survey_open", { question: item.q });
+    logEvent("survey_open", { kind: "ecosystem_primary" });
   }
 
   function hideSurvey() {
-    if (hud.surveyModal) hud.surveyModal.classList.add("is-hidden");
+    if (hud.surveyModal) {
+      hud.surveyModal.classList.add("is-hidden");
+    }
     detachModalBackTrap(MODAL_TRAP.survey, false);
+  }
+
+  function recordDiscoverySurveyAnswer(ecosystem) {
+    const never = Boolean(hud.surveyNeverAgain && hud.surveyNeverAgain.checked);
+    try {
+      window.localStorage.setItem(
+        DISCOVERY_SURVEY_RECORD_KEY,
+        JSON.stringify({
+          v: 1,
+          answered: true,
+          ecosystem,
+          never,
+          savedAt: new Date().toISOString()
+        })
+      );
+    } catch {
+      /* ignore */
+    }
+    logEvent("survey_answer", { kind: "ecosystem_primary", ecosystem, never });
+    persistPilotProfile({ ...pilotProfile, discoveryEcosystem: ecosystem });
     playCountSinceSurvey = 0;
+    hideSurvey();
   }
 
   function showOnboardingModal() {
@@ -1259,13 +1362,58 @@
     }
     attachModalBackTrap(MODAL_TRAP.onboarding, hideOnboardingModal);
     logEvent("onboarding_open", {});
+    syncDeckToneRadiosFromProfile();
     syncSovereignPresentation();
+  }
+
+  function reopenPilotBriefing() {
+    syncDeckToneRadiosFromProfile();
+    showOnboardingModal();
   }
 
   function deferOnboardingBriefing() {
     detachModalBackTrap(MODAL_TRAP.onboarding, false);
     hideOnboardingModal();
     logEvent("onboarding_deferred", {});
+  }
+
+  function initIdentity() {
+    let savedGender = window.localStorage.getItem('starfallSalvagePilotGender');
+    if (!savedGender) {
+      savedGender = 'male';
+      window.localStorage.setItem('starfallSalvagePilotGender', savedGender);
+    }
+    
+    let savedId = window.localStorage.getItem('starfallSovereignId');
+    if (!savedId) {
+      savedId = (function() {
+        const array = new Uint32Array(4);
+        window.crypto.getRandomValues(array);
+        return Array.from(array, dec => dec.toString(16).padStart(8, '0')).join('-');
+      })();
+      window.localStorage.setItem('starfallSovereignId', savedId);
+    }
+    
+    state.pilotGender = savedGender;
+    state.sovereignId = savedId;
+    
+    document.querySelector('.shell').setAttribute('data-gender', savedGender);
+    
+    const radio = document.getElementById(`gender${savedGender.charAt(0).toUpperCase() + savedGender.slice(1)}`);
+    if (radio) radio.checked = true;
+    
+    document.querySelectorAll('.gender-option').forEach(el => el.classList.remove('is-selected'));
+    const label = document.getElementById(`gender${savedGender.charAt(0).toUpperCase() + savedGender.slice(1)}Label`);
+    if (label) label.classList.add('is-selected');
+
+    // Sync UI with masked ID
+    const statusText = document.getElementById('authStatusText');
+    if (statusText && state.authStatus === 'guest') {
+      statusText.textContent = `Pilot ${savedId.slice(0, 8)}`;
+    }
+
+    // Sync deck resonance
+    applyDeckResonance(savedGender === "female" ? "solar" : "ion");
   }
 
   function dismissOnboarding() {
@@ -1281,16 +1429,13 @@
     } catch {
       markOnboardingDone();
     }
-    const selectedGender = hud.genderFemale && hud.genderFemale.checked ? "female" : "male";
-    pilotProfile.gender = selectedGender;
-    try {
-      window.localStorage.setItem(GENDER_STORAGE_KEY, selectedGender);
-    } catch {}
-    applyGenderTheme(selectedGender);
 
+    initIdentity();
+    
     detachModalBackTrap(MODAL_TRAP.onboarding, false);
     hideOnboardingModal();
-    logEvent("onboarding_complete", { gender: selectedGender });
+    logEvent("onboarding_complete", { pilotGender: state.pilotGender });
+
     if (pilotProfile.mode === "guest") {
       window.setTimeout(() => {
         setEventMessage("Sign in to save scores and squad up with friends");
@@ -1298,42 +1443,34 @@
     }
   }
 
-  function applyGenderTheme(gender) {
-    if (!hud.shell) return;
-    hud.shell.dataset.gender = gender;
-  }
+  // --- IDENTITY LISTENERS ---
+  const genderOptions = document.querySelectorAll('input[name="pilotGender"]');
+  genderOptions.forEach(opt => {
+    opt.addEventListener('change', (e) => {
+      const gender = e.target.value;
+      state.pilotGender = gender;
+      document.querySelector('.shell').setAttribute('data-gender', gender);
+      window.localStorage.setItem('starfallSalvagePilotGender', gender);
+      
+      // Update visual selection
+      document.querySelectorAll('.gender-option').forEach(el => el.classList.remove('is-selected'));
+      const label = document.getElementById(`gender${gender.charAt(0).toUpperCase() + gender.slice(1)}Label`);
+      if (label) label.classList.add('is-selected');
+      
+      const sid = state.sovereignId ? String(state.sovereignId) : "";
+      logEvent("identity_scan", { gender, maskedId: sid ? `${sid.slice(0, 8)}…` : "" });
+    });
+  });
 
-  function setupGenderListeners() {
-    if (hud.genderMale) {
-      hud.genderMale.addEventListener("change", () => {
-        if (hud.genderMaleLabel) hud.genderMaleLabel.classList.add("is-selected");
-        if (hud.genderFemaleLabel) hud.genderFemaleLabel.classList.remove("is-selected");
+  const authLoginBtn = document.getElementById('authLoginBtn');
+  if (authLoginBtn) {
+    authLoginBtn.addEventListener('click', () => {
+      setEventMessage("Sovereign Portal — Authentication Pending");
+      logEvent("auth_click", {
+        currentStatus: state.authStatus,
+        sovereignId: state.sovereignId ? String(state.sovereignId).slice(0, 12) : ""
       });
-    }
-    if (hud.genderFemale) {
-      hud.genderFemale.addEventListener("change", () => {
-        if (hud.genderFemaleLabel) hud.genderFemaleLabel.classList.add("is-selected");
-        if (hud.genderMaleLabel) hud.genderMaleLabel.classList.remove("is-selected");
-      });
-    }
-  }
-
-  function loadSavedGender() {
-    try {
-      const saved = window.localStorage.getItem(GENDER_STORAGE_KEY);
-      if (saved === "male" || saved === "female") {
-        pilotProfile.gender = saved;
-        applyGenderTheme(saved);
-        if (saved === "male" && hud.genderMale) {
-          hud.genderMale.checked = true;
-          if (hud.genderMaleLabel) hud.genderMaleLabel.classList.add("is-selected");
-        }
-        if (saved === "female" && hud.genderFemale) {
-          hud.genderFemale.checked = true;
-          if (hud.genderFemaleLabel) hud.genderFemaleLabel.classList.add("is-selected");
-        }
-      }
-    } catch {}
+    });
   }
 
   if (hud.onboardingAck) {
@@ -1435,9 +1572,18 @@
       }
       for (const touch of event.changedTouches) {
         if (touch.identifier === activeTouchId) {
+          const dx = touch.clientX - touchStartX;
+          const dy = touch.clientY - touchStartY;
           const elapsed = performance.now() - touchStartTime;
           const wasTap = elapsed <= TOUCH_TAP_MAX_MS && touchMaxTravel <= TOUCH_TAP_MAX_PX;
-          if (wasTap) {
+          let swipeCommitted = false;
+          if (state.mode === "playing" && state.pendingCorner &&
+              Math.abs(dx) >= SWIPE_TURN_MIN_PX &&
+              Math.abs(dx) > Math.abs(dy) * 0.72) {
+            queueTurn(dx < 0 ? -1 : 1);
+            swipeCommitted = true;
+          }
+          if (!swipeCommitted && wasTap) {
             if (state.mode !== "playing") {
               startGame();
             } else {
@@ -1715,11 +1861,23 @@
   }
 
   function getViewportCssSize() {
+    const minCss = 32;
     const vv = window.visualViewport;
-    if (vv && Number.isFinite(vv.width) && Number.isFinite(vv.height)) {
+    if (
+      vv &&
+      Number.isFinite(vv.width) &&
+      Number.isFinite(vv.height) &&
+      vv.width >= minCss &&
+      vv.height >= minCss
+    ) {
       return { width: vv.width, height: vv.height };
     }
-    return { width: canvas.clientWidth, height: canvas.clientHeight };
+    const rect = canvas.getBoundingClientRect();
+    let width = Math.round(rect.width) || canvas.clientWidth || window.innerWidth || 320;
+    let height = Math.round(rect.height) || canvas.clientHeight || window.innerHeight || 240;
+    width = Math.max(minCss, width);
+    height = Math.max(minCss, height);
+    return { width, height };
   }
 
   function randomRange(min, max) {
@@ -1735,8 +1893,8 @@
     const dprCap = budget.maxDpr || (isTouchCapable ? 1.5 : 2);
     const dpr = Math.min(window.devicePixelRatio || 1, dprCap);
     const { width: cssWidth, height: cssHeight } = getViewportCssSize();
-    const width = Math.floor(cssWidth * dpr);
-    const height = Math.floor(cssHeight * dpr);
+    const width = Math.max(32, Math.floor(cssWidth * dpr));
+    const height = Math.max(32, Math.floor(cssHeight * dpr));
     if (canvas.width !== width || canvas.height !== height) {
       canvas.width = width;
       canvas.height = height;
@@ -1755,9 +1913,10 @@
 
   const reviveState = {
     timer: 0,
-    caught: 0,
-    need: REVIVE_CORES_NEEDED
+    taps: 0,
+    need: REVIVE_TAPS_NEEDED
   };
+  let reviveTapHandler = null;
 
   const relaunchState = {
     remain: 0
@@ -1767,57 +1926,52 @@
     if (!hud.reviveArena) {
       return;
     }
-    hud.reviveArena.textContent = "";
+    hud.reviveArena.innerHTML = "";
   }
 
-  function spawnReviveCores() {
-    if (!hud.reviveArena) return;
-    clearReviveArena();
-    const rect = hud.reviveArena.getBoundingClientRect();
-    const width = Math.max(rect.width, 280);
-    const height = Math.max(rect.height, 200);
-    
-    let spawned = 0;
-    const spawnNext = () => {
-      if (state.mode !== "revive" || spawned >= REVIVE_CORE_COUNT) return;
-      
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "revive-core reaction-tap";
-      button.style.left = `${randomRange(15, width - 45)}px`;
-      button.style.top = `${randomRange(15, height - 45)}px`;
-      button.setAttribute("aria-label", `Salvage core ${spawned + 1}`);
-      
-      button.addEventListener("click", () => {
-        if (button.classList.contains("is-caught") || state.mode !== "revive") return;
-        button.classList.add("is-caught");
-        reviveState.caught += 1;
-        if (hud.reviveProgress) {
-          hud.reviveProgress.textContent = `${reviveState.caught} / ${reviveState.need}`;
-        }
-        if (navigator.vibrate) navigator.vibrate(18);
-        if (reviveState.caught >= reviveState.need) {
-          completeRevive(true);
-        }
-      });
-      
-      hud.reviveArena.append(button);
-      spawned++;
-      
-      // Sequential spawn with slight acceleration
-      const nextDelay = 800 - (spawned * 80);
-      setTimeout(spawnNext, Math.max(200, nextDelay));
+  function unbindReviveTapStorm() {
+    if (reviveTapHandler && hud.reviveModal) {
+      hud.reviveModal.removeEventListener("pointerdown", reviveTapHandler, true);
+    }
+    reviveTapHandler = null;
+  }
+
+  function bindReviveTapStorm() {
+    unbindReviveTapStorm();
+    reviveTapHandler = (event) => {
+      if (state.mode !== "revive") {
+        return;
+      }
+      const target = event.target;
+      if (target && (target.id === "reviveSkipButton" || target.closest("#reviveSkipButton"))) {
+        return;
+      }
+      event.preventDefault();
+      reviveState.taps += 1;
+      if (hud.reviveProgress) {
+        hud.reviveProgress.textContent = `${reviveState.taps} / ${reviveState.need}`;
+      }
+      if (navigator.vibrate) {
+        navigator.vibrate(12);
+      }
+      if (reviveState.taps >= reviveState.need) {
+        completeRevive(true);
+      }
     };
-    
-    spawnNext();
+    if (hud.reviveModal) {
+      hud.reviveModal.addEventListener("pointerdown", reviveTapHandler, true);
+    }
   }
 
   function startReviveMiniGame() {
     state.reviveUsedThisRun = true;
     state.mode = "revive";
     reviveState.timer = REVIVE_TIME_SECONDS;
-    reviveState.caught = 0;
-    reviveState.need = REVIVE_CORES_NEEDED;
+    reviveState.taps = 0;
+    reviveState.need = REVIVE_TAPS_NEEDED;
+    if (hud.shell) {
+      hud.shell.classList.add("is-revive-slow");
+    }
     if (hud.reviveModal) {
       hud.reviveModal.classList.remove("is-hidden");
     }
@@ -1826,17 +1980,24 @@
       hud.reviveTimer.textContent = REVIVE_TIME_SECONDS.toFixed(1);
     }
     if (hud.reviveProgress) {
-      hud.reviveProgress.textContent = `0 / ${REVIVE_CORES_NEEDED}`;
+      hud.reviveProgress.textContent = `0 / ${REVIVE_TAPS_NEEDED}`;
     }
-    window.requestAnimationFrame(() => spawnReviveCores());
-    setEventMessage("Core Salvage — tap three cores to relaunch");
+    clearReviveArena();
+    bindReviveTapStorm();
+    setEventMessage("SYSTEM FAILURE — tap to reboot");
     syncShellPlayState();
   }
 
   function completeRevive(success) {
+    unbindReviveTapStorm();
     detachModalBackTrap(MODAL_TRAP.revive, false);
-    if (hud.reviveModal) hud.reviveModal.classList.add("is-hidden");
+    if (hud.reviveModal) {
+      hud.reviveModal.classList.add("is-hidden");
+    }
     clearReviveArena();
+    if (hud.shell) {
+      hud.shell.classList.remove("is-revive-slow");
+    }
     if (success) {
       state.hull = 1;
       runCountdown(() => {
@@ -1860,7 +2021,7 @@
     if (hud.reviveTimer) {
       hud.reviveTimer.textContent = Math.max(0, reviveState.timer).toFixed(1);
     }
-    if (reviveState.caught >= reviveState.need) {
+    if (reviveState.taps >= reviveState.need) {
       completeRevive(true);
       return;
     }
@@ -1963,6 +2124,7 @@
       hud.relaunchHud.classList.add("is-hidden");
     }
     relaunchState.remain = 0;
+    resetLaneTurnState();
     updateHud();
     syncShellPlayState();
     setStatus("Ready", "Collect blue energy cores, dodge red debris, and use Space to phase dash through danger.", false);
@@ -1975,6 +2137,7 @@
     }
 
     state.mode = "countdown";
+    hud.countdownOverlay.classList.remove("is-engage");
     hud.countdownOverlay.classList.remove("is-hidden");
     let count = 3;
     hud.countdownNumber.textContent = String(count);
@@ -1983,8 +2146,13 @@
       count--;
       if (count <= 0) {
         clearInterval(interval);
-        hud.countdownOverlay.classList.add("is-hidden");
-        onComplete();
+        hud.countdownNumber.textContent = "ENGAGE";
+        hud.countdownOverlay.classList.add("is-engage");
+        window.setTimeout(() => {
+          hud.countdownOverlay.classList.remove("is-engage");
+          hud.countdownOverlay.classList.add("is-hidden");
+          onComplete();
+        }, 720);
       } else {
         hud.countdownNumber.textContent = String(count);
       }
@@ -2000,6 +2168,7 @@
     collapseEcosystemFlyout();
 
     runCountdown(() => {
+      resetLaneTurnState();
       state.mode = "playing";
       hud.pauseButton.textContent = "Pause";
       setStatus("", "", true);
@@ -2072,6 +2241,8 @@
       mode: "guest",
       palette: "default",
       bestScore: 0,
+      deckResonance: "ion",
+      discoveryEcosystem: "",
       lastSeen: new Date().toISOString()
     };
   }
@@ -2112,12 +2283,33 @@
     if (!saved || typeof saved !== "object" || !saved.callsign) {
       return defaultPilotProfile();
     }
+    let deck = normalizeDeckTone(saved.deckResonance ?? saved.gender);
+    try {
+      const hudStored = window.localStorage.getItem(HUD_RESONANCE_STORAGE_KEY);
+      if (hudStored === "ion" || hudStored === "solar") {
+        deck = hudStored;
+      }
+    } catch {
+      /* ignore */
+    }
+    if (!saved.deckResonance && !saved.gender) {
+      try {
+        const legacy = window.localStorage.getItem(LEGACY_GENDER_STORAGE_KEY);
+        if (legacy === "male" || legacy === "female") {
+          deck = normalizeDeckTone(legacy);
+        }
+      } catch {
+        /* ignore */
+      }
+    }
     return {
       id: saved.id || localPilotId(saved.callsign),
       callsign: normalizeCallsign(saved.callsign) || "Guest Pilot",
       mode: saved.mode || "local",
       palette: PILOT_PALETTES.includes(saved.palette) ? saved.palette : "default",
       bestScore: Number(saved.bestScore) || 0,
+      deckResonance: deck,
+      discoveryEcosystem: typeof saved.discoveryEcosystem === "string" ? saved.discoveryEcosystem : "",
       lastSeen: saved.lastSeen || new Date().toISOString()
     };
   }
@@ -2128,10 +2320,16 @@
       callsign: normalizeCallsign(profile.callsign) || "Guest Pilot",
       palette: PILOT_PALETTES.includes(profile.palette) ? profile.palette : "default",
       bestScore: Number(profile.bestScore) || 0,
+      deckResonance: normalizeDeckTone(profile.deckResonance ?? pilotProfile.deckResonance),
+      discoveryEcosystem:
+        typeof profile.discoveryEcosystem === "string"
+          ? profile.discoveryEcosystem
+          : (pilotProfile.discoveryEcosystem || ""),
       lastSeen: new Date().toISOString()
     };
     writeJsonStorage(PROFILE_STORAGE_KEY, pilotProfile);
     applyPilotPalette(pilotProfile.palette);
+    applyDeckResonance(pilotProfile.deckResonance);
     updatePilotBadge();
   }
 
@@ -2396,6 +2594,8 @@
     } catch {
       // Local storage may be unavailable in locked-down browsers.
     }
+    applyDeckResonance(pilotProfile.deckResonance);
+    syncDeckToneRadiosFromProfile();
     updatePilotBadge();
     hud.accountStatus.textContent = "Guest pilot active. Scores stay in this browser session.";
     refreshLeaderboard({ quiet: true });
@@ -2410,6 +2610,8 @@
     } catch {
       // Local storage may be unavailable in locked-down browsers.
     }
+    applyDeckResonance(pilotProfile.deckResonance);
+    syncDeckToneRadiosFromProfile();
     updatePilotBadge();
     renderLeaderboard([], "Local pilot data cleared. SQLite scores remain on the backend.");
     setEventMessage("Pilot reset");
@@ -2972,8 +3174,8 @@
     maybeShowGuestSignUpCta(finalScore);
     
     playCountSinceSurvey++;
-    if (playCountSinceSurvey >= SURVEY_PLAY_THRESHOLD) {
-      setTimeout(showSurvey, 1200);
+    if (playCountSinceSurvey >= SURVEY_PLAY_THRESHOLD && !isDiscoverySurveySilenced()) {
+      window.setTimeout(showSurvey, 1200);
     }
   }
 
@@ -3037,9 +3239,26 @@
       spinZ: randomRange(-0.5, 0.5),
       hp,
       maxHp: hp,
-      bossShootTimer: randomRange(1.0, 1.9)
+      bossShootTimer: randomRange(1.0, 1.9),
+      lane: 0,
+      laneTimer: randomRange(2.5, 4.0),
+      targetLane: 0
     });
     logEvent("boss_spawned", { hp });
+  }
+
+  function spawnLaneGate() {
+    const lane = Math.floor(Math.random() * 3) - 1; // -1, 0, 1
+    objects.push({
+      type: "laneGate",
+      lane,
+      x: lane * 2.2,
+      y: 0,
+      z: -120,
+      size: 2.5,
+      radius: 1.0
+    });
+    logEvent("lane_gate_spawned", { lane });
   }
 
   function spawnObject() {
@@ -3057,6 +3276,12 @@
     const bossChance = bossSpawnChance(mult, dangerActive);
     if (dangerActive && roll < bossChance) {
       spawnBossEntity(mult);
+      return;
+    }
+    
+    // Lane Gate chance (Danger zone specific)
+    if (dangerActive && roll > 0.95) {
+      spawnLaneGate();
       return;
     }
 
@@ -3262,6 +3487,68 @@
     return false;
   }
 
+  function resetLaneTurnState() {
+    state.cameraYaw = 0;
+    state.turnAnimActive = false;
+    state.turnAnimFrom = 0;
+    state.turnAnimTo = 0;
+    state.turnAnimElapsed = 0;
+    state.cornerTimer = CORNER_INTERVAL_SEC;
+    state.pendingCorner = false;
+    state.swipeTurnWindow = 0;
+  }
+
+  function tickTurnAnimation(dt) {
+    if (!state.turnAnimActive) {
+      return;
+    }
+    state.turnAnimElapsed += dt;
+    const u = Math.min(1, state.turnAnimElapsed / TURN_DURATION_SEC);
+    const t = u * u * (3 - 2 * u);
+    state.cameraYaw = state.turnAnimFrom + (state.turnAnimTo - state.turnAnimFrom) * t;
+    if (u >= 1) {
+      state.turnAnimActive = false;
+      state.cameraYaw = state.turnAnimTo;
+    }
+  }
+
+  function queueTurn(dir) {
+    if (state.turnAnimActive || state.mode !== "playing") {
+      return false;
+    }
+    state.turnAnimFrom = state.cameraYaw;
+    state.turnAnimTo = state.cameraYaw + dir * TURN_ANGLE;
+    state.turnAnimElapsed = 0;
+    state.turnAnimActive = true;
+    state.pendingCorner = false;
+    state.swipeTurnWindow = 0;
+    state.cornerTimer = CORNER_INTERVAL_SEC;
+    setEventMessage(dir < 0 ? "Port yaw — 90°" : "Starboard yaw — 90°");
+    logEvent("lane_turn", { dir: dir < 0 ? "left" : "right", yawTo: state.turnAnimTo });
+    return true;
+  }
+
+  function tickLaneCorners(dt) {
+    tickTurnAnimation(dt);
+    if (state.turnAnimActive) {
+      return;
+    }
+    if (!state.pendingCorner) {
+      state.cornerTimer -= dt;
+      if (state.cornerTimer <= 0) {
+        state.pendingCorner = true;
+        state.swipeTurnWindow = SWIPE_TURN_WINDOW_SEC;
+        setEventMessage("JUNCTION — swipe left or right to bank 90°");
+      }
+    } else {
+      state.swipeTurnWindow -= dt;
+      if (state.swipeTurnWindow <= 0) {
+        state.pendingCorner = false;
+        state.cornerTimer = CORNER_INTERVAL_SEC;
+      }
+    }
+  }
+
   function updateGame(dt) {
     if (state.mode !== "playing") {
       return;
@@ -3351,7 +3638,7 @@
       player.vy = moveY * 7.2;
       player.targetY = clamp(player.targetY + player.vy * dt, bounds.yMin, bounds.yMax);
     } else {
-      // Touch lane switching
+      // moveX += touchAxis.x; // Legacy proof: touch movement logic
       if (Math.abs(touchAxis.x) > 0.4) {
         if (touchAxis.x < -0.4 && player.targetLane > -1) {
           player.targetLane = -1;
@@ -3364,9 +3651,14 @@
       player.targetY = clamp(MOBILE_LANE_TARGET_Y, bounds.yMin, bounds.yMax);
     }
     
-    const positionLerp = isTouchCapable ? 0.25 : 0.18;
+    const positionLerp = isTouchCapable ? 0.28 : 0.22;
+    const oldX = player.x;
     player.x += (player.targetX - player.x) * positionLerp;
     player.y += (player.targetY - player.y) * positionLerp;
+
+    // Banking animation (Roll)
+    const dx = player.x - oldX;
+    player.viewRoll = dx * 0.42; // Dynamic roll based on horizontal velocity
 
     player.dash = Math.max(0, player.dash - dt);
     player.dashCooldown = Math.max(0, player.dashCooldown - dt);
@@ -3395,16 +3687,60 @@
       object.rotY += object.spinY * dt;
       object.rotZ += object.spinZ * dt;
       if (object.type === "boss") {
+        // Boss Lane Shifting logic (Kinetic Tracking)
+        object.laneTimer = (object.laneTimer || 3) - dt;
+        if (object.laneTimer <= 0) {
+          object.targetLane = Math.floor(Math.random() * 3) - 1; // Shift to random lane
+          object.laneTimer = randomRange(2.0, 4.5);
+        }
+        
+        const bossLerp = 0.05;
+        object.lane = (object.lane || 0) + (object.targetLane - (object.lane || 0)) * bossLerp;
+        object.x = (object.lane * 2.2) + Math.sin(state.time * 2) * 0.5; // Sine weave + lane shift
+
         object.bossShootTimer = (object.bossShootTimer || 1.5) - dt;
         if (object.bossShootTimer <= 0 && object.z > -50 && object.z < player.z - 4) {
           spawnBossBullet(object);
           object.bossShootTimer = randomRange(1.4, 2.4);
         }
       }
+      
+      // Lane Gate logic
+      if (object.type === "laneGate") {
+        const laneX = object.lane * 2.2;
+        object.x = laneX;
+        // Pulse glow
+        object.radius = 1.0 + Math.sin(state.time * 8) * 0.1;
+      }
 
       let removeObject = false;
       const dz = Math.abs(object.z - player.z);
-      if (object.type !== "rangeTarget" && dz < 1.1) {
+      
+      // Special Logic: Neural Lane Gate (Wall with a hole)
+      if (object.type === "laneGate" && dz < 1.0 && !object.passed) {
+        const inLane = Math.abs(player.x - object.x) < 0.95;
+        if (!inLane) {
+          // HIT THE WALL
+          if (!absorbHullHit()) {
+            state.hull -= 1;
+            state.hitShakeTime = 0.45;
+            state.hitShakeStrength = 1.2;
+            state.hitFlashTimer = 0.45;
+            hud.shell.classList.add("is-hit");
+            setEventMessage("Gate impact — wrong lane");
+            spawnSparks(player.x, player.y, player.z, [1, 0.1, 0.2, 1], 30);
+            if (navigator.vibrate) navigator.vibrate([300, 100, 300]);
+          }
+        } else {
+          // CLEARED
+          state.score += 250;
+          setEventMessage("Gate synchronized");
+          spawnSparks(object.x, object.y, object.z, [0.2, 1.0, 0.4, 0.8], 15);
+        }
+        object.passed = true;
+      }
+
+      if (object.type !== "rangeTarget" && object.type !== "laneGate" && dz < 1.1) {
         const distance = Math.hypot(object.x - player.x, object.y - player.y);
         if (distance < object.radius + player.radius) {
           if (object.type === "boss") {
@@ -3582,6 +3918,7 @@
       }
     }
 
+    tickLaneCorners(dt);
     updateHud();
   }
 
@@ -3660,8 +3997,10 @@
     const targetRoll = -player.x * 0.05;
     state.viewRoll += (targetRoll - state.viewRoll) * camLerp;
     Mat4.identity(viewMatrix);
+    Mat4.rotateY(viewMatrix, viewMatrix, state.cameraYaw);
     Mat4.rotateZ(viewMatrix, viewMatrix, state.viewRoll);
-    Mat4.translate(viewMatrix, viewMatrix, [state.smoothCamX, state.smoothCamY, 0]);
+    // Apply camera offset (BACK) and dynamic tracking (smoothCamX/Y)
+    Mat4.translate(viewMatrix, viewMatrix, [state.smoothCamX, state.smoothCamY, -8.2]);
 
     const speedMultiplier = state.lastSpeedMultiplier || 1;
     const speedT = Math.max(0, Math.min(1, (speedMultiplier - 1) / 3.5));
@@ -3856,26 +4195,36 @@
         });
       } else if (object.type === "boss") {
         const hpRatio = Math.max(0.25, (object.hp || 1) / (object.maxHp || 4));
-        drawMesh(meshes.cube, {
+        drawMesh(meshes.shard, {
           position: [object.x, object.y, object.z],
           rotation: [object.rotX + alphaTime * 0.4, object.rotY + alphaTime * 0.5, object.rotZ],
-          scale: [object.size, object.size * 0.9, object.size * 0.95],
+          scale: [object.size * 1.2, object.size, object.size],
           color: [1, 0.32 + (1 - hpRatio) * 0.4, 0.92, 1],
           texture: warningTexture,
           textureMix: 0.62,
           uvScale: [2, 2],
           pulse: 0.55 + Math.sin(alphaTime * 9) * 0.32
         });
-      } else {
+      } else if (object.type === "laneGate") {
         drawMesh(meshes.cube, {
           position: [object.x, object.y, object.z],
+          rotation: [0, 0, state.time * 0.5],
+          scale: [2.5, 2.5, 0.4],
+          color: [0.1, 0.8, 1, 0.4], // Translucent blue
+          texture: crystalTexture,
+          textureMix: 0.5,
+          pulse: 0.8 + Math.sin(state.time * 8) * 0.2
+        });
+      } else {
+        drawMesh(meshes.shard, {
+          position: [object.x, object.y, object.z],
           rotation: [object.rotX, object.rotY, object.rotZ],
-          scale: [object.size * 1.15, object.size * 0.9, object.size],
-          color: [1, 0.24, 0.08, 1],
+          scale: [object.size, object.size, object.size],
+          color: [0.65, 0.72, 0.85, 1],
           texture: warningTexture,
-          textureMix: 0.82,
-          uvScale: [1.5, 1.5],
-          pulse: 0.18
+          textureMix: 0.52,
+          uvScale: [1.2, 1.2],
+          pulse: 0.32 + Math.sin(alphaTime * 3 + object.z * 0.2) * 0.12
         });
       }
     });
@@ -3933,7 +4282,12 @@
     const seconds = time * 0.001;
     const dt = Math.min(0.033, seconds - (state.lastTime || seconds));
     state.lastTime = seconds;
-    if (contextLost || document.hidden) {
+    if (contextLost) {
+      requestAnimationFrame(frame);
+      return;
+    }
+    if (document.hidden) {
+      renderScene(seconds);
       requestAnimationFrame(frame);
       return;
     }
@@ -3941,7 +4295,7 @@
       tickRevive(dt);
     } else if (state.mode === "relaunch") {
       tickRelaunch(dt);
-    } else {
+    } else if (state.mode !== "countdown") {
       updateGame(dt);
     }
     updatePresentation(dt);
@@ -3955,11 +4309,36 @@
   gl.activeTexture(gl.TEXTURE0);
   resizeCanvas();
 
+  function wireSurveyUi() {
+    document.querySelectorAll(".survey-ecosystem-pick").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const ecosystem = btn.getAttribute("data-ecosystem") || "unknown";
+        recordDiscoverySurveyAnswer(ecosystem);
+      });
+    });
+    if (hud.surveySkip) {
+      hud.surveySkip.addEventListener("click", () => {
+        const never = Boolean(hud.surveyNeverAgain && hud.surveyNeverAgain.checked);
+        if (never) {
+          try {
+            window.localStorage.setItem(
+              DISCOVERY_SURVEY_RECORD_KEY,
+              JSON.stringify({ v: 1, never: true, skipped: true, savedAt: new Date().toISOString() })
+            );
+          } catch {
+            /* ignore */
+          }
+        }
+        hideSurvey();
+        playCountSinceSurvey = 0;
+      });
+    }
+  }
+
   async function boot() {
     refreshRenderBudgetLimits();
     await loadSimLaw();
-    setupGenderListeners();
-    loadSavedGender();
+    initIdentity();
     applyPilotPalette(pilotProfile.palette || "default");
     const squadParam = new URLSearchParams(window.location.search).get("squad");
     if (squadParam && hud.accessCodeInput) {
@@ -3971,11 +4350,11 @@
     if (!isOnboardingDone()) {
       showOnboardingModal();
     }
-    if (hud.surveySkip) {
-      hud.surveySkip.onclick = hideSurvey;
-    }
+    wireSurveyUi();
     requestAnimationFrame(frame);
   }
 
-  boot();
+  window.requestAnimationFrame(() => {
+    void boot();
+  });
 })();

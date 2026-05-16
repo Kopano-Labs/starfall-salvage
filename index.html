@@ -27,7 +27,7 @@
   <link rel="apple-touch-icon" href="starfall-smoke.png">
   <link rel="stylesheet" href="styles.css?v=20260516-p13-grounded">
   <script type="module" src="src/pwa-boot.js?v=20260516-p13-grounded"></script>
-  <script src="src/game.js?v=20260516-p13-grounded" defer></script>
+  <script src="src/game.js?v=20260516-viewport-boot" defer></script>
 </head>
 <body>
   <main class="shell">
@@ -136,6 +136,7 @@
           <li><a class="ecos-card" href="https://capecampass.kopanolabs.com/" target="_blank" rel="noopener"><span class="ecos-card-kicker">Navigate</span><span class="ecos-card-title">Cape Compass</span></a></li>
           <li><a class="ecos-card" href="https://amaphu.kopanolabs.com/" target="_blank" rel="noopener"><span class="ecos-card-kicker">Entertainment</span><span class="ecos-card-title">AMA-PHU</span></a></li>
           <li><a class="ecos-card" href="https://github.com/Kopano-Labs" target="_blank" rel="noopener"><span class="ecos-card-kicker">Open craft</span><span class="ecos-card-title">GitHub org</span></a></li>
+          <li><a class="ecos-card is-discovery" href="https://discovery.kopanolabs.com/" target="_blank" rel="noopener"><span class="ecos-card-kicker">Discovery</span><span class="ecos-card-title">Sovereign Portal</span></a></li>
         </ul>
         <p class="ecos-investor-foot">Every link = <strong>live</strong> property. 11 sovereign products. Zero dependencies. <em>James&nbsp;2:26</em></p>
       </div>
@@ -254,22 +255,32 @@
           <li><strong>Gold orbs:</strong> Fly through them for a rapid-fire boost.</li>
         </ul>
         <div class="onboarding-deck-tone">
-          <p class="eyebrow">HUD resonance (visual only)</p>
-          <p class="onboarding-deck-hint">Choose how the flight deck chrome glows. This is <strong>not</strong> medical or legal identity &mdash; optional aesthetic only.</p>
-          <div class="deck-tone-options">
-            <label class="deck-tone-option is-selected" id="deckToneIonLabel">
-              <input type="radio" name="deckTone" value="ion" id="deckToneIon" checked>
-              <span class="deck-tone-symbol">&#x269B;</span>
-              <span class="deck-tone-label">Ion lane</span>
-              <span class="deck-tone-sub">Cool cyan edge</span>
+          <p class="eyebrow">Pilot Identity (XY &bull; XX)</p>
+          <p class="onboarding-deck-hint">Select your biological identity to accommodate the interface. This sets your sovereign flight deck variables.</p>
+          <div class="deck-tone-options gender-options">
+            <label class="gender-option is-selected" id="genderMaleLabel">
+              <input type="radio" name="pilotGender" value="male" id="genderMale" checked>
+              <span class="gender-symbol">XY</span>
+              <span class="gender-label">MALE</span>
             </label>
-            <label class="deck-tone-option" id="deckToneSolarLabel">
-              <input type="radio" name="deckTone" value="solar" id="deckToneSolar">
-              <span class="deck-tone-symbol">&#x2600;</span>
-              <span class="deck-tone-label">Solar lane</span>
-              <span class="deck-tone-sub">Warm ember edge</span>
+            <label class="gender-option" id="genderFemaleLabel">
+              <input type="radio" name="pilotGender" value="female" id="genderFemale">
+              <span class="gender-symbol">XX</span>
+              <span class="gender-label">FEMALE</span>
             </label>
           </div>
+        </div>
+
+        <div class="onboarding-auth-portal">
+          <p class="eyebrow">Sovereign Portal</p>
+          <div class="auth-cta-grid">
+            <div class="auth-status-chip">
+              <span class="status-indicator"></span>
+              <span id="authStatusText">Guest Pilot</span>
+            </div>
+            <button type="button" class="is-tertiary" id="authLoginBtn">Sign In / Register</button>
+          </div>
+          <p class="onboarding-deck-hint">Data is used for product discovery, not extraction. One identity for the Kopano Labs 360 ecosystem.</p>
         </div>
         <label class="onboarding-acknowledge">
           <input id="onboardingAck" type="checkbox">
@@ -287,14 +298,20 @@
       </div>
     </section>
 
-    <!-- One-Question Discovery Survey -->
-    <section class="survey-modal is-hidden" id="surveyModal" aria-label="Pilot feedback">
+    <!-- One-question discovery survey (ecosystem preference — local only until sovereign auth ships) -->
+    <section class="survey-modal is-hidden" id="surveyModal" aria-label="Product discovery">
       <div class="survey-card ui-chrome">
         <p class="eyebrow">Product Discovery</p>
-        <h3 id="surveyQuestion">What feature should we build next?</h3>
+        <h3 id="surveyQuestion">What is your primary ecosystem?</h3>
         <div class="survey-options" id="surveyOptions">
-          <!-- Options injected by JS -->
+          <button type="button" class="survey-ecosystem-pick" data-ecosystem="tech">Tech</button>
+          <button type="button" class="survey-ecosystem-pick" data-ecosystem="commerce">Commerce</button>
+          <button type="button" class="survey-ecosystem-pick" data-ecosystem="sports">Sports</button>
         </div>
+        <label class="survey-never">
+          <input type="checkbox" id="surveyNeverAgain" />
+          <span>Don&rsquo;t ask again on this device</span>
+        </label>
         <div class="survey-actions">
           <button type="button" class="is-secondary" id="surveySkip">Skip</button>
         </div>
@@ -338,24 +355,6 @@
       </div>
     </section>
 
-    <section class="ecosystem-survey-modal is-hidden" id="ecosystemSurveyModal" role="dialog" aria-modal="true" aria-labelledby="ecosystemSurveyTitle">
-      <div class="ecosystem-survey-card">
-        <p class="eyebrow">Product discovery</p>
-        <h2 id="ecosystemSurveyTitle">One lane, one question</h2>
-        <p class="ecosystem-survey-copy">Where do you spend most of your Kopano time? (Anonymous preference &mdash; stored locally until the sovereign identity service lands.)</p>
-        <div class="ecosystem-survey-actions">
-          <button type="button" class="ecosystem-survey-pick" data-ecosystem="tech">Tech</button>
-          <button type="button" class="ecosystem-survey-pick" data-ecosystem="commerce">Commerce</button>
-          <button type="button" class="ecosystem-survey-pick" data-ecosystem="sports">Sports</button>
-        </div>
-        <label class="ecosystem-survey-never">
-          <input type="checkbox" id="ecosystemSurveyNever" />
-          <span>Don&rsquo;t ask again on this device</span>
-        </label>
-        <button type="button" id="ecosystemSurveyDismiss" class="is-secondary">Skip</button>
-      </div>
-    </section>
-
     <section class="guest-cta-modal is-hidden" id="guestCtaModal" role="dialog" aria-modal="true" aria-labelledby="guestCtaTitle">
       <div class="guest-cta-card">
         <p class="eyebrow">Pilot record</p>
@@ -380,11 +379,11 @@
     <section class="revive-modal is-hidden" id="reviveModal" role="dialog" aria-modal="true" aria-labelledby="reviveTitle">
       <div class="revive-card">
         <p class="eyebrow">Mini salvage</p>
-        <h2 id="reviveTitle">Core Salvage — earn one hull back</h2>
-        <p class="revive-copy">Tap the glowing cores before the lane collapses. Catch three to relaunch with 1 hull. One rescue per run.</p>
-        <p class="revive-timer">Time <strong id="reviveTimer">8.0</strong>s</p>
-        <p class="revive-progress">Caught <strong id="reviveProgress">0 / 3</strong></p>
-        <div class="revive-arena" id="reviveArena" aria-label="Tap salvage cores"></div>
+        <h2 id="reviveTitle">SYSTEM FAILURE — TAP TO REBOOT</h2>
+        <p class="revive-copy">Rapid-tap anywhere on this panel five times before the lane collapses to relaunch with 1 hull. One rescue per run.</p>
+        <p class="revive-timer">Time <strong id="reviveTimer">3.0</strong>s</p>
+        <p class="revive-progress">Taps <strong id="reviveProgress">0 / 5</strong></p>
+        <div class="revive-arena" id="reviveArena" aria-label="Tap to reboot systems"></div>
         <div class="revive-actions">
           <button id="reviveSkipButton" type="button" data-testid="modal-back" aria-label="Go back — skip rescue">Skip rescue</button>
         </div>

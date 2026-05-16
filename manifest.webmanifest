@@ -1,17 +1,20 @@
 {
   "name": "Starfall Salvage",
   "short_name": "Starfall",
-  "description": "Sovereign WebGL salvage runner by Kopano Labs.",
-  "start_url": ".",
+  "description": "High-fidelity sovereign space salvage game. Navigate the 360 Ecosystem, collect energy cores, and survive the danger zone.",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#07080e",
-  "theme_color": "#4ef0ff",
+  "theme_color": "#07080e",
+  "lang": "en-ZA",
+  "categories": ["games", "action", "arcade"],
+  "iarc_rating_id": "e7c65f90-1e5b-4c6e-8e7c-b65f901e5b4c",
   "icons": [
     {
       "src": "kopano-flight-mark.svg",
       "sizes": "any",
-      "type": "image/svg+xml"
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
     }
-  ],
-  "categories": ["games", "entertainment"]
+  ]
 }
