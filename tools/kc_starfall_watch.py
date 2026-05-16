@@ -276,6 +276,12 @@ def check_kopano_upgrade_features() -> dict[str, Any]:
         "relaunch_tick_handler": "tickRelaunch" in game_js,
         "onboarding_never_again_markup": 'id="onboardingNeverAgain"' in index_html,
         "review_briefing_button": 'id="reviewBriefingButton"' in index_html,
+        # Lesson 015 — Multitasking Flight Menu + Weapon Mode Orchestration (2026-05-16)
+        "flight_menu_pause_sync": 'scrim.hidden = mode === "playing" || mode === "relaunch"' in game_js,
+        "playing_hud_pause_visible": 'playHud.hidden = false;' in game_js and 'if (mode === "paused")' in game_js,
+        "weapon_mode_bolt_scatter_pierce": 'weapon: mode' in game_js and 'mode === "scatter"' in game_js and 'mode === "pierce"' in game_js,
+        "touch_range_performance_opt": 'TOUCH_FULL_RANGE_PX = Math.floor(70 *' in game_js,
+        "pause_minimal_toggle_hardened": 'state.mode === "playing" || state.mode === "paused"' in game_js,
     }
     missing = [name for name, ok in proofs.items() if not ok]
     return {

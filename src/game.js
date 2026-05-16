@@ -87,6 +87,10 @@
     pmhScore: document.getElementById("pmhScore"),
     pmhSpeed: document.getElementById("pmhSpeed"),
     pauseMinimalButton: document.getElementById("pauseMinimalButton"),
+    flightMenuToggle: document.getElementById("flightMenuToggle"),
+    flightMenuPanel: document.getElementById("flightMenuPanel"),
+    flightResumeItem: document.getElementById("flightResumeItem"),
+    flightStepOutItem: document.getElementById("flightStepOutItem"),
     gameOverSovereign: document.getElementById("gameOverSovereign"),
     gameOverFinal: document.getElementById("gameOverFinal"),
     gameOverBest: document.getElementById("gameOverBest"),
@@ -187,8 +191,24 @@
     if (mode === "playing" || mode === "relaunch") {
       scrim.hidden = true;
       scrim.setAttribute("aria-hidden", "true");
+      scrim.classList.remove("sovereign-scrim--backdrop-only");
       playHud.hidden = false;
       playHud.setAttribute("aria-hidden", "false");
+      return;
+    }
+
+    if (mode === "paused" && !blockMenu) {
+      scrim.hidden = false;
+      scrim.setAttribute("aria-hidden", "false");
+      scrim.classList.remove("sovereign-scrim--backdrop-only");
+      playHud.hidden = false;
+      playHud.setAttribute("aria-hidden", "false");
+      if (hud.sovereignSubline) {
+        hud.sovereignSubline.textContent = "Paused — salvage lane on hold";
+      }
+      if (hud.sovereignPrimaryCta) {
+        hud.sovereignPrimaryCta.textContent = "Resume";
+      }
       return;
     }
 
@@ -201,11 +221,40 @@
     }
     scrim.hidden = false;
     scrim.setAttribute("aria-hidden", "false");
+    scrim.classList.remove("sovereign-scrim--backdrop-only");
     if (hud.sovereignSubline) {
-      hud.sovereignSubline.textContent = mode === "paused" ? "Paused — salvage lane on hold" : "Tap to fly — sovereign lane";
+      hud.sovereignSubline.textContent = "Tap to fly — sovereign lane";
     }
     if (hud.sovereignPrimaryCta) {
-      hud.sovereignPrimaryCta.textContent = mode === "paused" ? "Resume" : "Tap to fly";
+      hud.sovereignPrimaryCta.textContent = "Tap to fly";
+    }
+  }
+
+  function isFlightMenuOpen() {
+    return Boolean(hud.flightMenuPanel && !hud.flightMenuPanel.classList.contains("is-hidden"));
+  }
+
+  function closeFlightMenu() {
+    if (!hud.flightMenuToggle || !hud.flightMenuPanel) {
+      return;
+    }
+    hud.flightMenuPanel.classList.add("is-hidden");
+    hud.flightMenuToggle.setAttribute("aria-expanded", "false");
+  }
+
+  function openFlightMenu() {
+    if (!hud.flightMenuToggle || !hud.flightMenuPanel) {
+      return;
+    }
+    hud.flightMenuPanel.classList.remove("is-hidden");
+    hud.flightMenuToggle.setAttribute("aria-expanded", "true");
+  }
+
+  function toggleFlightMenu() {
+    if (isFlightMenuOpen()) {
+      closeFlightMenu();
+    } else {
+      openFlightMenu();
     }
   }
 
@@ -598,6 +647,10 @@
     const scale = tier.particleScale || 1;
     sparksMax = Math.max(80, Math.floor(200 * scale));
     trailMax = Math.max(60, Math.floor(150 * scale));
+    // Reduce touch input area for performance optimization on lower tiers
+    if (isTouchCapable) {
+      TOUCH_FULL_RANGE_PX = Math.floor(70 * (scale < 1 ? 0.85 : 1));
+    }
   }
 
   function getSectorForMultiplier(multiplier) {
@@ -1108,7 +1161,7 @@
   let touchStartTime = 0;
   let touchMaxTravel = 0;
   const TOUCH_DEADZONE_PX = 8;
-  const TOUCH_FULL_RANGE_PX = 70;
+  let TOUCH_FULL_RANGE_PX = 70;
   const TOUCH_TAP_MAX_PX = 14;
   const TOUCH_TAP_MAX_MS = 260;
   const isTouchCapable = (typeof window !== "undefined") && (
@@ -1140,6 +1193,11 @@
     if (event.key === "Escape" && hud.shell?.classList.contains("leaderboard-overlay")) {
       event.preventDefault();
       closeLeaderboardOverlay();
+      return;
+    }
+    if (event.key === "Escape" && isFlightMenuOpen()) {
+      event.preventDefault();
+      closeFlightMenu();
       return;
     }
     const key = event.key.toLowerCase();
@@ -1617,7 +1675,7 @@
     hud.pauseMinimalButton.addEventListener("click", (event) => {
       event.preventDefault();
       event.stopPropagation();
-      if (state.mode === "playing") {
+      if (state.mode === "playing" || state.mode === "paused") {
         togglePause();
       }
     });
@@ -1800,6 +1858,28 @@
   canvas.addEventListener("webglcontextrestored", () => {
     window.location.reload();
   });
+
+  const STARFLIGHT_WEAPON_STORAGE_KEY = "starfall_salvage_weapon_v1";
+
+  function readWeaponModeFromStorage() {
+    try {
+      const raw = window.localStorage.getItem(STARFLIGHT_WEAPON_STORAGE_KEY);
+      if (raw === "scatter" || raw === "pierce" || raw === "bolt") {
+        return raw;
+      }
+    } catch {
+      /* ignore */
+    }
+    return "bolt";
+  }
+
+  function persistWeaponMode(mode) {
+    try {
+      window.localStorage.setItem(STARFLIGHT_WEAPON_STORAGE_KEY, mode);
+    } catch {
+      /* ignore */
+    }
+  }
 
   const POSITION_LERP_TOUCH = 0.42;
   const POSITION_LERP_DESKTOP = 0.28;
@@ -3390,29 +3470,31 @@
       return;
     }
     const rapid = player.fireBoostTimer > 0 || (player.buffKind === "overcharge" && player.buffTimer > 0);
-    state.bulletCooldown = rapid ? 0.09 : 0.18;
-    const triad = player.buffKind === "triad" || (player.buffKind === "overcharge" && player.buffTimer > 0);
-    const prism = player.buffKind === "prism" && player.buffTimer > 0;
-    const offsets = triad ? [-0.22, 0, 0.22] : [0];
-    const bulletColor = prism ? [0.95, 0.48, 1, 1] : rapid ? [1, 0.88, 0.38, 1] : [0.42, 0.96, 1, 1];
+    state.bulletCooldown = rapid ? 0.08 : 0.16;
+    
+    // Weapon Mode Orchestration: bolt, scatter, pierce
+    const mode = player.buffKind === "triad" ? "scatter" : (player.buffKind === "prism" ? "pierce" : "bolt");
+    const offsets = mode === "scatter" ? [-0.25, 0, 0.25] : [0];
+    const bulletColor = mode === "pierce" ? [0.95, 0.48, 1, 1] : (rapid ? [1, 0.88, 0.38, 1] : [0.42, 0.96, 1, 1]);
     
     offsets.forEach((offsetX, idx) => {
       if (sparks.length >= sparksMax) return;
-      const spread = triad ? (offsetX * 4) : 0;
+      const spread = mode === "scatter" ? (offsetX * 5) : 0;
       sparks.push({
         kind: "bullet",
         team: "player",
+        weapon: mode,
         x: player.x + offsetX,
         y: player.y + 0.18,
         z: player.z + 0.1,
         vx: spread,
         vy: 0,
-        vz: -72, // Increased velocity for better 'fluid' feel
+        vz: mode === "bolt" ? -76 : -68,
         life: 1.8,
         maxLife: 1.8,
-        size: prism ? 0.32 : (triad ? 0.20 : 0.24),
+        size: mode === "pierce" ? 0.34 : (mode === "scatter" ? 0.18 : 0.22),
         color: bulletColor,
-        pierce: prism
+        pierce: mode === "pierce"
       });
     });
     logEvent("player_shoot", { triad, prism });

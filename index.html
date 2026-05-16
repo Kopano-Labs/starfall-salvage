@@ -46,7 +46,28 @@
 
     <header class="playing-minimal-hud" id="playingMinimalHud" hidden aria-hidden="true">
       <div class="pmh-score"><span class="pmh-label">Score</span><strong id="pmhScore">0</strong></div>
-      <button type="button" class="pmh-pause" id="pauseMinimalButton" aria-label="Pause">||</button>
+      <button type="button" class="pmh-pause" id="pauseMinimalButton" aria-label="Pause or resume">||</button>
+      <div class="flight-menu-wrap">
+        <button
+          type="button"
+          class="flight-menu-toggle"
+          id="flightMenuToggle"
+          aria-expanded="false"
+          aria-haspopup="true"
+          aria-controls="flightMenuPanel"
+          aria-label="Flight menu — multitask, weapons"
+        >
+          ☰
+        </button>
+        <div class="flight-menu-panel is-hidden" id="flightMenuPanel" role="menu" aria-label="Flight menu">
+          <button type="button" class="flight-menu-item" id="flightResumeItem" role="menuitem">Drop in — resume</button>
+          <button type="button" class="flight-menu-item" id="flightStepOutItem" role="menuitem">Step out — hub pause</button>
+          <p class="flight-menu-heading" role="presentation">Weapon calibre</p>
+          <button type="button" class="flight-menu-item flight-weapon" data-weapon="bolt" role="menuitem" aria-pressed="true">Bolt lane</button>
+          <button type="button" class="flight-menu-item flight-weapon" data-weapon="scatter" role="menuitem" aria-pressed="false">Scatter burst</button>
+          <button type="button" class="flight-menu-item flight-weapon" data-weapon="pierce" role="menuitem" aria-pressed="false">Pierce core</button>
+        </div>
+      </div>
       <div class="pmh-speed"><strong id="pmhSpeed">1.0x</strong></div>
     </header>
 
