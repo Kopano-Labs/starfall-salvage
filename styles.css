@@ -1570,8 +1570,13 @@ h1 {
  }
 
  .event-toast {
- top: max(120px, env(safe-area-inset-top, 0px));
+ top: auto;
+ bottom: calc(92px + env(safe-area-inset-bottom, 0px));
  max-width: calc(100vw - 24px);
+ }
+
+ .shell.is-playing .event-toast {
+ bottom: calc(96px + env(safe-area-inset-bottom, 0px));
  }
 
  .mobile-fire-button {
@@ -1893,6 +1898,18 @@ select:focus {
    GAMEOVER = Clean mission report. Score + buttons.
    READY/PAUSED = Ecosystem + menus visible.
    ═══════════════════════════════════════════════════════════════════ */
+
+/* Sovereign landing: no flight-deck chrome on top of Tap to fly */
+.shell.is-ready .playing-minimal-hud,
+.shell.is-ready .hud {
+ display: none !important;
+ visibility: hidden !important;
+ pointer-events: none !important;
+}
+
+.shell.is-ready .sovereign-scrim:not([hidden]) {
+ z-index: 40;
+}
 
 /* ── STATE: PLAYING ─────────────────────────────────────────────── */
 /* Kill chrome during gameplay — prefer opacity over display toggles (less layout thrash) */
@@ -2278,11 +2295,11 @@ select:focus {
  left: 0;
  right: 0;
  z-index: 30;
- display: flex;
+ display: grid;
+ grid-template-columns: minmax(0, 1fr) auto;
  align-items: flex-start;
- justify-content: space-between;
- gap: 12px;
- padding: calc(12px + env(safe-area-inset-top, 0px)) 16px 0;
+ gap: 10px 12px;
+ padding: max(14px, env(safe-area-inset-top, 0px)) max(14px, env(safe-area-inset-right, 0px)) 0 max(14px, env(safe-area-inset-left, 0px));
  pointer-events: none;
 }
 
@@ -2295,9 +2312,17 @@ select:focus {
 }
 
 .pmh-score {
- flex: 1;
- text-align: center;
+ text-align: left;
  padding-top: 4px;
+ min-width: 0;
+}
+
+.pmh-controls {
+ display: flex;
+ align-items: flex-start;
+ justify-content: flex-end;
+ gap: 8px;
+ flex-wrap: nowrap;
 }
 
 .pmh-label {
@@ -2328,10 +2353,10 @@ select:focus {
 
 .pmh-speed {
  flex: 0 0 auto;
- min-width: 64px;
+ min-width: 52px;
  text-align: right;
- padding-top: 6px;
- font-size: 0.95rem;
+ padding-top: 10px;
+ font-size: 0.9rem;
  font-weight: 800;
  color: var(--cyan);
 }
@@ -2342,18 +2367,34 @@ select:focus {
 }
 
 .flight-menu-toggle {
+ display: inline-flex;
+ align-items: center;
+ justify-content: center;
+ gap: 4px;
  min-width: 44px;
  min-height: 44px;
- padding: 0 10px;
+ padding: 0 12px;
  border-radius: 10px;
- font-size: 1.1rem;
+ font-size: 0.82rem;
+ font-weight: 800;
  line-height: 1;
- letter-spacing: 0.02em;
+ letter-spacing: 0.04em;
+ text-transform: uppercase;
  background: rgba(8, 12, 22, 0.72);
  border: 1px solid rgba(255, 255, 255, 0.14);
  color: var(--text);
  cursor: pointer;
  -webkit-tap-highlight-color: transparent;
+}
+
+.flight-menu-glyph {
+ font-size: 1rem;
+ line-height: 1;
+}
+
+.flight-menu-label {
+ font-size: 0.72rem;
+ letter-spacing: 0.12em;
 }
 
 .flight-menu-toggle:focus-visible {

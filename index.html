@@ -18,9 +18,9 @@
   <link rel="icon" href="data:,">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="starfall-smoke.png">
-  <link rel="stylesheet" href="styles.css?v=20260516-sw-cache-glviewport">
-  <script type="module" src="src/pwa-boot.js?v=20260516-sw-cache-glviewport"></script>
-  <script src="src/game.js?v=20260516-sw-cache-glviewport" defer></script>
+  <link rel="stylesheet" href="styles.css?v=20260516-mobile-sovereign-hud">
+  <script type="module" src="src/pwa-boot.js?v=20260516-mobile-sovereign-hud"></script>
+  <script src="src/game.js?v=20260516-mobile-sovereign-hud" defer></script>
 </head>
 <body>
   <main class="shell">
@@ -46,6 +46,7 @@
 
     <header class="playing-minimal-hud" id="playingMinimalHud" hidden aria-hidden="true">
       <div class="pmh-score"><span class="pmh-label">Score</span><strong id="pmhScore">0</strong></div>
+      <div class="pmh-controls">
       <button type="button" class="pmh-pause" id="pauseMinimalButton" aria-label="Pause or resume">||</button>
       <div class="flight-menu-wrap">
         <button
@@ -57,7 +58,8 @@
           aria-controls="flightMenuPanel"
           aria-label="Flight menu — multitask, weapons"
         >
-          ☰
+          <span class="flight-menu-glyph" aria-hidden="true">☰</span>
+          <span class="flight-menu-label">Menu</span>
         </button>
         <div class="flight-menu-panel is-hidden" id="flightMenuPanel" role="menu" aria-label="Flight menu">
           <button type="button" class="flight-menu-item" id="flightResumeItem" role="menuitem">Drop in — resume</button>
@@ -69,6 +71,7 @@
         </div>
       </div>
       <div class="pmh-speed"><strong id="pmhSpeed">1.0x</strong></div>
+      </div>
     </header>
 
     <section class="game-over-sovereign" id="gameOverSovereign" hidden aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="gameOverTitle">

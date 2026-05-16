@@ -175,6 +175,7 @@
     const blockMenu = isOnboardingBlockingReady() || isAccountModalOpen() || isGuestCtaModalOpen();
 
     if (mode === "gameover") {
+      closeFlightMenu();
       scrim.hidden = false;
       scrim.setAttribute("aria-hidden", "false");
       scrim.classList.add("sovereign-scrim--backdrop-only");
@@ -188,30 +189,31 @@
     go.hidden = true;
     go.setAttribute("aria-hidden", "true");
 
-    if (mode === "playing" || mode === "relaunch") {
-      scrim.hidden = true;
-      scrim.setAttribute("aria-hidden", "true");
-      scrim.classList.remove("sovereign-scrim--backdrop-only");
+    const showMinimalPlayHud =
+      mode === "playing" || mode === "relaunch" || (mode === "paused" && !blockMenu);
+
+    if (showMinimalPlayHud) {
+      if (mode === "playing" || mode === "relaunch") {
+        scrim.hidden = true;
+        scrim.setAttribute("aria-hidden", "true");
+        scrim.classList.remove("sovereign-scrim--backdrop-only");
+      } else {
+        scrim.hidden = false;
+        scrim.setAttribute("aria-hidden", "false");
+        scrim.classList.remove("sovereign-scrim--backdrop-only");
+        if (hud.sovereignSubline) {
+          hud.sovereignSubline.textContent = "Paused — salvage lane on hold";
+        }
+        if (hud.sovereignPrimaryCta) {
+          hud.sovereignPrimaryCta.textContent = "Resume";
+        }
+      }
       playHud.hidden = false;
       playHud.setAttribute("aria-hidden", "false");
       return;
     }
 
-    if (mode === "paused" && !blockMenu) {
-      scrim.hidden = false;
-      scrim.setAttribute("aria-hidden", "false");
-      scrim.classList.remove("sovereign-scrim--backdrop-only");
-      playHud.hidden = false;
-      playHud.setAttribute("aria-hidden", "false");
-      if (hud.sovereignSubline) {
-        hud.sovereignSubline.textContent = "Paused — salvage lane on hold";
-      }
-      if (hud.sovereignPrimaryCta) {
-        hud.sovereignPrimaryCta.textContent = "Resume";
-      }
-      return;
-    }
-
+    closeFlightMenu();
     playHud.hidden = true;
     playHud.setAttribute("aria-hidden", "true");
     if (blockMenu) {
@@ -2293,6 +2295,7 @@
     hud.shell.classList.remove("is-hit");
     hud.eventToast.classList.remove("is-visible");
     hud.eventToast.textContent = "";
+    closeFlightMenu();
     if (hud.shareWhatsappButton) {
       hud.shareWhatsappButton.classList.add("is-hidden");
     }
