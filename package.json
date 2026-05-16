@@ -23,9 +23,11 @@
     "kc:audit:full": "python tools/kc_starfall_watch.py --once",
     "kc:audit:seed": "python tools/kc_starfall_watch.py --once --skip-backend --seed-kc",
     "kc:watch": "python tools/kc_starfall_watch.py --interval 60 --skip-backend",
-    "gate": "npm run verify:syntax && python tools/hot_path_audit.py && npm run kc:audit",
+    "gate": "npm run verify:syntax && python tools/hot_path_audit.py && npm run context:typecheck && npm run kc:audit",
     "hot-path:audit": "python tools/hot_path_audit.py",
-    "mobile:stress:pw": "node tools/playwright_mobile_audit.js"
+    "mobile:stress:pw": "node tools/playwright_mobile_audit.js",
+    "context:typecheck": "npm run typecheck --workspace=@kopano/context",
+    "context:smoke": "npm run context:typecheck && node --experimental-strip-types tools/kopano_context_smoke.mjs"
   },
   "devDependencies": {
     "turbo": "^2.0.0",

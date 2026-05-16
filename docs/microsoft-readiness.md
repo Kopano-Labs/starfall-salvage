@@ -39,10 +39,23 @@
 
 **Commandment rollup:** **12 / 16** PASS. Target **16 / 16** before submission.
 
+## Mobile stress parameters (C10b)
+
+| Parameter | Value |
+|-----------|--------|
+| Gate command | `npm run gate` → `mobile_stress_static` inside `kc:audit` |
+| Pass threshold | ≥ **80%** of static proofs (default `min_pass_pct=80` in `tools/kc_starfall_watch.py`) |
+| Proof count | 43 checks across `index.html`, `styles.css`, `src/game.js`, `manifest.webmanifest` |
+| **Not covered** | Concurrent sessions, memory pressure %, 10 min runtime stability — see **C10** and `docs/MAO-Starfall-Lane.md` BB-C9 |
+| Optional runtime | `npm run mobile:stress:pw` (Playwright; 3 viewports; **not** in gate) |
+
 ## Audit
 
 | UTC | Note |
 |-----|------|
+| 2026-05-16 | **Gate hash** `bf3989e`: `npm run gate` 7/7, `mobile_stress_pct` 100, 88 KC proofs (L001–L016); `context:smoke` ok. |
+| 2026-05-16 | Lesson 016: MAO Blackbox + `@kopano/context` in gate; KC proofs 79–88; SF-STRESS-01 intake table. |
+| 2026-05-16 | SF-STRESS-01: operator device fail &lt;80% **≠** static gate fail; static 100% @ `1560d32`; runtime/BB rows open. |
 | 2026-05-16 | C10c: MAO in-repo lane pack (`docs/MAO-Starfall-Lane.md`); commandments table extended. |
 | 2026-05-16 | P4 PASS: `docs/MAINTAINER-MAP.md`; optional `npm run mobile:stress:pw` (Playwright, not in gate). |
 | 2026-05-16 | C09/C15 PASS: `tools/hot_path_audit.py` in gate; `docs/KEYBOARD-MAP.md`; fixed `THREE`/`bounds`/`moveY` runtime bugs. |

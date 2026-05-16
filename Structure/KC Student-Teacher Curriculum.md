@@ -349,6 +349,62 @@ The teacher reads this, fixes the source, and triggers the next pass. No back-an
 
 ---
 
+## Lesson 015: Multitasking Flight Menu + Weapon Mode Orchestration (2026-05-16)
+
+**Why:** Pilots need drop-in / step-out multitasking and three weapon calibres without leaving the sovereign lane.
+
+**Spec:** `#flightMenuToggle` + panel; pause keeps minimal HUD + sovereign scrim; `STARFLIGHT_WEAPON_STORAGE_KEY`; bolt / scatter / pierce in `spawnPlayerBullet`.
+
+### Required Proofs (Lesson 015)
+
+| # | Proof Key | File | Search String |
+|---|-----------|------|---------------|
+| 70 | `flight_menu_pause_sync` | `src/game.js` | `mode === "paused" && !blockMenu` |
+| 71 | `playing_hud_pause_visible` | `src/game.js` | `playHud.hidden = false` |
+| 72 | `weapon_mode_bolt_scatter_pierce` | `src/game.js` | `STARFLIGHT_WEAPON_STORAGE_KEY` AND `setWeaponMode` |
+| 73 | `touch_range_performance_opt` | `src/game.js` | `TOUCH_FULL_RANGE_PX` |
+| 74 | `pause_minimal_toggle_hardened` | `src/game.js` | `state.mode === "playing" \|\| state.mode === "paused"` |
+| 75 | `maintainer_map_present` | `docs/MAINTAINER-MAP.md` | `docs/MAO-Starfall-Lane.md` |
+| 76 | `optional_playwright_script` | `package.json` | `mobile:stress:pw` |
+| 77 | `keyboard_map_doc` | `docs/KEYBOARD-MAP.md` | `flightMenuToggle` |
+| 78 | `hot_path_audit_script` | `tools/` | `hot_path_audit.py` exists |
+
+### Acceptance Criteria
+
+- All 9 new proofs `true` (running total: **78 proofs** across Lessons 001–015).
+- `npm run gate` passes.
+
+---
+
+## Lesson 016: MAO Blackbox + Kopano Context Governance (2026-05-16)
+
+**Why:** Breaking Point lane requires auditable BB-C5/C9/C12 rows, Identic Flow Bridge, ZAR ledger, and in-repo Kopano Context (`@kopano/context`) — not narrative-only “done.”
+
+**Spec:** `docs/MAO-Starfall-Lane.md` holds Blackbox + SF-STRESS-01 + Identic + ZAR; `packages/kopano-context` ships Immutable Law + Ephemeral State Broker; `npm run gate` runs `context:typecheck`; `tools/kopano_context_smoke.mjs` proves broker path.
+
+### Required Proofs (Lesson 016)
+
+| # | Proof Key | File | Search String |
+|---|-----------|------|---------------|
+| 79 | `mao_sf_stress_incident` | `docs/MAO-Starfall-Lane.md` | `SF-STRESS-01` |
+| 80 | `mao_bb_rows` | `docs/MAO-Starfall-Lane.md` | `BB-C5` AND `BB-C9` AND `BB-C12` |
+| 81 | `mao_identic_bridge` | `docs/MAO-Starfall-Lane.md` | `Identic Flow Bridge` |
+| 82 | `mao_zar_ledger` | `docs/MAO-Starfall-Lane.md` | `ZAR ledger stub` |
+| 83 | `kopano_context_commandments` | `packages/kopano-context/.../commandments_1_to_15.ts` | `validateExecution` |
+| 84 | `kopano_state_broker` | `packages/kopano-context/.../ephemeral_state_broker.ts` | `class StateBroker` |
+| 85 | `kopano_swarm_validator` | `packages/kopano-context/.../ephemeral_state_broker.ts` | `SwarmValidator` |
+| 86 | `context_smoke_tool` | `tools/` | `kopano_context_smoke.mjs` exists |
+| 87 | `gate_includes_context_typecheck` | `package.json` | `context:typecheck` in `gate` script |
+| 88 | `m_ready_hides_play_hud` | `styles.css` | `.shell.is-ready .playing-minimal-hud` |
+
+### Acceptance Criteria
+
+- All 10 new proofs `true` (running total: **88 proofs** across Lessons 001–016).
+- `npm run gate` and `npm run context:smoke` exit 0.
+- SF-STRESS-01 intake table present; operator fills before BB-C9 can PASS.
+
+---
+
 ## Maintenance
 
 - Every shipped feature spec adds a new lesson and at least one new proof key.

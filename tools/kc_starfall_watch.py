@@ -158,6 +158,7 @@ def check_mobile_stress_score(*, min_pass_pct: int = 80) -> dict[str, Any]:
         "m_weapon_storage_key": "STARFLIGHT_WEAPON_STORAGE_KEY" in game_js,
         "m_flight_menu_css": ".flight-menu-toggle" in styles_css
         and ".flight-menu-panel" in styles_css,
+        "m_ready_hides_play_hud": ".shell.is-ready .playing-minimal-hud" in styles_css,
     }
 
     passed = sum(1 for ok in proofs.values() if ok)
@@ -308,11 +309,30 @@ def check_kopano_upgrade_features() -> dict[str, Any]:
         and "flightMenuToggle" in _read_text("tools/playwright_mobile_audit.js"),
         "keyboard_map_doc": "flightMenuToggle" in _read_text("docs/KEYBOARD-MAP.md"),
         "hot_path_audit_script": (ROOT / "tools/hot_path_audit.py").exists(),
+        # Lesson 016 — MAO Blackbox + Kopano Context governance (2026-05-16)
+        "mao_sf_stress_incident": "SF-STRESS-01" in _read_text("docs/MAO-Starfall-Lane.md"),
+        "mao_bb_rows": "BB-C5" in _read_text("docs/MAO-Starfall-Lane.md")
+        and "BB-C9" in _read_text("docs/MAO-Starfall-Lane.md")
+        and "BB-C12" in _read_text("docs/MAO-Starfall-Lane.md"),
+        "mao_identic_bridge": "Identic Flow Bridge" in _read_text("docs/MAO-Starfall-Lane.md"),
+        "mao_zar_ledger": "ZAR ledger stub" in _read_text("docs/MAO-Starfall-Lane.md"),
+        "kopano_context_commandments": "validateExecution" in _read_text(
+            "packages/kopano-context/src/governance/commandments_1_to_15.ts"
+        ),
+        "kopano_state_broker": "class StateBroker" in _read_text(
+            "packages/kopano-context/src/governance/ephemeral_state_broker.ts"
+        ),
+        "kopano_swarm_validator": "SwarmValidator" in _read_text(
+            "packages/kopano-context/src/governance/ephemeral_state_broker.ts"
+        ),
+        "context_smoke_tool": (ROOT / "tools/kopano_context_smoke.mjs").exists(),
+        "gate_includes_context_typecheck": "context:typecheck" in _read_text("package.json")
+        and "npm run context:typecheck" in _read_text("package.json"),
     }
     missing = [name for name, ok in proofs.items() if not ok]
     return {
         "name": "kopano_upgrade_audit",
-        "expected": f"all {len(proofs)} curriculum proofs (Lessons 001–014) present in shipped files",
+        "expected": f"all {len(proofs)} curriculum proofs (Lessons 001–016) present in shipped files",
         "ok": not missing,
         "actual": "all proofs satisfied" if not missing else f"missing proofs: {', '.join(missing)}",
         "retry": (
