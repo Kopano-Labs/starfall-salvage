@@ -3067,3 +3067,27 @@ select:focus {
   font-size: clamp(2.5rem, 11vw, 5.5rem);
   letter-spacing: 0.12em;
 }
+
+.event-ticker {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #c084fc;
+  text-shadow: 0 0 8px rgba(192, 132, 252, 0.6);
+  padding: 4px 8px;
+  border: 1px solid rgba(192, 132, 252, 0.3);
+  border-radius: 4px;
+  background: rgba(192, 132, 252, 0.1);
+  margin-right: 8px;
+  white-space: nowrap;
+  animation: tickerPulse 2.4s infinite ease-in-out;
+}
+
+.event-ticker.is-hidden {
+  display: none;
+}
+
+@keyframes tickerPulse {
+  0%, 100% { opacity: 0.8; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.02); }
+}
+

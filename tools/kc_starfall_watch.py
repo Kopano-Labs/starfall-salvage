@@ -71,6 +71,8 @@ def check_required_files() -> dict[str, Any]:
         "README.md",
         "DEPLOYMENT.md",
         "CONTRIBUTING.md",
+        "docs/MAINTAINER-MAP.md",
+        "docs/MAO-Starfall-Lane.md",
         "Structure/Starfall Salvage - Index.md",
         "Structure/KC Dev Lane.md",
         "Structure/KC Student-Teacher Curriculum.md",
@@ -148,6 +150,13 @@ def check_mobile_stress_score(*, min_pass_pct: int = 80) -> dict[str, Any]:
         "m_position_lerp_touch": "POSITION_LERP_TOUCH" in game_js,
         "m_vibrate_optional": "navigator.vibrate" in game_js,
         "m_onboarding_modal": 'id="onboardingModal"' in index_html,
+        "m_flight_multitask_menu": 'id="flightMenuToggle"' in index_html
+        and 'id="flightMenuPanel"' in index_html,
+        "m_flight_drop_resume": 'id="flightResumeItem"' in index_html,
+        "m_flight_step_out": 'id="flightStepOutItem"' in index_html,
+        "m_weapon_storage_key": "STARFLIGHT_WEAPON_STORAGE_KEY" in game_js,
+        "m_flight_menu_css": ".flight-menu-toggle" in styles_css
+        and ".flight-menu-panel" in styles_css,
     }
 
     passed = sum(1 for ok in proofs.values() if ok)
@@ -178,8 +187,13 @@ def check_kopano_upgrade_features() -> dict[str, Any]:
     backend_py = _read_text("backend/starfall_server.py")
     contributing_md = _read_text("CONTRIBUTING.md")
     manifest_json = _read_text("manifest.webmanifest")
+    mao_lane_doc = _read_text("docs/MAO-Starfall-Lane.md")
 
     proofs = {
+        "mao_starfall_lane_doc": "**Architect**" in mao_lane_doc
+        and "**Business**" in mao_lane_doc
+        and "**Forensic Sociology**" in mao_lane_doc
+        and "SF-MT-01" in mao_lane_doc,
         # Lesson 001 — Kopano Labs Upgrade
         "haptic_vibrate_present": "navigator.vibrate" in game_js,
         "haptic_damage_pattern": "[200, 100, 200]" in game_js,
@@ -277,11 +291,20 @@ def check_kopano_upgrade_features() -> dict[str, Any]:
         "onboarding_never_again_markup": 'id="onboardingNeverAgain"' in index_html,
         "review_briefing_button": 'id="reviewBriefingButton"' in index_html,
         # Lesson 015 — Multitasking Flight Menu + Weapon Mode Orchestration (2026-05-16)
-        "flight_menu_pause_sync": 'scrim.hidden = mode === "playing" || mode === "relaunch"' in game_js,
-        "playing_hud_pause_visible": 'playHud.hidden = false;' in game_js and 'if (mode === "paused")' in game_js,
-        "weapon_mode_bolt_scatter_pierce": 'weapon: mode' in game_js and 'mode === "scatter"' in game_js and 'mode === "pierce"' in game_js,
+        "flight_menu_pause_sync": 'mode === "paused" && !blockMenu' in game_js
+        and 'scrim.classList.remove("sovereign-scrim--backdrop-only")' in game_js,
+        "playing_hud_pause_visible": "playHud.hidden = false" in game_js
+        and 'mode === "paused" && !blockMenu' in game_js,
+        "weapon_mode_bolt_scatter_pierce": "STARFLIGHT_WEAPON_STORAGE_KEY" in game_js
+        and 'w === "scatter"' in game_js
+        and 'w === "pierce"' in game_js
+        and "setWeaponMode" in game_js,
         "touch_range_performance_opt": 'TOUCH_FULL_RANGE_PX = Math.floor(70 *' in game_js,
         "pause_minimal_toggle_hardened": 'state.mode === "playing" || state.mode === "paused"' in game_js,
+        "maintainer_map_present": "npm run gate" in _read_text("docs/MAINTAINER-MAP.md")
+        and "docs/MAO-Starfall-Lane.md" in _read_text("docs/MAINTAINER-MAP.md"),
+        "optional_playwright_script": "mobile:stress:pw" in _read_text("package.json")
+        and "flightMenuToggle" in _read_text("tools/playwright_mobile_audit.js"),
     }
     missing = [name for name, ok in proofs.items() if not ok]
     return {

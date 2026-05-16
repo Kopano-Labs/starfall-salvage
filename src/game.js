@@ -228,6 +228,14 @@
     if (hud.sovereignPrimaryCta) {
       hud.sovereignPrimaryCta.textContent = "Tap to fly";
     }
+    syncEventTicker();
+  }
+
+  function syncEventTicker() {
+    if (!hud.eventTicker) return;
+    const isHackathonTime = true; // May 2026 Window
+    hud.eventTicker.textContent = isHackathonTime ? "LIVE: Midnight Hackathon — May 15-17" : "";
+    hud.eventTicker.classList.toggle("is-hidden", !isHackathonTime);
   }
 
   function isFlightMenuOpen() {
@@ -337,8 +345,9 @@
   }
 
   function updateSpeedVisuals(multiplier) {
-    const palette = document.body.dataset.pilotPalette || "default";
-    const paletteHue = palette === "blossom" ? 318 : palette === "ember" ? 28 : palette === "mono" ? 210 : 188;
+    const isMidnight = true; // Hackathon mode
+    const palette = isMidnight ? "midnight" : (document.body.dataset.pilotPalette || "default");
+    const paletteHue = palette === "midnight" ? 258 : (palette === "blossom" ? 318 : (palette === "ember" ? 28 : (palette === "mono" ? 210 : 188)));
     const t = Math.max(0, Math.min(1, (multiplier - 1) / 3.2));
     const hue = Math.round(paletteHue - t * (palette === "mono" ? 24 : 148));
     const sat = Math.round((palette === "mono" ? 8 : 42) + t * 38);
@@ -647,8 +656,9 @@
     const scale = tier.particleScale || 1;
     sparksMax = Math.max(80, Math.floor(200 * scale));
     trailMax = Math.max(60, Math.floor(150 * scale));
-    // Reduce touch input area for performance optimization on lower tiers
     if (isTouchCapable) {
+      sparksMax = Math.max(72, Math.floor(sparksMax * 0.88));
+      trailMax = Math.max(52, Math.floor(trailMax * 0.88));
       TOUCH_FULL_RANGE_PX = Math.floor(70 * (scale < 1 ? 0.85 : 1));
     }
   }
@@ -1675,6 +1685,7 @@
     hud.pauseMinimalButton.addEventListener("click", (event) => {
       event.preventDefault();
       event.stopPropagation();
+      closeFlightMenu();
       if (state.mode === "playing" || state.mode === "paused") {
         togglePause();
       }
@@ -1901,8 +1912,84 @@
     fireBoostTimer: 0,
     buffKind: "",
     buffTimer: 0,
-    aegisHits: 0
+    aegisHits: 0,
+    weaponMode: readWeaponModeFromStorage()
   };
+
+  function setWeaponMode(mode) {
+    const next = mode === "scatter" || mode === "pierce" ? mode : "bolt";
+    player.weaponMode = next;
+    persistWeaponMode(next);
+    syncFlightWeaponButtons();
+    if (next === "bolt") {
+      setEventMessage("Bolt lane", 0.55);
+    } else if (next === "scatter") {
+      setEventMessage("Scatter burst", 0.55);
+    } else {
+      setEventMessage("Pierce core", 0.55);
+    }
+    logEvent("weapon_mode_set", { mode: next });
+  }
+
+  function syncFlightWeaponButtons() {
+    if (!hud.flightMenuPanel) {
+      return;
+    }
+    const mode = player.weaponMode || "bolt";
+    hud.flightMenuPanel.querySelectorAll(".flight-weapon").forEach((btn) => {
+      const on = btn.dataset.weapon === mode;
+      btn.classList.toggle("is-selected", on);
+      btn.setAttribute("aria-pressed", on ? "true" : "false");
+    });
+  }
+
+  if (hud.flightMenuToggle && hud.flightMenuPanel) {
+    hud.flightMenuToggle.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      toggleFlightMenu();
+    });
+    if (hud.flightResumeItem) {
+      hud.flightResumeItem.addEventListener("click", () => {
+        closeFlightMenu();
+        if (state.mode === "paused") {
+          togglePause();
+        }
+      });
+    }
+    if (hud.flightStepOutItem) {
+      hud.flightStepOutItem.addEventListener("click", () => {
+        closeFlightMenu();
+        if (state.mode === "playing") {
+          togglePause();
+        }
+      });
+    }
+    hud.flightMenuPanel.querySelectorAll(".flight-weapon").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const w = btn.dataset.weapon;
+        if (w) {
+          setWeaponMode(w);
+        }
+        closeFlightMenu();
+      });
+    });
+    document.addEventListener(
+      "pointerdown",
+      (event) => {
+        if (!isFlightMenuOpen()) {
+          return;
+        }
+        const t = event.target;
+        if (hud.flightMenuToggle.contains(t) || hud.flightMenuPanel.contains(t)) {
+          return;
+        }
+        closeFlightMenu();
+      },
+      true
+    );
+    syncFlightWeaponButtons();
+  }
 
   const objects = [];
   const sparks = [];
@@ -3470,34 +3557,77 @@
       return;
     }
     const rapid = player.fireBoostTimer > 0 || (player.buffKind === "overcharge" && player.buffTimer > 0);
-    state.bulletCooldown = rapid ? 0.08 : 0.16;
-    
-    // Weapon Mode Orchestration: bolt, scatter, pierce
-    const mode = player.buffKind === "triad" ? "scatter" : (player.buffKind === "prism" ? "pierce" : "bolt");
-    const offsets = mode === "scatter" ? [-0.25, 0, 0.25] : [0];
-    const bulletColor = mode === "pierce" ? [0.95, 0.48, 1, 1] : (rapid ? [1, 0.88, 0.38, 1] : [0.42, 0.96, 1, 1]);
-    
-    offsets.forEach((offsetX, idx) => {
-      if (sparks.length >= sparksMax) return;
-      const spread = mode === "scatter" ? (offsetX * 5) : 0;
+    const w = player.weaponMode || "bolt";
+    const prismBuff = player.buffKind === "prism" && player.buffTimer > 0;
+    const triadBuff =
+      player.buffKind === "triad" ||
+      (player.buffKind === "overcharge" && player.buffTimer > 0);
+
+    let baseCdSlow = 0.16;
+    let baseCdFast = 0.08;
+    const isMidnight = true; // Hackathon mode
+    const finalW = isMidnight ? "phantom" : w;
+
+    if (finalW === "scatter") {
+      baseCdSlow = 0.26;
+      baseCdFast = 0.12;
+    } else if (finalW === "pierce") {
+      baseCdSlow = 0.21;
+      baseCdFast = 0.1;
+    } else if (finalW === "phantom") {
+      baseCdSlow = 0.12;
+      baseCdFast = 0.06;
+    }
+    state.bulletCooldown = rapid ? baseCdFast : baseCdSlow;
+
+    const pierceShot = prismBuff || w === "pierce";
+    let offsets;
+    if (w === "scatter") {
+      offsets = [-0.22, -0.11, 0, 0.11, 0.22];
+    } else if (triadBuff) {
+      offsets = [-0.22, 0, 0.22];
+    } else {
+      offsets = [0];
+    }
+
+    const triadShape = triadBuff && w !== "scatter";
+    let bulletColor = [0.42, 0.96, 1, 1];
+    if (prismBuff) {
+      bulletColor = [0.95, 0.48, 1, 1];
+    } else if (finalW === "phantom") {
+      bulletColor = [0.4, 0, 1, 0.4]; // Void Purple
+    } else if (w === "pierce") {
+      bulletColor = [1, 0.72, 0.28, 1];
+    } else if (w === "scatter") {
+      bulletColor = [0.55, 1, 0.62, 1];
+    } else if (rapid) {
+      bulletColor = [1, 0.88, 0.38, 1];
+    }
+
+    offsets.forEach((offsetX) => {
+      if (sparks.length >= sparksMax) {
+        return;
+      }
+      const spread = triadShape || finalW === "scatter" ? offsetX * 4 : 0;
+      let size = prismBuff ? 0.32 : (finalW === "phantom" ? 0.28 : (w === "scatter" ? 0.15 : (triadShape ? 0.2 : (w === "pierce" ? 0.28 : 0.24))));
       sparks.push({
         kind: "bullet",
         team: "player",
-        weapon: mode,
+        weapon: finalW,
         x: player.x + offsetX,
         y: player.y + 0.18,
         z: player.z + 0.1,
         vx: spread,
         vy: 0,
-        vz: mode === "bolt" ? -76 : -68,
-        life: 1.8,
-        maxLife: 1.8,
-        size: mode === "pierce" ? 0.34 : (mode === "scatter" ? 0.18 : 0.22),
+        vz: finalW === "phantom" ? -82 : (w === "bolt" ? -76 : -68),
+        life: 2.0,
+        maxLife: 2.0,
+        size: size,
         color: bulletColor,
-        pierce: mode === "pierce"
+        pierce: pierceShot || finalW === "phantom"
       });
     });
-    logEvent("player_shoot", { triad, prism });
+    logEvent("player_shoot", { triad: triadShape, prism: prismBuff, weapon: w });
   }
 
   function spawnBossBullet(boss) {

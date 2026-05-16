@@ -23,7 +23,8 @@
     "kc:audit:full": "python tools/kc_starfall_watch.py --once",
     "kc:audit:seed": "python tools/kc_starfall_watch.py --once --skip-backend --seed-kc",
     "kc:watch": "python tools/kc_starfall_watch.py --interval 60 --skip-backend",
-    "gate": "npm run verify:syntax && npm run kc:audit"
+    "gate": "npm run verify:syntax && npm run kc:audit",
+    "mobile:stress:pw": "node tools/playwright_mobile_audit.js"
   },
   "devDependencies": {
     "turbo": "^2.0.0",
