@@ -97,10 +97,14 @@
     <section class="status-panel ui-chrome" id="statusPanel">
       <p class="eyebrow">Mission</p>
       <h2 id="statusTitle">Ready</h2>
-      <p id="statusText">Collect blue energy cores and avoid red debris inside the moving salvage lane.</p>
-      <p class="control-line">One flight deck on every device: WASD or drag to move, Space or tap to dash, F / click / hold FIRE to shoot. Collect prism buffs for spread, pierce, aegis, and overcharge.</p>
-      <p class="desktop-fire-hint ui-chrome" id="desktopFireHint">Desktop: click canvas or hold F to fire</p>
+      <p id="statusText">Collect cores. Dodge debris. Dash through danger.</p>
+      <p class="desktop-fire-hint ui-chrome" id="desktopFireHint">Click canvas or hold F to fire</p>
     </section>
+
+    <!-- 3-second countdown overlay -->
+    <div class="countdown-overlay is-hidden" id="countdownOverlay" aria-live="assertive">
+      <span class="countdown-number" id="countdownNumber">3</span>
+    </div>
 
     <section class="kopano-ecosystem ui-chrome ecosystem-360 is-collapsed" id="ecosystemPanel" aria-label="Kopano Labs ecosystem">
       <button class="ecosystem-360-toggle" id="ecosystemToggle" type="button" aria-expanded="false" aria-controls="ecosystemBody">
@@ -225,15 +229,34 @@
           <li><strong>Orange plates:</strong> Range targets take two hits; clear them for a score burst.</li>
           <li><strong>Gold orbs:</strong> Fly through them for a rapid-fire boost.</li>
         </ul>
+        <div class="onboarding-gender-select">
+          <p class="eyebrow">Select Pilot Biological Identity</p>
+          <div class="gender-options">
+            <label class="gender-option" id="genderMaleLabel">
+              <input type="radio" name="pilotGender" value="male" id="genderMale">
+              <span class="gender-symbol">♂</span>
+              <span class="gender-label">MALE (XY)</span>
+            </label>
+            <label class="gender-option" id="genderFemaleLabel">
+              <input type="radio" name="pilotGender" value="female" id="genderFemale">
+              <span class="gender-symbol">♀</span>
+              <span class="gender-label">FEMALE (XX)</span>
+            </label>
+          </div>
+        </div>
         <label class="onboarding-acknowledge">
           <input id="onboardingAck" type="checkbox">
           <span>I understand the controls and the 2.0x danger threshold.</span>
+        </label>
+        <label class="onboarding-persist">
+          <input id="onboardingNeverAgain" type="checkbox" checked>
+          <span>Don&rsquo;t show this briefing again on this browser (uncheck to see it again next visit).</span>
         </label>
         <div class="onboarding-actions">
           <button id="onboardingSkipButton" type="button" class="is-secondary" data-testid="modal-back" aria-label="Go back — defer briefing">Back</button>
           <button id="onboardingContinueButton" type="button" disabled>I understand — Continue</button>
         </div>
-        <p class="onboarding-footnote">This briefing only shows once. Got an upgrade idea? Email <a href="mailto:rkholofelo@kopanolabs.com">rkholofelo@kopanolabs.com</a> &mdash; strong ideas earn a Sovereign Tech bounty.</p>
+        <p class="onboarding-footnote">You can reopen this briefing anytime from <strong>Pilot Access</strong> &rarr; &ldquo;Review briefing&rdquo;. Got an upgrade idea? Email <a href="mailto:rkholofelo@kopanolabs.com">rkholofelo@kopanolabs.com</a> &mdash; strong ideas earn a Sovereign Tech bounty.</p>
       </div>
     </section>
 
@@ -267,6 +290,7 @@
           <button id="closeAccountButton" type="button" data-testid="modal-back" aria-label="Go back">Close</button>
         </div>
         <div class="account-secondary-actions">
+          <button id="reviewBriefingButton" type="button" class="is-secondary">Review briefing</button>
           <button id="resetPilotButton" type="button">Reset Pilot</button>
         </div>
         <p class="account-status" id="accountStatus">No network account required.</p>
@@ -283,6 +307,14 @@
           <button id="guestCtaSaveButton" type="button">Save pilot stats / Squad up</button>
           <button id="guestCtaDismissButton" type="button" class="is-secondary" data-testid="modal-back" aria-label="Go back — not now">Not now</button>
         </div>
+      </div>
+    </section>
+
+    <section class="relaunch-hud is-hidden" id="relaunchHud" aria-live="assertive" aria-atomic="true">
+      <div class="relaunch-hud-inner">
+        <p class="eyebrow">Relaunch gate</p>
+        <p class="relaunch-hud-label">Back in the lane</p>
+        <p class="relaunch-hud-count" id="relaunchCountdownValue">3</p>
       </div>
     </section>
 

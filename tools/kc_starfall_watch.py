@@ -74,6 +74,7 @@ def check_required_files() -> dict[str, Any]:
         "Structure/Starfall Salvage - Index.md",
         "Structure/KC Dev Lane.md",
         "Structure/KC Student-Teacher Curriculum.md",
+        "Structure/Microsoft Store Integration.md",
     ]
     missing = [path for path in required if not (ROOT / path).exists()]
     return {
@@ -195,11 +196,16 @@ def check_kopano_upgrade_features() -> dict[str, Any]:
         "minimal_playing_hud_dom": 'id="playingMinimalHud"' in index_html,
         "touch_lerp_constant": "POSITION_LERP_TOUCH" in game_js,
         "tunnel_parallax_ribs": "// Parallax ribs:" in game_js,
+        # Lesson 014 — Post-revive relaunch gate + onboarding persistence (2026-05-16)
+        "relaunch_countdown_constant": "RELAUNCH_COUNTDOWN_SECONDS" in game_js,
+        "relaunch_tick_handler": "tickRelaunch" in game_js,
+        "onboarding_never_again_markup": 'id="onboardingNeverAgain"' in index_html,
+        "review_briefing_button": 'id="reviewBriefingButton"' in index_html,
     }
     missing = [name for name, ok in proofs.items() if not ok]
     return {
         "name": "kopano_upgrade_audit",
-        "expected": f"all {len(proofs)} curriculum proofs (Lessons 001–013) present in shipped files",
+        "expected": f"all {len(proofs)} curriculum proofs (Lessons 001–014) present in shipped files",
         "ok": not missing,
         "actual": "all proofs satisfied" if not missing else f"missing proofs: {', '.join(missing)}",
         "retry": (

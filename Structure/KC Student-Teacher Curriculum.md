@@ -321,9 +321,31 @@ The teacher reads this, fixes the source, and triggers the next pass. No back-an
 
 ### Acceptance Criteria
 
-- All 6 new proofs `true` (running total: 65 proofs across 13 lessons).
+- All 6 new proofs `true` (running total: 65 proofs across Lessons 001–013).
 - `npm run gate` (or `node --check src/game.js` + KC audit) passes.
 - Tunnel rib pass does not regress `node --check`.
+
+---
+
+## Lesson 014: Post-revive relaunch gate + onboarding persistence (2026-05-16)
+
+**Why:** Pilots need a clear **3-second relaunch runway** after a successful revive mini-game, plus control over whether the pilot briefing appears again (without a separate instruction box).
+
+**Spec:** After revive success, enter `relaunch` mode for `RELAUNCH_COUNTDOWN_SECONDS` (3) with `#relaunchHud` + `tickRelaunch`; then resume `playing`. Onboarding adds `#onboardingNeverAgain` (persist skip) and **Pilot Access** exposes `#reviewBriefingButton` to reopen the briefing.
+
+### Required Proofs (Lesson 014)
+
+| # | Proof Key | File | Search String |
+|---|-----------|------|---------------|
+| 66 | `relaunch_countdown_constant` | `src/game.js` | `RELAUNCH_COUNTDOWN_SECONDS` |
+| 67 | `relaunch_tick_handler` | `src/game.js` | `tickRelaunch` |
+| 68 | `onboarding_never_again_markup` | `index.html` | `id="onboardingNeverAgain"` |
+| 69 | `review_briefing_button` | `index.html` | `id="reviewBriefingButton"` |
+
+### Acceptance Criteria
+
+- All 4 new proofs `true` (running total: **69 proofs** across Lessons 001–014).
+- `npm run gate` passes; KC `kopano_upgrade_audit` reports `ok`.
 
 ---
 

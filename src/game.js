@@ -50,6 +50,8 @@
     onboardingAck: document.getElementById("onboardingAck"),
     onboardingContinueButton: document.getElementById("onboardingContinueButton"),
     onboardingSkipButton: document.getElementById("onboardingSkipButton"),
+    onboardingNeverAgain: document.getElementById("onboardingNeverAgain"),
+    reviewBriefingButton: document.getElementById("reviewBriefingButton"),
     mobileFireButton: document.getElementById("mobileFireButton"),
     mobileLockdown: document.getElementById("mobileLockdown"),
     opsConsoleButton: document.getElementById("opsConsoleButton"),
@@ -63,6 +65,8 @@
     reviveTimer: document.getElementById("reviveTimer"),
     reviveProgress: document.getElementById("reviveProgress"),
     reviveSkipButton: document.getElementById("reviveSkipButton"),
+    relaunchHud: document.getElementById("relaunchHud"),
+    relaunchCountdownValue: document.getElementById("relaunchCountdownValue"),
     kasiCommEmojiBar: document.getElementById("kasiCommEmojiBar"),
     guestCtaModal: document.getElementById("guestCtaModal"),
     guestCtaScore: document.getElementById("guestCtaScore"),
@@ -84,7 +88,13 @@
     gameOverBest: document.getElementById("gameOverBest"),
     gameOverFlyAgain: document.getElementById("gameOverFlyAgain"),
     gameOverLeaderboard: document.getElementById("gameOverLeaderboard"),
-    gameOverHub: document.getElementById("gameOverHub")
+    gameOverHub: document.getElementById("gameOverHub"),
+    countdownOverlay: document.getElementById("countdownOverlay"),
+    countdownNumber: document.getElementById("countdownNumber"),
+    genderMale: document.getElementById("genderMale"),
+    genderFemale: document.getElementById("genderFemale"),
+    genderMaleLabel: document.getElementById("genderMaleLabel"),
+    genderFemaleLabel: document.getElementById("genderFemaleLabel")
   };
 
   // Mobile: playable by default (touch + FIRE). Append ?strictMobile=1 to show the audit lockdown wall again.
@@ -124,9 +134,10 @@
   window.addEventListener("pointerdown", () => canvas.focus());
 
   function syncShellPlayState() {
-    const playing = state.mode === "playing";
+    const playing = state.mode === "playing" || state.mode === "relaunch";
     const gameover = state.mode === "gameover";
     hud.shell.classList.toggle("is-playing", playing);
+    hud.shell.classList.toggle("is-relaunch", state.mode === "relaunch");
     hud.shell.classList.toggle("is-paused", state.mode === "paused");
     hud.shell.classList.toggle("is-ready", state.mode === "ready");
     hud.shell.classList.toggle("is-gameover", gameover);
@@ -163,7 +174,7 @@
     go.hidden = true;
     go.setAttribute("aria-hidden", "true");
 
-    if (mode === "playing") {
+    if (mode === "playing" || mode === "relaunch") {
       scrim.hidden = true;
       scrim.setAttribute("aria-hidden", "true");
       playHud.hidden = false;
@@ -394,6 +405,13 @@
   const PROFILE_STORAGE_KEY = "starfallSalvagePilotProfile";
   const SCORES_STORAGE_KEY = "starfallSalvageLocalScores";
   const ONBOARDING_STORAGE_KEY = "starfallSalvageOnboardingComplete";
+  const GENDER_STORAGE_KEY = "starfallSalvagePilotGender";
+  const pilotProfile = {
+    mode: "guest",
+    callsign: "Guest Pilot",
+    id: null,
+    gender: "male" // Default
+  };
   const GUEST_CTA_SEEN_KEY = "starfall:guest_cta_seen_v1";
   const GUEST_CTA_SEEN_LEGACY_KEYS = ["starfallSalvageGuestCtaSeen"];
   const EVENTS_STORAGE_KEY = "starfallSalvageEventLog";
@@ -410,6 +428,7 @@
   const REVIVE_TIME_SECONDS = 8;
   const REVIVE_CORES_NEEDED = 3;
   const REVIVE_CORE_COUNT = 6;
+  const RELAUNCH_COUNTDOWN_SECONDS = 3;
   const MODAL_TRAP = {
     account: "account",
     guestCta: "guestCta",
@@ -1087,7 +1106,13 @@
     if (key === " ") {
       dashRequested = true;
     }
-    if (key === "enter" && state.mode !== "playing") {
+    if (key === "a" || key === "arrowleft") {
+      player.targetLane = Math.max(-1, player.targetLane - 1);
+    }
+    if (key === "d" || key === "arrowright") {
+      player.targetLane = Math.min(1, player.targetLane + 1);
+    }
+    if (key === "enter" && state.mode !== "playing" && state.mode !== "relaunch") {
       startGame();
     }
     if (key === "p") {
@@ -1175,6 +1200,9 @@
     if (hud.onboardingAck) {
       hud.onboardingAck.checked = false;
     }
+    if (hud.onboardingNeverAgain) {
+      hud.onboardingNeverAgain.checked = true;
+    }
     if (hud.onboardingContinueButton) {
       hud.onboardingContinueButton.disabled = true;
     }
@@ -1193,15 +1221,68 @@
     if (hud.onboardingAck && !hud.onboardingAck.checked) {
       return;
     }
-    markOnboardingDone();
+    try {
+      if (hud.onboardingNeverAgain && hud.onboardingNeverAgain.checked) {
+        markOnboardingDone();
+      } else {
+        window.localStorage.removeItem(ONBOARDING_STORAGE_KEY);
+      }
+    } catch {
+      markOnboardingDone();
+    }
+    const selectedGender = hud.genderFemale && hud.genderFemale.checked ? "female" : "male";
+    pilotProfile.gender = selectedGender;
+    try {
+      window.localStorage.setItem(GENDER_STORAGE_KEY, selectedGender);
+    } catch {}
+    applyGenderTheme(selectedGender);
+
     detachModalBackTrap(MODAL_TRAP.onboarding, false);
     hideOnboardingModal();
-    logEvent("onboarding_complete", {});
+    logEvent("onboarding_complete", { gender: selectedGender });
     if (pilotProfile.mode === "guest") {
       window.setTimeout(() => {
         setEventMessage("Sign in to save scores and squad up with friends");
       }, 700);
     }
+  }
+
+  function applyGenderTheme(gender) {
+    if (!hud.shell) return;
+    hud.shell.dataset.gender = gender;
+  }
+
+  function setupGenderListeners() {
+    if (hud.genderMale) {
+      hud.genderMale.addEventListener("change", () => {
+        if (hud.genderMaleLabel) hud.genderMaleLabel.classList.add("is-selected");
+        if (hud.genderFemaleLabel) hud.genderFemaleLabel.classList.remove("is-selected");
+      });
+    }
+    if (hud.genderFemale) {
+      hud.genderFemale.addEventListener("change", () => {
+        if (hud.genderFemaleLabel) hud.genderFemaleLabel.classList.add("is-selected");
+        if (hud.genderMaleLabel) hud.genderMaleLabel.classList.remove("is-selected");
+      });
+    }
+  }
+
+  function loadSavedGender() {
+    try {
+      const saved = window.localStorage.getItem(GENDER_STORAGE_KEY);
+      if (saved === "male" || saved === "female") {
+        pilotProfile.gender = saved;
+        applyGenderTheme(saved);
+        if (saved === "male" && hud.genderMale) {
+          hud.genderMale.checked = true;
+          if (hud.genderMaleLabel) hud.genderMaleLabel.classList.add("is-selected");
+        }
+        if (saved === "female" && hud.genderFemale) {
+          hud.genderFemale.checked = true;
+          if (hud.genderFemaleLabel) hud.genderFemaleLabel.classList.add("is-selected");
+        }
+      }
+    } catch {}
   }
 
   if (hud.onboardingAck) {
@@ -1216,6 +1297,9 @@
   }
   if (hud.onboardingSkipButton) {
     hud.onboardingSkipButton.addEventListener("click", deferOnboardingBriefing);
+  }
+  if (hud.reviewBriefingButton) {
+    hud.reviewBriefingButton.addEventListener("click", reopenPilotBriefing);
   }
   if (!isOnboardingDone()) {
     showOnboardingModal();
@@ -1485,13 +1569,16 @@
   }
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) {
-      wasPlayingBeforeHidden = state.mode === "playing";
-      if (wasPlayingBeforeHidden || state.mode === "revive") {
+      wasPlayingBeforeHidden = state.mode === "playing" || state.mode === "relaunch";
+      if (wasPlayingBeforeHidden || state.mode === "revive" || state.mode === "relaunch") {
         if (state.mode === "revive") {
           wasPlayingBeforeHidden = true;
           if (hud.reviveModal) {
             hud.reviveModal.classList.add("is-hidden");
           }
+        }
+        if (state.mode === "relaunch" && hud.relaunchHud) {
+          hud.relaunchHud.classList.add("is-hidden");
         }
         state.mode = "paused";
         hud.pauseButton.textContent = "Resume";
@@ -1524,6 +1611,7 @@
     z: -7.8,
     targetX: 0,
     targetY: isTouchCapable ? MOBILE_LANE_TARGET_Y : -0.45,
+    targetLane: 0, // -1: Left, 0: Center, 1: Right
     vx: 0,
     vy: 0,
     radius: 0.62,
@@ -1620,6 +1708,10 @@
     need: REVIVE_CORES_NEEDED
   };
 
+  const relaunchState = {
+    remain: 0
+  };
+
   function clearReviveArena() {
     if (!hud.reviveArena) {
       return;
@@ -1691,8 +1783,15 @@
     clearReviveArena();
     if (success) {
       state.hull = 1;
-      state.mode = "playing";
-      setEventMessage("Hull restored — keep flying!");
+      relaunchState.remain = RELAUNCH_COUNTDOWN_SECONDS;
+      state.mode = "relaunch";
+      if (hud.relaunchCountdownValue) {
+        hud.relaunchCountdownValue.textContent = String(Math.ceil(Math.max(0, relaunchState.remain)));
+      }
+      if (hud.relaunchHud) {
+        hud.relaunchHud.classList.remove("is-hidden");
+      }
+      setEventMessage("Relaunch gate — lane opens in 3…");
       logEvent("revive_success", { score: Math.floor(state.score) });
       syncShellPlayState();
       updateHud();
@@ -1715,6 +1814,26 @@
     }
     if (reviveState.timer <= 0) {
       completeRevive(false);
+    }
+  }
+
+  function tickRelaunch(dt) {
+    if (state.mode !== "relaunch") {
+      return;
+    }
+    relaunchState.remain -= dt;
+    const shown = Math.max(0, Math.ceil(relaunchState.remain));
+    if (hud.relaunchCountdownValue) {
+      hud.relaunchCountdownValue.textContent = String(shown);
+    }
+    if (relaunchState.remain <= 0) {
+      if (hud.relaunchHud) {
+        hud.relaunchHud.classList.add("is-hidden");
+      }
+      state.mode = "playing";
+      setEventMessage("Hull restored — keep flying!");
+      syncShellPlayState();
+      updateHud();
     }
   }
 
@@ -1788,9 +1907,36 @@
     if (hud.shareWhatsappButton) {
       hud.shareWhatsappButton.classList.add("is-hidden");
     }
+    if (hud.relaunchHud) {
+      hud.relaunchHud.classList.add("is-hidden");
+    }
+    relaunchState.remain = 0;
     updateHud();
     syncShellPlayState();
     setStatus("Ready", "Collect blue energy cores, dodge red debris, and use Space to phase dash through danger.", false);
+  }
+
+  function runCountdown(onComplete) {
+    if (!hud.countdownOverlay || !hud.countdownNumber) {
+      onComplete();
+      return;
+    }
+
+    state.mode = "countdown";
+    hud.countdownOverlay.classList.remove("is-hidden");
+    let count = 3;
+    hud.countdownNumber.textContent = String(count);
+
+    const interval = setInterval(() => {
+      count--;
+      if (count <= 0) {
+        clearInterval(interval);
+        hud.countdownOverlay.classList.add("is-hidden");
+        onComplete();
+      } else {
+        hud.countdownNumber.textContent = String(count);
+      }
+    }, 1000);
   }
 
   function startGame() {
@@ -1800,14 +1946,20 @@
     }
     closeLeaderboardOverlay();
     collapseEcosystemFlyout();
-    state.mode = "playing";
-    hud.pauseButton.textContent = "Pause";
-    setStatus("", "", true);
-    syncShellPlayState();
-    canvas.focus();
+
+    runCountdown(() => {
+      state.mode = "playing";
+      hud.pauseButton.textContent = "Pause";
+      setStatus("", "", true);
+      syncShellPlayState();
+      canvas.focus();
+    });
   }
 
   function togglePause() {
+    if (state.mode === "relaunch" || state.mode === "revive") {
+      return;
+    }
     if (state.mode === "playing") {
       state.mode = "paused";
       hud.pauseButton.textContent = "Resume";
@@ -2147,7 +2299,14 @@
   }
 
   function openAccountModal() {
-    if (state.mode === "playing") {
+    const wasRelaunch = state.mode === "relaunch";
+    if (wasRelaunch) {
+      if (hud.relaunchHud) {
+        hud.relaunchHud.classList.add("is-hidden");
+      }
+      relaunchState.remain = 0;
+    }
+    if (state.mode === "playing" || wasRelaunch) {
       state.mode = "paused";
       hud.pauseButton.textContent = "Resume";
       setStatus("Pilot Access", "Mission paused while pilot credentials are entered.", false);
@@ -2762,7 +2921,7 @@
   }
 
   function updateHud() {
-    const playing = state.mode === "playing";
+    const playing = state.mode === "playing" || state.mode === "relaunch";
     const scoreInt = Math.floor(state.score);
     const speedLabel = `${(state.speed / 18).toFixed(1)}x`;
 
@@ -3126,42 +3285,29 @@
       state.spawnTimer = nextSpawnInterval(deciSteps, speedMultiplier);
     }
 
-    let moveX = 0;
-    let moveY = 0;
-    if (keys.has("a") || keys.has("arrowleft")) moveX -= 1;
-    if (keys.has("d") || keys.has("arrowright")) moveX += 1;
-    if (keys.has("w") || keys.has("arrowup")) moveY += 1;
-    if (keys.has("s") || keys.has("arrowdown")) moveY -= 1;
-    moveX += touchAxis.x;
-    moveY += touchAxis.y;
-
-    const length = Math.hypot(moveX, moveY) || 1;
-    moveX /= length;
-    moveY /= length;
-
-    const controlSpeed = player.dash > 0 ? 11 : 7.2;
-    player.vx = moveX * controlSpeed;
-    player.vy = moveY * controlSpeed;
-    const bounds = getPlayerBounds();
-    if (isTouchCapable && Math.hypot(touchAxis.x, touchAxis.y) > 0.02) {
-      player.targetX = clamp(
-        player.targetX + player.vx * dt,
-        bounds.xMin,
-        bounds.xMax
-      );
-      player.targetY = clamp(
-        player.targetY + player.vy * dt,
-        bounds.yMin,
-        bounds.yMax
-      );
-    } else {
-      player.targetX = clamp(player.targetX + player.vx * dt, bounds.xMin, bounds.xMax);
+    const laneWidth = 2.2;
+    player.targetX = player.targetLane * laneWidth;
+    
+    if (!isTouchCapable) {
+      if (keys.has("w") || keys.has("arrowup")) moveY += 1;
+      if (keys.has("s") || keys.has("arrowdown")) moveY -= 1;
+      player.vy = moveY * 7.2;
       player.targetY = clamp(player.targetY + player.vy * dt, bounds.yMin, bounds.yMax);
-    }
-    if (isTouchCapable) {
+    } else {
+      // Touch lane switching
+      if (Math.abs(touchAxis.x) > 0.4) {
+        if (touchAxis.x < -0.4 && player.targetLane > -1) {
+          player.targetLane = -1;
+        } else if (touchAxis.x > 0.4 && player.targetLane < 1) {
+          player.targetLane = 1;
+        } else if (Math.abs(touchAxis.x) < 0.1) {
+          player.targetLane = 0;
+        }
+      }
       player.targetY = clamp(MOBILE_LANE_TARGET_Y, bounds.yMin, bounds.yMax);
     }
-    const positionLerp = isTouchCapable ? POSITION_LERP_TOUCH : POSITION_LERP_DESKTOP;
+    
+    const positionLerp = isTouchCapable ? 0.25 : 0.18;
     player.x += (player.targetX - player.x) * positionLerp;
     player.y += (player.targetY - player.y) * positionLerp;
 
@@ -3590,7 +3736,7 @@
   }
 
   function renderPlayerGlow(alphaTime) {
-    if (state.mode !== "playing" && state.mode !== "paused") {
+    if (state.mode !== "playing" && state.mode !== "paused" && state.mode !== "relaunch") {
       return;
     }
     const shipZ = player.z + 0.45;
@@ -3736,6 +3882,8 @@
     }
     if (state.mode === "revive") {
       tickRevive(dt);
+    } else if (state.mode === "relaunch") {
+      tickRelaunch(dt);
     } else {
       updateGame(dt);
     }
@@ -3753,6 +3901,8 @@
   async function boot() {
     refreshRenderBudgetLimits();
     await loadSimLaw();
+    setupGenderListeners();
+    loadSavedGender();
     applyPilotPalette(pilotProfile.palette || "default");
     const squadParam = new URLSearchParams(window.location.search).get("squad");
     if (squadParam && hud.accessCodeInput) {
@@ -3761,6 +3911,9 @@
     }
     updatePilotBadge();
     resetGame();
+    if (!isOnboardingDone()) {
+      showOnboardingModal();
+    }
     refreshLeaderboard({ quiet: true });
     requestAnimationFrame(frame);
   }
