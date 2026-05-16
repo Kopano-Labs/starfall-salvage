@@ -1,6 +1,6 @@
 import { KopanoVault } from "./kopano-vault.js";
 
-const BUILD = "20260514-ecosystem-runtime";
+const BUILD = "20260516-sw-cache-glviewport";
 
 window.__kopanoVault = null;
 window.__kopanoVaultReady = KopanoVault.open()
