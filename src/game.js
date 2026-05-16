@@ -48,6 +48,7 @@
     onboardingModal: document.getElementById("onboardingModal"),
     onboardingAck: document.getElementById("onboardingAck"),
     onboardingContinueButton: document.getElementById("onboardingContinueButton"),
+    onboardingSkipButton: document.getElementById("onboardingSkipButton"),
     mobileFireButton: document.getElementById("mobileFireButton"),
     mobileLockdown: document.getElementById("mobileLockdown"),
     opsConsoleButton: document.getElementById("opsConsoleButton"),
@@ -286,7 +287,7 @@
   const KOPANO_BOUNTY_EMAIL = "rkholofelo@kopanolabs.com";
   const PUBLIC_LIVE_URL = "https://starfallsalvage.kopanolabs.com";
   const PUBLIC_REPO_URL = "https://github.com/Kopano-Labs/starfall-salvage";
-  const GAME_BUILD = "20260514-mobile-ux-b";
+  const GAME_BUILD = "20260516-fluid-ship";
   const PILOT_PALETTES = ["default", "blossom", "ember", "mono"];
   const REVIVE_TIME_SECONDS = 8;
   const REVIVE_CORES_NEEDED = 3;
@@ -995,6 +996,11 @@
     touchAxis.x = (dx / dist) * magnitude;
     // Browser y-axis is inverted vs game world Y (up is negative pixel delta).
     touchAxis.y = -(dy / dist) * magnitude;
+    // Mobile salvage lane: absolute X tracking + lateral relative nudge — no vertical drag
+    // (Temple-runner sightline; avoids fighting camera bias — see MOBILE_LANE_TARGET_Y).
+    if (isTouchCapable) {
+      touchAxis.y = 0;
+    }
   }
 
   function clearTouchAxis() {
@@ -1041,6 +1047,12 @@
     hud.onboardingModal.classList.add("is-hidden");
   }
 
+  function deferOnboardingBriefing() {
+    detachModalBackTrap(MODAL_TRAP.onboarding, false);
+    hideOnboardingModal();
+    logEvent("onboarding_deferred", {});
+  }
+
   function dismissOnboarding() {
     if (hud.onboardingAck && !hud.onboardingAck.checked) {
       return;
@@ -1065,6 +1077,9 @@
   }
   if (hud.onboardingContinueButton) {
     hud.onboardingContinueButton.addEventListener("click", dismissOnboarding);
+  }
+  if (hud.onboardingSkipButton) {
+    hud.onboardingSkipButton.addEventListener("click", deferOnboardingBriefing);
   }
   if (!isOnboardingDone()) {
     showOnboardingModal();
@@ -1315,14 +1330,16 @@
     window.location.reload();
   });
 
-  const POSITION_LERP_TOUCH = 0.18;
-  const POSITION_LERP_DESKTOP = 0.32;
+  const POSITION_LERP_TOUCH = 0.42;
+  const POSITION_LERP_DESKTOP = 0.38;
+  /** Locked runner lane height on touch devices (paired with camera viewBias — execution ledger baseline). */
+  const MOBILE_LANE_TARGET_Y = -0.58;
   const player = {
     x: 0,
-    y: -0.45,
+    y: isTouchCapable ? MOBILE_LANE_TARGET_Y : -0.45,
     z: -7.8,
     targetX: 0,
-    targetY: -0.45,
+    targetY: isTouchCapable ? MOBILE_LANE_TARGET_Y : -0.45,
     vx: 0,
     vy: 0,
     radius: 0.62,
@@ -1361,8 +1378,8 @@
 
   function getCameraFollow() {
     if (isTouchCapable) {
-      // Partial follow + viewBiasY in renderScene keeps ship in lower viewport (runner baseline).
-      return { x: 0.88, y: 0.38 };
+      // Relaxed follow — ship stays visible but player sees further ahead.
+      return { x: 0.42, y: 0.22 };
     }
     return { x: 0.018, y: 0.016 };
   }
@@ -1556,10 +1573,11 @@
     state.sectorLabel = "Approach";
     state.reviveUsedThisRun = false;
     player.x = 0;
-    player.y = -0.45;
+    const laneY = isTouchCapable ? MOBILE_LANE_TARGET_Y : -0.45;
+    player.y = laneY;
     player.z = -7.8;
     player.targetX = 0;
-    player.targetY = -0.45;
+    player.targetY = laneY;
     player.vx = 0;
     player.vy = 0;
     player.dash = 0;
@@ -2894,6 +2912,9 @@
     } else {
       player.targetX = clamp(player.targetX + player.vx * dt, bounds.xMin, bounds.xMax);
       player.targetY = clamp(player.targetY + player.vy * dt, bounds.yMin, bounds.yMax);
+    }
+    if (isTouchCapable) {
+      player.targetY = clamp(MOBILE_LANE_TARGET_Y, bounds.yMin, bounds.yMax);
     }
     const positionLerp = isTouchCapable ? POSITION_LERP_TOUCH : POSITION_LERP_DESKTOP;
     player.x += (player.targetX - player.x) * positionLerp;
