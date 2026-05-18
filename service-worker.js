@@ -1,5 +1,5 @@
 /* Starfall Salvage — offline shell (Commandment IX). Bump on deploy. */
-const CACHE_VERSION = "20260514-ecosystem-runtime";
+const CACHE_VERSION = "20260515-orbital-wreck-lane";
 const SHELL_CACHE = `starfall-shell-${CACHE_VERSION}`;
 
 const PRECACHE_URLS = [

@@ -287,7 +287,7 @@
   const KOPANO_BOUNTY_EMAIL = "rkholofelo@kopanolabs.com";
   const PUBLIC_LIVE_URL = "https://starfallsalvage.kopanolabs.com";
   const PUBLIC_REPO_URL = "https://github.com/Kopano-Labs/starfall-salvage";
-  const GAME_BUILD = "20260514-unified-ecosystem";
+  const GAME_BUILD = "20260515-orbital-wreck-lane";
   const PILOT_PALETTES = ["default", "blossom", "ember", "mono"];
   const REVIVE_TIME_SECONDS = 8;
   const REVIVE_CORES_NEEDED = 3;
@@ -1331,12 +1331,13 @@
   const objects = [];
   const sparks = [];
   const trailParticles = [];
-  const stars = Array.from({ length: 80 }, () => ({
-    x: randomRange(-9, 9),
-    y: randomRange(-5, 5),
-    z: randomRange(-12, -80),
-    size: randomRange(0.025, 0.09),
-    phase: Math.random() * Math.PI * 2
+  const stars = Array.from({ length: 110 }, (_, index) => ({
+    x: randomRange(-11, 11),
+    y: randomRange(-6, 6),
+    z: randomRange(-14, -88),
+    size: randomRange(0.02, 0.11),
+    phase: Math.random() * Math.PI * 2,
+    layer: index % 3
   }));
 
   function getPlayerBounds() {
@@ -3171,15 +3172,18 @@
     const shakeX = Math.sin(alphaTime * 82) * shakeAmount;
     const shakeY = Math.cos(alphaTime * 67) * shakeAmount * 0.72;
     const follow = getCameraFollow();
+    const speedMultiplier = state.lastSpeedMultiplier || 1;
+    const speedT = Math.max(0, Math.min(1, (speedMultiplier - 1) / 3.5));
+    const bankRad = clamp(player.vx * -0.052, -0.13, 0.13) + Math.sin(alphaTime * 0.38) * 0.016;
+    const swayX = Math.sin(alphaTime * 0.52) * 0.07 * (0.35 + speedT);
     Mat4.identity(viewMatrix);
     Mat4.translate(
       viewMatrix,
       viewMatrix,
-      [shakeX - player.x * follow.x, shakeY - player.y * follow.y, 0]
+      [shakeX - player.x * follow.x + swayX, shakeY - player.y * follow.y, 0]
     );
+    Mat4.rotateZ(viewMatrix, viewMatrix, bankRad);
 
-    const speedMultiplier = state.lastSpeedMultiplier || 1;
-    const speedT = Math.max(0, Math.min(1, (speedMultiplier - 1) / 3.5));
     const dangerLerp = speedMultiplier >= 2
       ? Math.max(0.48, Math.min(1, 0.48 + ((speedMultiplier - 2) / 0.8) * 0.52))
       : speedT * 0.35;
@@ -3200,6 +3204,7 @@
     gl.disable(gl.BLEND);
     gl.depthMask(true);
 
+    renderOrbitalBackdrop(alphaTime, speedT);
     renderStars(alphaTime);
     renderTunnel(alphaTime);
     renderObjects(alphaTime);
@@ -3219,57 +3224,185 @@
     gl.disable(gl.BLEND);
   }
 
+  function getWreckLaneCurve(z, alphaTime) {
+    const drift = Math.sin(z * 0.09 + alphaTime * 0.42) * 0.4;
+    const counterSteer = -player.x * 0.11;
+    return drift + counterSteer;
+  }
+
+  function renderOrbitalBackdrop(alphaTime, speedT) {
+    const planetPulse = 0.04 + Math.sin(alphaTime * 0.22) * 0.02;
+    drawMesh(meshes.cube, {
+      position: [7.2, 2.4, -92],
+      rotation: [0.12, -0.35, 0],
+      scale: [14, 14, 0.4],
+      color: [0.42, 0.18, 0.52, 0.55 + speedT * 0.12],
+      texture: colorTexture,
+      textureMix: 0.35,
+      pulse: planetPulse
+    });
+    drawMesh(meshes.cube, {
+      position: [-8.5, -1.2, -88],
+      rotation: [0, 0.2, 0],
+      scale: [18, 10, 0.35],
+      color: [0.08, 0.22, 0.48, 0.38 + speedT * 0.1],
+      texture: colorTexture,
+      textureMix: 0.28,
+      pulse: planetPulse * 0.8
+    });
+    drawMesh(meshes.cube, {
+      position: [0, 0.8, -96],
+      rotation: [0, 0, 0],
+      scale: [22, 12, 0.2],
+      color: [0.12, 0.34, 0.62, 0.22 + speedT * 0.08],
+      texture: starTexture,
+      textureMix: 0.55,
+      pulse: 0.06
+    });
+  }
+
   function renderStars(alphaTime) {
+    const layerSpeed = [0.42, 0.68, 1];
     stars.forEach((star) => {
-      const wrappedZ = -10 - (((-star.z + state.time * state.speed * 0.72) % 72 + 72) % 72);
-      const twinkle = 0.15 + Math.sin(alphaTime * 3 + star.phase) * 0.08;
+      const scroll = state.time * state.speed * 0.72 * (layerSpeed[star.layer] || 0.68);
+      const wrappedZ = -10 - (((-star.z + scroll) % 78 + 78) % 78);
+      const parallaxX = star.x + Math.sin(alphaTime * 0.4 + star.phase) * 0.08 * (star.layer + 1);
+      const twinkle = 0.12 + Math.sin(alphaTime * 3 + star.phase) * 0.09;
+      const tint = star.layer === 0 ? [0.92, 0.96, 1, 1] : star.layer === 1 ? [0.78, 0.9, 1, 1] : [0.62, 0.82, 1, 1];
       drawMesh(meshes.cube, {
-        position: [star.x, star.y, wrappedZ],
+        position: [parallaxX, star.y, wrappedZ],
         rotation: [0, 0, 0],
         scale: [star.size, star.size, star.size],
-        color: [0.78, 0.94, 1, 1],
+        color: tint,
         texture: starTexture,
-        textureMix: 0.85,
+        textureMix: 0.82,
         pulse: twinkle
       });
     });
   }
 
+  function renderWreckSalvageDecor(curveX, z, alphaTime, decorScale, segIndex) {
+    if (decorScale < 0.55 || segIndex % 2 !== 0) {
+      return;
+    }
+    const kind = Math.abs(Math.floor(segIndex * 1.7)) % 4;
+    const side = segIndex % 4 < 2 ? -1 : 1;
+    const yBase = kind === 0 ? 1.2 : kind === 1 ? -0.4 : kind === 2 ? 2.6 : 0.4;
+    const pulse = 0.08 + Math.sin(alphaTime * 2.4 + z * 0.3) * 0.05;
+    if (kind === 0) {
+      drawMesh(meshes.cube, {
+        position: [curveX + side * 4.2, yBase, z - 0.4],
+        rotation: [0, side * 0.2, 0],
+        scale: [1.1 * decorScale, 0.85 * decorScale, 0.7 * decorScale],
+        color: [0.38, 0.42, 0.48, 1],
+        texture: colorTexture,
+        textureMix: 0.58,
+        pulse
+      });
+    } else if (kind === 1) {
+      drawMesh(meshes.cube, {
+        position: [curveX + side * 3.8, yBase, z],
+        rotation: [0.4, side * 0.35, 0],
+        scale: [1.6 * decorScale, 0.08 * decorScale, 1.1 * decorScale],
+        color: [0.22, 0.48, 0.62, 1],
+        texture: colorTexture,
+        textureMix: 0.62,
+        pulse
+      });
+    } else if (kind === 2) {
+      drawMesh(meshes.cube, {
+        position: [curveX + side * 4.6, yBase, z + 0.2],
+        rotation: [0, 0, side * 0.15],
+        scale: [0.12 * decorScale, 2.4 * decorScale, 0.12 * decorScale],
+        color: [0.28, 0.32, 0.4, 1],
+        texture: warningTexture,
+        textureMix: 0.48,
+        pulse
+      });
+    } else {
+      drawMesh(meshes.crystal, {
+        position: [curveX + side * 3.2, yBase + 0.6, z],
+        rotation: [alphaTime * 0.2, alphaTime * 0.35, 0],
+        scale: [0.35 * decorScale, 0.35 * decorScale, 0.35 * decorScale],
+        color: [0.48, 0.95, 1, 1],
+        texture: crystalTexture,
+        textureMix: 0.78,
+        pulse: 0.42 + pulse
+      });
+    }
+  }
+
   function renderTunnel(alphaTime) {
-    const spacing = 6;
+    const tier = getRenderBudgetTier();
+    const decorScale = tier.tunnelDecorScale ?? 1;
+    const spacing = 5.2;
     const offset = (state.time * state.speed) % spacing;
-    for (let z = -10 + offset; z > -82; z -= spacing) {
-      const pulse = 0.05 + Math.sin(alphaTime * 2 + z * 0.2) * 0.04;
+    const speedMul = state.lastSpeedMultiplier || 1;
+    const laneHeat = Math.max(0, Math.min(1, (speedMul - 1) / 3.2));
+    for (let z = -8 + offset; z > -78; z -= spacing) {
+      const curveX = getWreckLaneCurve(z, alphaTime);
+      const pulse = 0.05 + Math.sin(alphaTime * 2 + z * 0.18) * 0.04;
+      const segIndex = Math.round(z / spacing);
+      const railTilt = Math.sin(z * 0.14 + alphaTime * 0.28) * 0.06;
+      const deckColor = [
+        0.08 + laneHeat * 0.14,
+        0.2 + laneHeat * 0.08,
+        0.34 + laneHeat * 0.1,
+        1
+      ];
+      const railColor = [
+        0.1 + laneHeat * 0.16,
+        0.24 + laneHeat * 0.1,
+        0.46 + laneHeat * 0.12,
+        1
+      ];
+
       drawMesh(meshes.cube, {
-        position: [0, -3.75, z],
-        rotation: [0, 0, 0],
-        scale: [11.4, 0.08, 0.85],
-        color: [0.12, 0.35, 0.52, 1],
+        position: [curveX, -3.82, z],
+        rotation: [railTilt * 0.35, 0, railTilt],
+        scale: [11.6, 0.1, 1.05],
+        color: deckColor,
         texture: colorTexture,
-        textureMix: 0.72,
-        uvScale: [10, 1],
+        textureMix: 0.7,
+        uvScale: [11, 1],
         pulse
       });
+
       drawMesh(meshes.cube, {
-        position: [-5.85, 0, z],
-        rotation: [0, 0, 0],
-        scale: [0.08, 7.4, 0.85],
-        color: [0.12, 0.27, 0.48, 1],
+        position: [curveX - 5.75, 0.05, z],
+        rotation: [0, 0.08, railTilt],
+        scale: [0.1, 7.2, 0.95],
+        color: railColor,
         texture: colorTexture,
-        textureMix: 0.65,
+        textureMix: 0.62,
         uvScale: [1, 7],
         pulse
       });
       drawMesh(meshes.cube, {
-        position: [5.85, 0, z],
-        rotation: [0, 0, 0],
-        scale: [0.08, 7.4, 0.85],
-        color: [0.12, 0.27, 0.48, 1],
+        position: [curveX + 5.75, 0.05, z],
+        rotation: [0, -0.08, -railTilt],
+        scale: [0.1, 7.2, 0.95],
+        color: railColor,
         texture: colorTexture,
-        textureMix: 0.65,
+        textureMix: 0.62,
         uvScale: [1, 7],
         pulse
       });
+
+      if (segIndex % 3 === 0) {
+        drawMesh(meshes.cube, {
+          position: [curveX, -3.72, z],
+          rotation: [0, 0, 0],
+          scale: [9.2, 0.04, 0.55],
+          color: [0.18, 0.52, 0.68, 0.85],
+          texture: colorTexture,
+          textureMix: 0.55,
+          uvScale: [8, 1],
+          pulse: pulse * 1.2
+        });
+      }
+
+      renderWreckSalvageDecor(curveX, z, alphaTime, decorScale, segIndex);
     }
   }
 
