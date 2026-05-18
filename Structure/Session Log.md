@@ -43,4 +43,4 @@
 - Cache/build markers bumped to `20260515-orbital-wreck-lane`.
 - Responsive browser proof passed across Redmi 393x873, narrow 360x800, and desktop 1280x720: `C:\Users\rkhol\AppData\Local\Temp\starfall-audit-20260518-orbital-wreck-r3\report.json`, failures `[]`.
 - KC teacher/student lane updated to audit visual identity via screenshot proof, not only syntax and DOM proof strings.
-- KC watcher patched for Lesson 013 and passed with `kc_context_id=kc-38`, 69/69 proofs.
+- KC watcher patched for Lesson 013 and passed with `kc_context_id=kc-39`, 69/69 proofs.

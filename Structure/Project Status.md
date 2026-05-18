@@ -89,7 +89,7 @@
 - Comfort layout proof passed: `C:\Users\rkhol\AppData\Local\Temp\starfall-audit-20260515-comfort-r1\report.json`.
 - Comfort speed proof passed: `C:\Users\rkhol\AppData\Local\Temp\starfall-audit-20260515-comfort-speed-r1\report.json`.
 - Orbital wreck lane responsive proof passed across Redmi 393x873, narrow 360x800, and desktop 1280x720: `C:\Users\rkhol\AppData\Local\Temp\starfall-audit-20260518-orbital-wreck-r3\report.json`, failures `[]`.
-- KC student audit passed after Lesson 013 watcher wiring: `python tools\kc_starfall_watch.py --once --seed-kc`, `kc_context_id=kc-38`, 69/69 curriculum proofs.
+- KC student audit passed after Lesson 013 watcher wiring: `python tools\kc_starfall_watch.py --once --seed-kc`, `kc_context_id=kc-39`, 69/69 curriculum proofs.
 - `node --check src\game.js` passed.
 - `python -m py_compile backend\starfall_server.py tools\kc_starfall_watch.py` passed.
 - Backend `/api/health`, `/api/signin`, `/api/score`, and `/api/leaderboard` passed locally against SQLite.

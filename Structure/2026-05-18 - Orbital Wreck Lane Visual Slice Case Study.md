@@ -28,7 +28,7 @@ This is not declared final or industry-competitive yet. It is the first grounded
 | Check | Result |
 |---|---|
 | Browser proof | `C:\Users\rkhol\AppData\Local\Temp\starfall-audit-20260518-orbital-wreck-r3\report.json`, failures `[]` |
-| KC student audit | `python tools\kc_starfall_watch.py --once --seed-kc` PASS, `kc_context_id=kc-38`, 69/69 curriculum proofs |
+| KC student audit | `python tools\kc_starfall_watch.py --once --seed-kc` PASS, `kc_context_id=kc-39`, 69/69 curriculum proofs |
 | Redmi playing | `C:\Users\rkhol\AppData\Local\Temp\starfall-audit-20260518-orbital-wreck-r3\redmi-393x873-playing.png` |
 | Narrow playing | `C:\Users\rkhol\AppData\Local\Temp\starfall-audit-20260518-orbital-wreck-r3\narrow-360x800-playing.png` |
 | Desktop playing | `C:\Users\rkhol\AppData\Local\Temp\starfall-audit-20260518-orbital-wreck-r3\desktop-1280x720-playing.png` |
@@ -50,5 +50,5 @@ Teacher instruction changed from UI comfort to visual identity. KC student must 
 - Branch: `codex/starfall-mobile-weapon-ecosystem`.
 - Build marker: `20260515-orbital-wreck-lane`.
 - Current proof: `C:\Users\rkhol\AppData\Local\Temp\starfall-audit-20260518-orbital-wreck-r3\report.json`, failures `[]`.
-- KC student proof: `kc-38`, 69/69 curriculum proofs, failures `0`.
+- KC student proof: `kc-39`, 69/69 curriculum proofs, failures `0`.
 - Production remains unchanged until the branch is merged and redeployed.
