@@ -157,7 +157,8 @@ def check_kopano_upgrade_features() -> dict[str, Any]:
         "tap_to_start_or_dash": "wasTap" in game_js and "dashRequested = true" in game_js,
         "touch_axis_in_movement": "moveX += touchAxis.x" in game_js,
         "touch_action_none_css": "touch-action: none" in _read_text("styles.css"),
-        "mobile_control_hint_html": "Mobile:" in index_html and "tap to start" in index_html,
+        "mobile_control_hint_html": "Mobile:" in index_html
+        and "tap to start" in index_html.lower(),
         # Lesson 008 — Onboarding Pop-up
         "onboarding_modal_markup": 'id="onboardingModal"' in index_html
         and 'id="onboardingAck"' in index_html
@@ -187,6 +188,14 @@ def check_kopano_upgrade_features() -> dict[str, Any]:
         "mobile_fire_button_css": ".mobile-fire-button" in _read_text("styles.css"),
         "mobile_fire_button_handler": "mobileFireButton" in game_js
         and "spawnPlayerBullet()" in game_js,
+        # Lesson 013 — Orbital Wreck Lane Visual Slice (Codex + Cursor)
+        "orbital_build_stamp": "20260515-orbital-wreck-lane" in game_js,
+        "orbital_backdrop_render": "renderOrbitalBackdrop" in game_js,
+        "wreck_lane_curve": "getWreckLaneCurve" in game_js,
+        "wreck_salvage_decor": "renderWreckSalvageDecor" in game_js,
+        "camera_banking": "Mat4.rotateZ(viewMatrix, viewMatrix, bankRad)" in game_js,
+        "parallax_star_layers": "layer: index % 3" in game_js,
+        "orbital_cache_bust_html": "20260515-orbital-wreck-lane" in index_html,
     }
     missing = [name for name, ok in proofs.items() if not ok]
     return {
@@ -303,10 +312,11 @@ def seed_kc_context(report: dict[str, Any], kc_impl: Path, kc_store_path: Path) 
     record = store.create({
         "title": f"Starfall Salvage KC hard QA pass - {report['timestamp']}",
         "teacher_context": (
-            "KC is the strict dev QA student. Teacher (Claude / Master Robyn) ships features. "
-            "KC reads Structure/KC Student-Teacher Curriculum.md, audits the codebase against it, "
-            "and refuses to mark work complete unless every proof is present. "
-            "Expected behavior: fail incomplete work, state what broke, issue retry instructions, and log proof."
+            "KC is the strict dev QA student (Cassy). Active teachers: Codex (Starfall execution), "
+            "Claude (protocol senior), Chief Architect (Owner gate). Cursor is IDE surface only. "
+            "KC reads Structure/KC Student-Teacher Curriculum.md, audits against every proof including "
+            "Lesson 013 orbital wreck lane, and refuses pass unless proofs are present. "
+            "Codex is with the lane on branch codex/starfall-mobile-weapon-ecosystem."
         ),
         "student_response": json.dumps(report["summary"], sort_keys=True),
     })

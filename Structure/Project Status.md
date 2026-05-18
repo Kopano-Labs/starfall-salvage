@@ -6,17 +6,19 @@
 
 ## Last Updated
 
-2026-05-15
+2026-05-18
 
 ## Current Branch Proof
 
-- Active execution clone: `C:\Users\rkhol\OneDrive\Documents\Kopano Labs\starfall-salvage`.
+- Active execution clone: `C:\Users\rkhol\Starfall Salvage` (canonical; pushed from here).
 - Branch: `codex/starfall-mobile-weapon-ecosystem`.
-- Code commit: `5467bb4 fix(starfall): unify device fire control and speed chrome`.
-- Branch proof docs: committed after the code patch on the same branch; use `git log -1` for the current branch tip.
+- Latest code commit: `8804aea` — `feat(starfall): orbital wreck lane backdrop, banking, salvage decor`.
+- Build stamp: `20260515-orbital-wreck-lane`.
+- Prior commits on branch: `d655996` (comfort/mobile pressure), `5467bb4` (unified FIRE + speed chrome).
 - Remote push: complete to `origin/codex/starfall-mobile-weapon-ecosystem`.
 - Manual PR URL: `https://github.com/Kopano-Labs/starfall-salvage/pull/new/codex/starfall-mobile-weapon-ecosystem`.
 - Production redeploy: pending merge to `main`.
+- KC teacher-student lane: **ACTIVE** — Codex (teacher) + KC student (Cassy) + Cursor (execution surface); see `Structure/KC Student-Teacher Curriculum.md` Lesson 013.
 
 ## Completed
 
@@ -49,6 +51,15 @@
 - Existing buff system remains canonical: `overcharge`, `triad`, `aegis`, `prism`, plus legacy `powerOrb` bridge.
 - Speed-responsive chrome uses CSS variables (`--speed-strength`, `--speed-accent`) and brightens as speed rises.
 
+## Orbital Wreck Lane Visual Slice (2026-05-15 / shipped 2026-05-18)
+
+- Playfield identity: parallax stars, nebula/planet backdrop, curved salvage corridor, decorative wreck clusters, camera bank/sway from player movement.
+- Not claimed industry-competitive — visual slice only.
+- Mobile comfort pass and unified device rules unchanged.
+- Proof: `node --check`, `npm run vault:check`, `git diff --check` PASS on commit `8804aea`.
+- Emulator layout proof (pre-merge): `C:\Users\rkhol\AppData\Local\Temp\starfall-audit-20260515-orbital-wreck-r1\report.json` failures `[]`.
+- Physical Redmi recapture on production URL: **WATCH** after merge/deploy.
+
 ## Comfort Zoom Pass (2026-05-15)
 
 - Field feedback: "Zoom out" and "the problem is it's too much."
@@ -62,7 +73,7 @@
 
 - Physical Redmi 13 recapture after this branch merges and Vercel redeploys production.
 - GitHub PR creation from this agent lane is blocked by invalid `gh` token / connector 403; branch push succeeded.
-- MAIN-BRAIN path drift remains on WATCH: older registry path is `C:\Users\rkhol\Starfall Salvage`, current execution clone is `C:\Users\rkhol\OneDrive\Documents\Kopano Labs\starfall-salvage`.
+- MAIN-BRAIN path drift reconciled 2026-05-18: canonical clone is `C:\Users\rkhol\Starfall Salvage`; OneDrive `Kopano Labs\starfall-salvage` path is retired unless Master re-homes the repo.
 - Kasi-Comm chat backend is **not deployed** on production — frontend gracefully shows "Lobby offline." Phase C of 2026-05-06 session adds mailto-based idea capture with bounty incentive.
 - SQLite leaderboard backend not deployed on production — frontend gracefully degrades to local browser scores.
 - Production backend hosting (the Python `starfall_server.py`) is not configured. Current backend is local-demo only.

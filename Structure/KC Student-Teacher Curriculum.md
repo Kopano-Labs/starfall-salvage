@@ -7,6 +7,8 @@ project: Starfall Salvage
 sub-brain: C:\Users\rkhol\Starfall Salvage
 main-brain-link: "[[Schematics/06-Reference/kopano-code-implementation/.kc/context_store.json]]"
 activated: 2026-05-05
+reactivated: 2026-05-18
+teacher_lane: Codex (execution teacher) + Cursor (IDE surface) + Chief Architect (Owner gate)
 authority:
   - Lovable-Primary Build Doctrine
   - Refusal Authority Protocol
@@ -24,13 +26,13 @@ tags:
 > Activated 2026-05-05 by Master Robyn during the Kopano Labs Upgrade handoff.
 > Authority: [[Lovable-Primary Build Doctrine]] + [[Refusal Authority Protocol]] + [[KC Memory-Renter Doctrine]].
 
-KC is the **strict dev QA student**. Claude (acting as Senior Engineer for this lane) is the **teacher**. This file is the syllabus. KC does not get to skip lessons. KC does not get to mark work complete on vibes. KC reads this file every pass and audits Starfall Salvage against every proof below.
+KC is the **strict dev QA student** (Cassy alias in Main Brain). **Codex** is the active execution teacher for Starfall on branch `codex/starfall-mobile-weapon-ecosystem`. **Cursor** is the IDE execution surface. Claude remains senior protocol teacher for historical lessons. This file is the syllabus. KC does not get to skip lessons. KC does not get to mark work complete on vibes. KC reads this file every pass and audits Starfall Salvage against every proof below.
 
 ---
 
 ## Protocol Overview
 
-1. **Teacher ships features.** Claude or Master Robyn lands code on `main`.
+1. **Teacher ships features.** Codex, Claude, or Master Robyn lands code on `main` or a named feature branch; KC audits before merge.
 2. **Student audits.** KC runs `tools/kc_starfall_watch.py --once --seed-kc`. The watcher invokes `check_kopano_upgrade_features()` which holds 16+ binary proofs for the most recent upgrade.
 3. **Student fails loud.** Any missing proof → KC refuses the pass, logs the failure to `Structure/KC Review Log.jsonl`, and seeds the failure to the Main Brain context store at `Schematics/06-Reference/kopano-code-implementation/.kc/context_store.json`.
 4. **Teacher patches.** Claude or Codex re-patches the source. No hand-waving — the proof string must literally appear in the indicated file.
@@ -302,12 +304,42 @@ The teacher reads this, fixes the source, and triggers the next pass. No back-an
 
 ---
 
+## Lesson 013: Orbital Wreck Lane Visual Slice (2026-05-15 / Codex + Cursor)
+
+**Why:** Field and Chief Architect reset: the game was functional but the playfield still read as a flat tunnel. The ecosystem must appear in the world, not only in HUD copy. Mobile layout crisis (Redmi bleed, white bar) is **historical** — addressed on `fix/mobile-layout-redmi13` and `d655996`; do not re-run that CSS payload.
+
+**Spec:** Raw WebGL only. Add space backdrop, parallax stars, curved wreck corridor, salvage dressing, camera banking/sway. Do not claim industry-competitive. Keep comfort pass and unified FIRE rules.
+
+**Files in scope:** `src/game.js`, `index.html`, `src/pwa-boot.js`, `service-worker.js`.
+
+### Required Proofs (Lesson 013)
+
+| # | Proof Key | File | Search String |
+|---|-----------|------|---------------|
+| 60 | `orbital_build_stamp` | `src/game.js` | `20260515-orbital-wreck-lane` |
+| 61 | `orbital_backdrop_render` | `src/game.js` | `renderOrbitalBackdrop` |
+| 62 | `wreck_lane_curve` | `src/game.js` | `getWreckLaneCurve` |
+| 63 | `wreck_salvage_decor` | `src/game.js` | `renderWreckSalvageDecor` |
+| 64 | `camera_banking` | `src/game.js` | `Mat4.rotateZ(viewMatrix, viewMatrix, bankRad)` |
+| 65 | `parallax_star_layers` | `src/game.js` | `layer: index % 3` |
+| 66 | `orbital_cache_bust_html` | `index.html` | `20260515-orbital-wreck-lane` |
+
+### Acceptance Criteria
+
+- All 7 new proofs `true` (watcher total grows accordingly).
+- `node --check src/game.js` and `npm run vault:check` green.
+- No new npm game-engine dependencies.
+- Save/Kill/Watch logged to Main Brain comms-log when Teacher ships.
+
+---
+
 ## Maintenance
 
 - Every shipped feature spec adds a new lesson and at least one new proof key.
 - Old lessons stay in this file as a regression curriculum — KC keeps auditing every proof from every lesson, forever.
-- Master Robyn or the Senior Engineer updates this file before the feature merges. Editing this file *after* a merge is allowed only to add new lessons, never to soften existing proofs.
+- Master Robyn or the active Teacher (Codex / Claude) updates this file before the feature merges. Editing this file *after* a merge is allowed only to add new lessons, never to soften existing proofs.
 
-— Teacher: Claude (Senior Engineer, Starfall lane)
-— Student: KC (Kopano Context strict dev QA)
+— Teachers: Codex (Starfall execution), Claude (protocol senior), Chief Architect (Owner gate)
+— Student: KC / Cassy (Kopano Context strict dev QA)
+— Execution surface: Cursor
 — Authority: Master Robyn / Kopano Labs

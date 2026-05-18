@@ -8,8 +8,9 @@ tags:
   - webgl
   - visual-slice
   - protocol-13
-status: committed-pending-push
+status: pushed-pending-merge
 branch: codex/starfall-mobile-weapon-ecosystem
+commit: 8804aea
 build: 20260515-orbital-wreck-lane
 ---
 

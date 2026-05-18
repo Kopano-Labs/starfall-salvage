@@ -34,3 +34,11 @@
 - Browser proof passed across Redmi 393x873, narrow 360x800, and desktop 1280x720: `C:\Users\rkhol\AppData\Local\Temp\starfall-audit-20260515-comfort-r1\report.json`.
 - Speed proof passed: `C:\Users\rkhol\AppData\Local\Temp\starfall-audit-20260515-comfort-speed-r1\report.json`.
 - Case study added: `Structure/2026-05-15 - Comfort Zoom Pass Case Study.md`.
+
+## 2026-05-18
+
+- Staleness pass: canonical clone locked to `C:\Users\rkhol\Starfall Salvage`; branch tip `8804aea`, build `20260515-orbital-wreck-lane`.
+- KC Student-Teacher curriculum reactivated; Lesson 013 (orbital wreck lane) added; `tools/kc_starfall_watch.py` extended with 7 proofs.
+- Codex named active execution teacher; Cursor IDE surface; Cassy/KC remains student auditor.
+- Main Brain comms-log entry added: Codex coordination + apprenticeship activation.
+- Pushed prior orbital commit `8804aea`; this session commits doc/KC lane updates.

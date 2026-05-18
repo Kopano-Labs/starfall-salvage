@@ -16,8 +16,8 @@ Starfall Salvage is a raw-WebGL arcade runner built for the OpenGL/WebGL assignm
 
 ## Active Paths
 
-- Active execution clone: `C:\Users\rkhol\OneDrive\Documents\Kopano Labs\starfall-salvage`
-- Historical registry clone: `C:\Users\rkhol\Starfall Salvage` (WATCH until MAIN-BRAIN path drift is fully reconciled)
+- Active execution clone: `C:\Users\rkhol\Starfall Salvage`
+- GitHub remote: same repo as historical OneDrive clone (path retired 2026-05-18)
 - GitHub repo: `https://github.com/Kopano-Labs/starfall-salvage`
 - Local static proof URL: `http://127.0.0.1:5178/`
 - Local backend proof URL: `http://127.0.0.1:8765/` (optional Python backend lane)
@@ -30,7 +30,8 @@ Starfall Salvage is a raw-WebGL arcade runner built for the OpenGL/WebGL assignm
 - The game is live on the public Kopano Labs GitHub repo (public 2026-05-06 per Sovereign Tech / CONTRIBUTING.md doctrine).
 - The IONOS subdomain `starfallsalvage.kopanolabs.com` is proven live with HTTPS + Vercel edge serving; branch `codex/starfall-mobile-weapon-ecosystem` is pushed for review before production redeploy.
 - The older mobile-lockdown notes are historical context, not the current branch truth. Current work unifies PC, Android, Xiaomi, and Apple browser gameplay under one ruleset and adapts only presentation density, safe-area, and touch affordances.
-- Build `20260514-unified-ecosystem` preserves current-main PWA boot, guest CTA, modal history traps, schema spawns, revive flow, and buff model while adding desktop-visible FIRE, active weapon labels, speed-color chrome, and compact Redmi-class layout.
+- Build `20260515-orbital-wreck-lane` (branch `codex/starfall-mobile-weapon-ecosystem`, commit `8804aea`): orbital wreck playfield + prior unified-ecosystem mobile/PC rules (FIRE, speed chrome, comfort pass).
+- Build `20260514-unified-ecosystem` (historical): unified device FIRE, weapon labels, speed-color chrome, Redmi-class layout.
 - Root node alignment: 5 Pillars, 15 Commandments, CRUD-only mandate, 80% Optimal Threshold, Asymmetric Edge Reality, Testimony Delta.
 - Thesis alignment: Starfall demonstrates Pillar 5 (Expansion) — raw WebGL under township constraints proves Commandment 9 (Offline-First Mandate) and the AER test.
 - KC is wired as a strict local QA/dev lane through documentation, context-store entries, `tools/kc_starfall_watch.py` (sub-brain proofs), and `tools/kc_main_brain_scan.py` (main-brain alignment).
@@ -59,3 +60,5 @@ Starfall Salvage is a raw-WebGL arcade runner built for the OpenGL/WebGL assignm
 - `Structure/2026-05-15 - Comfort Zoom Pass Case Study.md` - field-feedback proof for "zoom out / too much" comfort correction.
 - Comfort browser proof: `C:\Users\rkhol\AppData\Local\Temp\starfall-audit-20260515-comfort-r1\report.json` with failures `[]`.
 - Comfort speed proof: `C:\Users\rkhol\AppData\Local\Temp\starfall-audit-20260515-comfort-speed-r1\report.json` with failures `[]`.
+- Orbital wreck lane case study: `Structure/2026-05-15 - Orbital Wreck Lane Visual Slice Case Study.md`.
+- KC curriculum Lesson 013: orbital wreck proofs in `tools/kc_starfall_watch.py`.
