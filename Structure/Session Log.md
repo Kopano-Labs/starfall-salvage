@@ -34,3 +34,13 @@
 - Browser proof passed across Redmi 393x873, narrow 360x800, and desktop 1280x720: `C:\Users\rkhol\AppData\Local\Temp\starfall-audit-20260515-comfort-r1\report.json`.
 - Speed proof passed: `C:\Users\rkhol\AppData\Local\Temp\starfall-audit-20260515-comfort-speed-r1\report.json`.
 - Case study added: `Structure/2026-05-15 - Comfort Zoom Pass Case Study.md`.
+
+## 2026-05-18
+
+- Resumed environment did not contain the expected OneDrive execution clone, so the branch was recovered in `C:\Users\rkhol\.cursor\projects\empty-window\starfall-salvage` and switched to `codex/starfall-mobile-weapon-ecosystem`.
+- Stale mobile-Tailwind payload was rejected as historical; current work targeted the scene, not HUD polish.
+- Orbital wreck lane visual slice added: parallax starfield, nebula/planet backdrop, salvage dressing, corridor deck/rails, shared corridor transform, and camera banking/drift.
+- Cache/build markers bumped to `20260515-orbital-wreck-lane`.
+- Responsive browser proof passed across Redmi 393x873, narrow 360x800, and desktop 1280x720: `C:\Users\rkhol\AppData\Local\Temp\starfall-audit-20260518-orbital-wreck-r3\report.json`, failures `[]`.
+- KC teacher/student lane updated to audit visual identity via screenshot proof, not only syntax and DOM proof strings.
+- KC watcher patched for Lesson 013 and passed with `kc_context_id=kc-38`, 69/69 proofs.

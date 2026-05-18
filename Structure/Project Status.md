@@ -6,15 +6,16 @@
 
 ## Last Updated
 
-2026-05-15
+2026-05-18
 
 ## Current Branch Proof
 
-- Active execution clone: `C:\Users\rkhol\OneDrive\Documents\Kopano Labs\starfall-salvage`.
+- Active execution clone for this resumed run: `C:\Users\rkhol\.cursor\projects\empty-window\starfall-salvage`.
+- Expected OneDrive clone `C:\Users\rkhol\OneDrive\Documents\Kopano Labs\starfall-salvage` was missing in the resumed environment; path drift stays on WATCH.
 - Branch: `codex/starfall-mobile-weapon-ecosystem`.
-- Code commit: `5467bb4 fix(starfall): unify device fire control and speed chrome`.
-- Branch proof docs: committed after the code patch on the same branch; use `git log -1` for the current branch tip.
-- Remote push: complete to `origin/codex/starfall-mobile-weapon-ecosystem`.
+- Code commit: do not trust stale static hashes here; use `git log -1` on the active clone for branch tip truth.
+- Branch proof docs: this file now records the orbital wreck lane proof before final commit/push.
+- Remote push: pending for the 2026-05-18 orbital wreck lane slice.
 - Manual PR URL: `https://github.com/Kopano-Labs/starfall-salvage/pull/new/codex/starfall-mobile-weapon-ecosystem`.
 - Production redeploy: pending merge to `main`.
 
@@ -58,11 +59,18 @@
 - Speed color remains active but glow/saturation are toned down.
 - FIRE remains visible and touch-safe, with slower/smaller pulse.
 
+## Orbital Wreck Lane Visual Slice (2026-05-18)
+
+- Visual direction moved from flat tunnel to a space salvage runner through a township-built orbital wreck lane.
+- Raw WebGL renderer now draws parallax stars, nebula haze, distant planet glow, corridor deck rails, overhead wreck structure, salvage silhouettes, and glowing salvage cores.
+- Camera banking, sway, corridor drift, and shared corridor transforms create motion through a world without forking PC/mobile gameplay.
+- This is not declared industry-competitive yet; it is a stronger visual slice with proof artifacts.
+
 ## Not Yet Proven
 
 - Physical Redmi 13 recapture after this branch merges and Vercel redeploys production.
 - GitHub PR creation from this agent lane is blocked by invalid `gh` token / connector 403; branch push succeeded.
-- MAIN-BRAIN path drift remains on WATCH: older registry path is `C:\Users\rkhol\Starfall Salvage`, current execution clone is `C:\Users\rkhol\OneDrive\Documents\Kopano Labs\starfall-salvage`.
+- MAIN-BRAIN path drift remains on WATCH: older registry path is `C:\Users\rkhol\Starfall Salvage`; expected current clone was `C:\Users\rkhol\OneDrive\Documents\Kopano Labs\starfall-salvage`; this run recovered `C:\Users\rkhol\.cursor\projects\empty-window\starfall-salvage`.
 - Kasi-Comm chat backend is **not deployed** on production — frontend gracefully shows "Lobby offline." Phase C of 2026-05-06 session adds mailto-based idea capture with bounty incentive.
 - SQLite leaderboard backend not deployed on production — frontend gracefully degrades to local browser scores.
 - Production backend hosting (the Python `starfall_server.py`) is not configured. Current backend is local-demo only.
@@ -80,6 +88,8 @@
 - Speed-color proof passed in deterministic browser run: `C:\Users\rkhol\AppData\Local\Temp\starfall-audit-20260514-resume-speed-r5\report.json`.
 - Comfort layout proof passed: `C:\Users\rkhol\AppData\Local\Temp\starfall-audit-20260515-comfort-r1\report.json`.
 - Comfort speed proof passed: `C:\Users\rkhol\AppData\Local\Temp\starfall-audit-20260515-comfort-speed-r1\report.json`.
+- Orbital wreck lane responsive proof passed across Redmi 393x873, narrow 360x800, and desktop 1280x720: `C:\Users\rkhol\AppData\Local\Temp\starfall-audit-20260518-orbital-wreck-r3\report.json`, failures `[]`.
+- KC student audit passed after Lesson 013 watcher wiring: `python tools\kc_starfall_watch.py --once --seed-kc`, `kc_context_id=kc-38`, 69/69 curriculum proofs.
 - `node --check src\game.js` passed.
 - `python -m py_compile backend\starfall_server.py tools\kc_starfall_watch.py` passed.
 - Backend `/api/health`, `/api/signin`, `/api/score`, and `/api/leaderboard` passed locally against SQLite.

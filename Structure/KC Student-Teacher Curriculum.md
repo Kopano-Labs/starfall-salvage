@@ -302,6 +302,39 @@ The teacher reads this, fixes the source, and triggers the next pass. No back-an
 
 ---
 
+## Lesson 013: Orbital Wreck Lane Visual Identity (2026-05-18)
+
+**Why:** Owner reset confirmed the game was functional but not visually competitive. KC must stop accepting a flat tunnel as "done" when the directive is a space salvage runner through a township-built orbital wreck lane.
+
+**Spec:** Keep one PC/mobile ruleset. Add visual evidence inside the WebGL world: parallax space, planet/nebula backdrop, salvage corridor identity, wreck silhouettes, glowing salvage cores, and camera banking/drift.
+
+**Files in scope:** `src/game.js`, `index.html`, `src/pwa-boot.js`, `service-worker.js`, `Structure/2026-05-18 - Orbital Wreck Lane Visual Slice Case Study.md`.
+
+### Required Proofs (Lesson 013)
+
+| # | Proof Key | File | Search String |
+|---|-----------|------|---------------|
+| 60 | `orbital_build_marker` | `src/game.js` | `20260515-orbital-wreck-lane` |
+| 61 | `camera_bank_state` | `src/game.js` | `cameraRoll` AND `BANK_MAX` |
+| 62 | `corridor_pose_transform` | `src/game.js` | `corridorPose` AND `corridorPoint` |
+| 63 | `parallax_star_layers` | `src/game.js` | `starLayers` AND `createStarLayer` |
+| 64 | `planet_nebula_backdrop` | `src/game.js` | `nebulaTexture` AND `planetTexture` |
+| 65 | `salvage_dressing_world` | `src/game.js` | `salvageDressing` AND `renderSalvageDressing` |
+| 66 | `cache_bust_aligned` | `index.html` | `20260515-orbital-wreck-lane` |
+| 67 | `pwa_boot_aligned` | `src/pwa-boot.js` | `20260515-orbital-wreck-lane` |
+| 68 | `pwa_cache_aligned` | `service-worker.js` | `20260515-orbital-wreck-lane` |
+| 69 | `visual_slice_case_study` | `Structure/2026-05-18 - Orbital Wreck Lane Visual Slice Case Study.md` | `Save / Kill / Watch` |
+
+### Acceptance Criteria
+
+- `node --check .\src\game.js` passes.
+- `npm run vault:check` passes.
+- `git diff --check` passes.
+- Browser proof report passes with failures `[]` for Redmi 393x873, narrow 360x800, and desktop 1280x720.
+- Screenshot must show space, salvage, lane identity, danger, and readable mobile playfield. If it still looks like a flat tunnel, KC refuses the pass.
+
+---
+
 ## Maintenance
 
 - Every shipped feature spec adds a new lesson and at least one new proof key.

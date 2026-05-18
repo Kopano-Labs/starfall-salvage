@@ -102,6 +102,11 @@ def check_kopano_upgrade_features() -> dict[str, Any]:
     backend_py = _read_text("backend/starfall_server.py")
     contributing_md = _read_text("CONTRIBUTING.md")
     manifest_json = _read_text("manifest.webmanifest")
+    pwa_boot_js = _read_text("src/pwa-boot.js")
+    service_worker_js = _read_text("service-worker.js")
+    orbital_case_study = _read_text(
+        "Structure/2026-05-18 - Orbital Wreck Lane Visual Slice Case Study.md"
+    )
 
     proofs = {
         # Lesson 001 — Kopano Labs Upgrade
@@ -187,6 +192,20 @@ def check_kopano_upgrade_features() -> dict[str, Any]:
         "mobile_fire_button_css": ".mobile-fire-button" in _read_text("styles.css"),
         "mobile_fire_button_handler": "mobileFireButton" in game_js
         and "spawnPlayerBullet()" in game_js,
+        # Lesson 013 — Orbital Wreck Lane Visual Identity
+        "orbital_build_marker": "20260515-orbital-wreck-lane" in game_js,
+        "camera_bank_state": "cameraRoll" in game_js and "BANK_MAX" in game_js,
+        "corridor_pose_transform": "corridorPose" in game_js
+        and "corridorPoint" in game_js,
+        "parallax_star_layers": "starLayers" in game_js and "createStarLayer" in game_js,
+        "planet_nebula_backdrop": "nebulaTexture" in game_js
+        and "planetTexture" in game_js,
+        "salvage_dressing_world": "salvageDressing" in game_js
+        and "renderSalvageDressing" in game_js,
+        "cache_bust_aligned": "20260515-orbital-wreck-lane" in index_html,
+        "pwa_boot_aligned": "20260515-orbital-wreck-lane" in pwa_boot_js,
+        "pwa_cache_aligned": "20260515-orbital-wreck-lane" in service_worker_js,
+        "visual_slice_case_study": "Save / Kill / Watch" in orbital_case_study,
     }
     missing = [name for name, ok in proofs.items() if not ok]
     return {

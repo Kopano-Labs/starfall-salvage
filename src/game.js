@@ -273,6 +273,9 @@
   const DASH_DURATION = 0.34;
   const DASH_COOLDOWN = 1.45;
   const LIGHT_DIRECTION = new Float32Array([0.35, 0.9, 0.55]);
+  const WORLD_WRAP_DEPTH = 88;
+  const BANK_MAX = 0.078;
+  const TOUCH_BANK_MAX = 0.056;
   const PROFILE_STORAGE_KEY = "starfallSalvagePilotProfile";
   const SCORES_STORAGE_KEY = "starfallSalvageLocalScores";
   const ONBOARDING_STORAGE_KEY = "starfallSalvageOnboardingComplete";
@@ -287,7 +290,7 @@
   const KOPANO_BOUNTY_EMAIL = "rkholofelo@kopanolabs.com";
   const PUBLIC_LIVE_URL = "https://starfallsalvage.kopanolabs.com";
   const PUBLIC_REPO_URL = "https://github.com/Kopano-Labs/starfall-salvage";
-  const GAME_BUILD = "20260514-unified-ecosystem";
+  const GAME_BUILD = "20260515-orbital-wreck-lane";
   const PILOT_PALETTES = ["default", "blossom", "ember", "mono"];
   const REVIVE_TIME_SECONDS = 8;
   const REVIVE_CORES_NEEDED = 3;
@@ -562,6 +565,9 @@
     hitShakeStrength: 0,
     currentFov: BASE_FOV,
     targetFov: BASE_FOV,
+    cameraRoll: 0,
+    cameraSwayX: 0,
+    cameraSwayY: 0,
     eventMessage: "",
     eventTimer: 0,
     hitFlashTimer: 0,
@@ -702,6 +708,8 @@
   const crystalTexture = createTexture("crystal");
   const warningTexture = createTexture("warning");
   const starTexture = createTexture("star");
+  const nebulaTexture = createTexture("nebula");
+  const planetTexture = createTexture("planet");
 
   function makeModel(position, rotation, scale) {
     Mat4.identity(modelMatrix);
@@ -773,15 +781,58 @@
     }
 
     if (kind === "star") {
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, textureSize, textureSize);
+      ctx.clearRect(0, 0, textureSize, textureSize);
       const half = textureSize / 2;
       const gradient = ctx.createRadialGradient(half, half, 1, half, half, 56);
-      gradient.addColorStop(0, "#ffffff");
-      gradient.addColorStop(0.2, "#bff7ff");
-      gradient.addColorStop(1, "#334155");
+      gradient.addColorStop(0, "rgba(255,255,255,1)");
+      gradient.addColorStop(0.18, "rgba(191,247,255,0.92)");
+      gradient.addColorStop(0.58, "rgba(91,141,173,0.26)");
+      gradient.addColorStop(1, "rgba(8,16,30,0)");
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, textureSize, textureSize);
+    }
+
+    if (kind === "nebula") {
+      ctx.clearRect(0, 0, textureSize, textureSize);
+      const gradient = ctx.createRadialGradient(46, 58, 6, 58, 64, 82);
+      gradient.addColorStop(0, "rgba(125,244,255,0.48)");
+      gradient.addColorStop(0.32, "rgba(56,110,210,0.34)");
+      gradient.addColorStop(0.68, "rgba(180,52,132,0.2)");
+      gradient.addColorStop(1, "rgba(7,12,28,0)");
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, textureSize, textureSize);
+      ctx.strokeStyle = "rgba(190,245,255,0.16)";
+      ctx.lineWidth = 3;
+      for (let i = -32; i < textureSize + 32; i += 18) {
+        ctx.beginPath();
+        ctx.moveTo(i, textureSize);
+        ctx.bezierCurveTo(i + 24, 78, i + 38, 48, i + 76, 0);
+        ctx.stroke();
+      }
+    }
+
+    if (kind === "planet") {
+      ctx.clearRect(0, 0, textureSize, textureSize);
+      const half = textureSize / 2;
+      const glow = ctx.createRadialGradient(half, half, 30, half, half, 63);
+      glow.addColorStop(0, "rgba(26,58,82,1)");
+      glow.addColorStop(0.58, "rgba(66,176,208,0.95)");
+      glow.addColorStop(0.76, "rgba(190,250,255,0.72)");
+      glow.addColorStop(1, "rgba(24,120,170,0)");
+      ctx.fillStyle = glow;
+      ctx.fillRect(0, 0, textureSize, textureSize);
+      ctx.fillStyle = "rgba(74,216,146,0.35)";
+      ctx.beginPath();
+      ctx.ellipse(44, 58, 15, 7, -0.35, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(74, 72, 20, 8, 0.18, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(255,255,255,0.35)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(half, half, 42, 4.0, 5.45);
+      ctx.stroke();
     }
 
     const texture = gl.createTexture();
@@ -835,6 +886,21 @@
       indices.push(offset, offset + 1, offset + 2, offset, offset + 2, offset + 3);
     });
 
+    return createMesh(vertices, indices);
+  }
+
+  function createDiscMesh(segments = 48) {
+    const vertices = [0, 0, 0, 0, 0, 1, 0.5, 0.5];
+    const indices = [];
+    for (let i = 0; i <= segments; i += 1) {
+      const angle = (i / segments) * Math.PI * 2;
+      const x = Math.cos(angle);
+      const y = Math.sin(angle);
+      vertices.push(x, y, 0, 0, 0, 1, 0.5 + x * 0.5, 0.5 + y * 0.5);
+    }
+    for (let i = 1; i <= segments; i += 1) {
+      indices.push(0, i, i + 1);
+    }
     return createMesh(vertices, indices);
   }
 
@@ -907,7 +973,8 @@
   const meshes = {
     cube: createCubeMesh(),
     crystal: createOctahedronMesh(),
-    ship: createShipMesh()
+    ship: createShipMesh(),
+    disc: createDiscMesh(56)
   };
 
   const keys = new Set();
@@ -1331,13 +1398,12 @@
   const objects = [];
   const sparks = [];
   const trailParticles = [];
-  const stars = Array.from({ length: 80 }, () => ({
-    x: randomRange(-9, 9),
-    y: randomRange(-5, 5),
-    z: randomRange(-12, -80),
-    size: randomRange(0.025, 0.09),
-    phase: Math.random() * Math.PI * 2
-  }));
+  const starLayers = [
+    createStarLayer(isTouchCapable ? 72 : 110, 20, 100, 0.18, 0.024, 0.075, 0.52),
+    createStarLayer(isTouchCapable ? 48 : 74, 12, 76, 0.58, 0.04, 0.13, 0.82),
+    createStarLayer(isTouchCapable ? 18 : 32, 8, 58, 0.92, 0.075, 0.19, 0.95)
+  ];
+  const salvageDressing = Array.from({ length: isTouchCapable ? 18 : 28 }, (_, index) => createSalvageDressing(index));
 
   function getPlayerBounds() {
     const base = (SIM.lanes && SIM.lanes.playerBounds) || SIM_LAW_DEFAULT.lanes.playerBounds;
@@ -1373,6 +1439,83 @@
 
   function clamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
+  }
+
+  function createStarLayer(count, near, depth, speedFactor, minSize, maxSize, alpha) {
+    return {
+      near,
+      depth,
+      speedFactor,
+      alpha,
+      stars: Array.from({ length: count }, () => ({
+        x: randomRange(-15, 15),
+        y: randomRange(-7.5, 7.5),
+        z: randomRange(-(near + depth), -near),
+        size: randomRange(minSize, maxSize),
+        phase: Math.random() * Math.PI * 2,
+        tint: Math.random()
+      }))
+    };
+  }
+
+  function createSalvageDressing(index) {
+    const side = Math.random() < 0.5 ? -1 : 1;
+    return {
+      kind: index % 5,
+      side,
+      x: side * randomRange(4.55, 8.2),
+      y: randomRange(-1.95, 3.35),
+      z: randomRange(-WORLD_WRAP_DEPTH - 8, -12),
+      scale: randomRange(0.72, 1.42),
+      phase: Math.random() * Math.PI * 2,
+      spin: randomRange(-0.24, 0.24)
+    };
+  }
+
+  function speedProgress() {
+    return clamp(((state.lastSpeedMultiplier || 1) - 1) / 3.5, 0, 1);
+  }
+
+  function wrapLaneZ(baseZ, speedFactor = 1, near = 10, depth = WORLD_WRAP_DEPTH) {
+    const travel = state.time * state.speed * speedFactor;
+    return -near - (((-baseZ + travel) % depth + depth) % depth);
+  }
+
+  function corridorPose(z, alphaTime) {
+    const depthT = clamp(((-z) - 7.8) / WORLD_WRAP_DEPTH, 0, 1);
+    const speedT = speedProgress();
+    const curvePhase = state.time * (0.22 + speedT * 0.12) + depthT * 4.2;
+    const curve = Math.sin(curvePhase) * (0.22 + speedT * 0.52) * depthT * depthT;
+    const drift = Math.sin(alphaTime * 0.38 + depthT * 5.4) * 0.16 * depthT;
+    const y = Math.cos(curvePhase * 0.72) * 0.1 * depthT + state.cameraSwayY * depthT;
+    const roll = (Math.sin(curvePhase + 0.8) * (0.035 + speedT * 0.034) + state.cameraRoll * 0.32) * depthT;
+    return {
+      x: curve + drift + state.cameraSwayX * depthT,
+      y,
+      roll
+    };
+  }
+
+  function corridorPoint(localX, localY, z, alphaTime) {
+    const pose = corridorPose(z, alphaTime);
+    const c = Math.cos(pose.roll);
+    const s = Math.sin(pose.roll);
+    return [
+      pose.x + localX * c - localY * s,
+      pose.y + localX * s + localY * c,
+      z
+    ];
+  }
+
+  function drawCorridorMesh(mesh, localX, localY, z, alphaTime, options) {
+    const pose = corridorPose(z, alphaTime);
+    const position = corridorPoint(localX, localY, z, alphaTime);
+    const rotation = options.rotation || [0, 0, 0];
+    drawMesh(mesh, {
+      ...options,
+      position,
+      rotation: [rotation[0], rotation[1], rotation[2] + pose.roll]
+    });
   }
 
   function resizeCanvas() {
@@ -1525,6 +1668,9 @@
     state.hitShakeStrength = 0;
     state.currentFov = BASE_FOV;
     state.targetFov = BASE_FOV;
+    state.cameraRoll = 0;
+    state.cameraSwayX = 0;
+    state.cameraSwayY = 0;
     state.eventMessage = "";
     state.eventTimer = 0;
     state.hitFlashTimer = 0;
@@ -3131,6 +3277,12 @@
     state.targetFov = player.dash > 0 ? DASH_FOV : BASE_FOV;
     const fovEase = Math.min(1, dt * 10);
     state.currentFov += (state.targetFov - state.currentFov) * fovEase;
+    const bankLimit = isTouchCapable ? TOUCH_BANK_MAX : BANK_MAX;
+    const targetRoll = clamp((-player.vx * 0.0065) + (-player.x * 0.008), -bankLimit, bankLimit);
+    const cameraEase = Math.min(1, dt * (isTouchCapable ? 4.5 : 6.8));
+    state.cameraRoll += (targetRoll - state.cameraRoll) * cameraEase;
+    state.cameraSwayX += ((-player.x * 0.065) - state.cameraSwayX) * Math.min(1, dt * 2.4);
+    state.cameraSwayY += ((-player.y * 0.035) - state.cameraSwayY) * Math.min(1, dt * 2.1);
     syncShellPlayState();
   }
 
@@ -3177,14 +3329,15 @@
       viewMatrix,
       [shakeX - player.x * follow.x, shakeY - player.y * follow.y, 0]
     );
+    Mat4.rotateZ(viewMatrix, viewMatrix, state.cameraRoll || 0);
 
     const speedMultiplier = state.lastSpeedMultiplier || 1;
     const speedT = Math.max(0, Math.min(1, (speedMultiplier - 1) / 3.5));
     const dangerLerp = speedMultiplier >= 2
       ? Math.max(0.48, Math.min(1, 0.48 + ((speedMultiplier - 2) / 0.8) * 0.52))
       : speedT * 0.35;
-    const calm = [0.01 + speedT * 0.04, 0.012 + speedT * 0.06, 0.022 + speedT * 0.08];
-    const danger = [0.22 + speedT * 0.12, 0.04 + speedT * 0.08, 0.12 + speedT * 0.18];
+    const calm = [0.004 + speedT * 0.02, 0.007 + speedT * 0.035, 0.02 + speedT * 0.055];
+    const danger = [0.13 + speedT * 0.09, 0.025 + speedT * 0.05, 0.08 + speedT * 0.13];
     const cr = calm[0] + (danger[0] - calm[0]) * dangerLerp;
     const cg = calm[1] + (danger[1] - calm[1]) * dangerLerp;
     const cb = calm[2] + (danger[2] - calm[2]) * dangerLerp;
@@ -3200,8 +3353,10 @@
     gl.disable(gl.BLEND);
     gl.depthMask(true);
 
+    renderBackdrop(alphaTime);
     renderStars(alphaTime);
     renderTunnel(alphaTime);
+    renderSalvageDressing(alphaTime);
     renderObjects(alphaTime);
     renderPlayer(alphaTime);
     renderGlowPass(alphaTime);
@@ -3213,64 +3368,300 @@
     gl.depthMask(false);
     renderPlayerGlow(alphaTime);
     renderCoreGlows(alphaTime);
+    renderSalvageGlows(alphaTime);
     renderTrail(alphaTime);
     renderSparks(alphaTime);
     gl.depthMask(true);
     gl.disable(gl.BLEND);
   }
 
+  function renderBackdrop(alphaTime) {
+    const speedT = speedProgress();
+    const drift = Math.sin(alphaTime * 0.055) * 0.35 + state.cameraSwayX * 0.55;
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    gl.depthMask(false);
+    drawMesh(meshes.disc, {
+      position: [-4.2 + drift, 2.1 + state.cameraSwayY * 0.55, -96],
+      rotation: [0, 0, -0.22 + Math.sin(alphaTime * 0.03) * 0.04],
+      scale: [12.5, 7.2, 1],
+      color: [0.18 + speedT * 0.08, 0.38 + speedT * 0.08, 0.72 + speedT * 0.16, 0.36],
+      texture: nebulaTexture,
+      textureMix: 1,
+      pulse: 0.08 + speedT * 0.14
+    });
+    drawMesh(meshes.disc, {
+      position: [6.2 + drift * 0.35, 2.55 - state.cameraSwayY * 0.3, -92],
+      rotation: [0, 0, -0.18],
+      scale: [5.0, 5.0, 1],
+      color: [0.55, 0.86, 1, 0.82],
+      texture: planetTexture,
+      textureMix: 1,
+      pulse: 0.08 + Math.sin(alphaTime * 0.18) * 0.04
+    });
+    drawMesh(meshes.disc, {
+      position: [6.2 + drift * 0.35, 2.55 - state.cameraSwayY * 0.3, -94],
+      rotation: [0, 0, 0],
+      scale: [7.2, 7.2, 1],
+      color: [0.28, 0.78, 1, 0.24],
+      texture: nebulaTexture,
+      textureMix: 1,
+      pulse: 0.16 + speedT * 0.08
+    });
+    gl.depthMask(true);
+    gl.disable(gl.BLEND);
+  }
+
   function renderStars(alphaTime) {
-    stars.forEach((star) => {
-      const wrappedZ = -10 - (((-star.z + state.time * state.speed * 0.72) % 72 + 72) % 72);
-      const twinkle = 0.15 + Math.sin(alphaTime * 3 + star.phase) * 0.08;
-      drawMesh(meshes.cube, {
-        position: [star.x, star.y, wrappedZ],
-        rotation: [0, 0, 0],
-        scale: [star.size, star.size, star.size],
-        color: [0.78, 0.94, 1, 1],
-        texture: starTexture,
-        textureMix: 0.85,
-        pulse: twinkle
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
+    gl.depthMask(false);
+    starLayers.forEach((layer, layerIndex) => {
+      const layerDrift = state.cameraSwayX * (1.4 - layerIndex * 0.34);
+      const horizonDrift = Math.sin(alphaTime * (0.08 + layerIndex * 0.03)) * (0.18 + layerIndex * 0.08);
+      layer.stars.forEach((star) => {
+        const wrappedZ = wrapLaneZ(star.z, layer.speedFactor, layer.near, layer.depth);
+        const twinkle = 0.08 + Math.sin(alphaTime * (2.2 + layerIndex) + star.phase) * 0.06;
+        const warm = star.tint > 0.78;
+        drawMesh(meshes.cube, {
+          position: [star.x + layerDrift, star.y + horizonDrift + state.cameraSwayY * 0.5, wrappedZ],
+          rotation: [0, 0, star.phase],
+          scale: [star.size, star.size, star.size],
+          color: warm ? [1, 0.82, 0.58, layer.alpha] : [0.7, 0.92, 1, layer.alpha],
+          texture: starTexture,
+          textureMix: 1,
+          pulse: twinkle
+        });
       });
     });
+    gl.depthMask(true);
+    gl.disable(gl.BLEND);
   }
 
   function renderTunnel(alphaTime) {
-    const spacing = 6;
+    const spacing = 4.8;
+    const speedT = speedProgress();
+    const budget = getRenderBudgetTier();
+    const decorScale = budget.tunnelDecorScale || 1;
     const offset = (state.time * state.speed) % spacing;
-    for (let z = -10 + offset; z > -82; z -= spacing) {
-      const pulse = 0.05 + Math.sin(alphaTime * 2 + z * 0.2) * 0.04;
-      drawMesh(meshes.cube, {
-        position: [0, -3.75, z],
+    let segmentIndex = 0;
+    for (let z = -9 + offset; z > -84; z -= spacing) {
+      const pulse = 0.06 + Math.sin(alphaTime * 2.2 + z * 0.18) * 0.04 + speedT * 0.12;
+      const markerColor = speedT > 0.55 ? [1, 0.42, 0.24, 1] : [0.28, 0.95, 1, 1];
+      drawCorridorMesh(meshes.cube, 0, -3.18, z, alphaTime, {
         rotation: [0, 0, 0],
-        scale: [11.4, 0.08, 0.85],
-        color: [0.12, 0.35, 0.52, 1],
+        scale: [5.8, 0.08, 1.2],
+        color: [0.055 + speedT * 0.06, 0.2 + speedT * 0.06, 0.24 + speedT * 0.12, 1],
         texture: colorTexture,
-        textureMix: 0.72,
-        uvScale: [10, 1],
+        textureMix: 0.78,
+        uvScale: [7.5, 1],
         pulse
       });
-      drawMesh(meshes.cube, {
-        position: [-5.85, 0, z],
-        rotation: [0, 0, 0],
-        scale: [0.08, 7.4, 0.85],
-        color: [0.12, 0.27, 0.48, 1],
-        texture: colorTexture,
-        textureMix: 0.65,
-        uvScale: [1, 7],
-        pulse
+      [-1.35, 1.35].forEach((laneX) => {
+        drawCorridorMesh(meshes.cube, laneX, -3.04, z - 0.06, alphaTime, {
+          rotation: [0, 0, 0],
+          scale: [0.045, 0.055, 1.08],
+          color: markerColor,
+          texture: starTexture,
+          textureMix: 0.7,
+          pulse: pulse + 0.22
+        });
       });
-      drawMesh(meshes.cube, {
-        position: [5.85, 0, z],
-        rotation: [0, 0, 0],
-        scale: [0.08, 7.4, 0.85],
-        color: [0.12, 0.27, 0.48, 1],
-        texture: colorTexture,
-        textureMix: 0.65,
-        uvScale: [1, 7],
-        pulse
+      [-3.25, 3.25].forEach((railX) => {
+        drawCorridorMesh(meshes.cube, railX, -2.64, z, alphaTime, {
+          rotation: [0, 0, 0],
+          scale: [0.12, 0.8, 1.05],
+          color: [0.1, 0.42 + speedT * 0.12, 0.5 + speedT * 0.18, 1],
+          texture: colorTexture,
+          textureMix: 0.68,
+          uvScale: [1, 2],
+          pulse: pulse * 0.75
+        });
       });
+      if (segmentIndex % 2 === 0) {
+        drawCorridorMesh(meshes.cube, 0, 2.45, z - 0.18, alphaTime, {
+          rotation: [0, 0, 0],
+          scale: [7.6 * decorScale, 0.09, 0.34],
+          color: [0.08, 0.24, 0.32, 1],
+          texture: warningTexture,
+          textureMix: 0.42,
+          uvScale: [4, 1],
+          pulse: pulse * 0.42
+        });
+        [-3.82, 3.82].forEach((postX) => {
+          drawCorridorMesh(meshes.cube, postX, -0.15, z - 0.2, alphaTime, {
+            rotation: [0, 0, 0],
+            scale: [0.13, 2.55 * decorScale, 0.38],
+            color: [0.075, 0.22, 0.3, 1],
+            texture: colorTexture,
+            textureMix: 0.58,
+            uvScale: [1, 3],
+            pulse: pulse * 0.35
+          });
+        });
+      }
+      if (segmentIndex % 3 === 1) {
+        const side = segmentIndex % 2 === 0 ? -1 : 1;
+        drawCorridorMesh(meshes.cube, side * 4.45, -1.85, z - 0.65, alphaTime, {
+          rotation: [0.12, side * 0.16, side * 0.1],
+          scale: [1.0 * decorScale, 0.18 * decorScale, 0.7],
+          color: [0.1, 0.3, 0.34, 1],
+          texture: colorTexture,
+          textureMix: 0.72,
+          uvScale: [2.5, 1],
+          pulse: pulse * 0.5
+        });
+      }
+      segmentIndex += 1;
     }
+  }
+
+  function renderSalvageDressing(alphaTime) {
+    const speedT = speedProgress();
+    const densitySkip = isTouchCapable && speedT < 0.42 ? 2 : 1;
+    salvageDressing.forEach((cluster, index) => {
+      if (densitySkip > 1 && index % densitySkip !== 0) {
+        return;
+      }
+      const z = wrapLaneZ(cluster.z, 0.56 + speedT * 0.12, 11, WORLD_WRAP_DEPTH);
+      const bob = Math.sin(alphaTime * 0.42 + cluster.phase) * (0.12 + speedT * 0.12);
+      const sway = Math.cos(alphaTime * 0.34 + cluster.phase) * (0.1 + speedT * 0.1);
+      const localX = cluster.x + sway;
+      const localY = cluster.y + bob;
+      const sideYaw = cluster.side > 0 ? -0.18 : 0.18;
+      const spin = alphaTime * cluster.spin;
+      const s = cluster.scale;
+      const dim = 0.82 + speedT * 0.18;
+
+      if (cluster.kind === 0) {
+        drawCorridorMesh(meshes.cube, localX, localY, z, alphaTime, {
+          rotation: [0.22 + spin, sideYaw, spin],
+          scale: [0.9 * s, 0.62 * s, 0.78 * s],
+          color: [0.38 * dim, 0.42 * dim, 0.46 * dim, 1],
+          texture: warningTexture,
+          textureMix: 0.48,
+          uvScale: [2, 2],
+          pulse: 0.06 + speedT * 0.1
+        });
+        drawCorridorMesh(meshes.cube, localX - cluster.side * 0.52 * s, localY + 0.44 * s, z - 0.08, alphaTime, {
+          rotation: [0.22, sideYaw, spin],
+          scale: [0.36 * s, 0.08 * s, 0.54 * s],
+          color: [0.95, 0.64, 0.26, 1],
+          texture: warningTexture,
+          textureMix: 0.7,
+          uvScale: [1.4, 1],
+          pulse: 0.1 + speedT * 0.12
+        });
+      } else if (cluster.kind === 1) {
+        drawCorridorMesh(meshes.cube, localX, localY, z, alphaTime, {
+          rotation: [0, sideYaw, 0.45 + spin],
+          scale: [0.08 * s, 1.55 * s, 0.08 * s],
+          color: [0.32, 0.42, 0.46, 1],
+          texture: colorTexture,
+          textureMix: 0.38,
+          pulse: 0.04
+        });
+        [-1, 1].forEach((wing) => {
+          drawCorridorMesh(meshes.cube, localX + wing * cluster.side * 0.72 * s, localY, z, alphaTime, {
+            rotation: [0.08, sideYaw, 0.18 * wing + spin],
+            scale: [0.72 * s, 0.08 * s, 0.9 * s],
+            color: [0.08, 0.42 + speedT * 0.08, 0.64 + speedT * 0.1, 1],
+            texture: colorTexture,
+            textureMix: 0.82,
+            uvScale: [3, 1],
+            pulse: 0.08 + speedT * 0.1
+          });
+        });
+      } else if (cluster.kind === 2) {
+        [-0.58, 0.58].forEach((barY) => {
+          drawCorridorMesh(meshes.cube, localX, localY + barY * s, z, alphaTime, {
+            rotation: [0.18, sideYaw, spin],
+            scale: [1.25 * s, 0.055 * s, 0.08 * s],
+            color: [0.15, 0.34, 0.38, 1],
+            texture: colorTexture,
+            textureMix: 0.48,
+            pulse: 0.05
+          });
+        });
+        [-0.58, 0.58].forEach((barX) => {
+          drawCorridorMesh(meshes.cube, localX + barX * s, localY, z, alphaTime, {
+            rotation: [0.18, sideYaw, spin],
+            scale: [0.055 * s, 1.18 * s, 0.08 * s],
+            color: [0.15, 0.34, 0.38, 1],
+            texture: colorTexture,
+            textureMix: 0.48,
+            pulse: 0.05
+          });
+        });
+      } else if (cluster.kind === 3) {
+        drawCorridorMesh(meshes.cube, localX, localY, z, alphaTime, {
+          rotation: [spin, sideYaw + 0.2, spin * 0.7],
+          scale: [0.42 * s, 0.42 * s, 0.42 * s],
+          color: [0.44, 0.48, 0.5, 1],
+          texture: colorTexture,
+          textureMix: 0.68,
+          uvScale: [2, 2],
+          pulse: 0.06 + speedT * 0.06
+        });
+        drawCorridorMesh(meshes.cube, localX + cluster.side * 0.7 * s, localY + 0.12 * s, z - 0.05, alphaTime, {
+          rotation: [0, sideYaw, 0.84 + spin],
+          scale: [0.06 * s, 1.35 * s, 0.06 * s],
+          color: [0.82, 0.92, 0.95, 1],
+          texture: starTexture,
+          textureMix: 0.54,
+          pulse: 0.18 + speedT * 0.16
+        });
+      } else {
+        drawCorridorMesh(meshes.cube, localX - cluster.side * 0.44 * s, localY - 0.26 * s, z, alphaTime, {
+          rotation: [0.28 + spin, sideYaw, spin],
+          scale: [0.62 * s, 0.42 * s, 0.58 * s],
+          color: [0.34, 0.32, 0.3, 1],
+          texture: warningTexture,
+          textureMix: 0.5,
+          uvScale: [1.4, 1.4],
+          pulse: 0.04
+        });
+        drawCorridorMesh(meshes.crystal, localX + cluster.side * 0.4 * s, localY + 0.18 * s, z - 0.08, alphaTime, {
+          rotation: [spin, alphaTime * 0.7 + cluster.phase, spin],
+          scale: [0.28 * s, 0.28 * s, 0.28 * s],
+          color: [0.34, 0.95, 1, 1],
+          texture: crystalTexture,
+          textureMix: 0.82,
+          pulse: 0.35 + speedT * 0.22
+        });
+      }
+
+      if (speedT > 0.42 && index % 3 === 0) {
+        drawCorridorMesh(meshes.cube, localX + cluster.side * 0.9 * s, localY - 0.65 * s, z - 1.25, alphaTime, {
+          rotation: [spin * 1.4, sideYaw, spin * -1.2],
+          scale: [0.28 * s, 0.18 * s, 0.4 * s],
+          color: [0.42, 0.26, 0.18, 1],
+          texture: warningTexture,
+          textureMix: 0.62,
+          uvScale: [1.2, 1.2],
+          pulse: 0.08 + speedT * 0.14
+        });
+      }
+    });
+  }
+
+  function renderSalvageGlows(alphaTime) {
+    const speedT = speedProgress();
+    salvageDressing.forEach((cluster, index) => {
+      if (cluster.kind !== 4 || index % (isTouchCapable ? 2 : 1) !== 0) {
+        return;
+      }
+      const z = wrapLaneZ(cluster.z, 0.56 + speedT * 0.12, 11, WORLD_WRAP_DEPTH) - 0.08;
+      const pulse = 0.42 + Math.sin(alphaTime * 2.4 + cluster.phase) * 0.16 + speedT * 0.18;
+      drawCorridorMesh(meshes.crystal, cluster.x + cluster.side * 0.4 * cluster.scale, cluster.y + 0.18 * cluster.scale, z, alphaTime, {
+        rotation: [alphaTime * 0.4, alphaTime * 0.8 + cluster.phase, 0],
+        scale: [0.62 * cluster.scale, 0.62 * cluster.scale, 0.62 * cluster.scale],
+        color: [0.18, 0.92, 1, isTouchCapable ? 0.16 : 0.22],
+        texture: crystalTexture,
+        textureMix: 0.5,
+        pulse
+      });
+    });
   }
 
   function renderPlayer(alphaTime) {
@@ -3306,9 +3697,10 @@
 
   function renderObjects(alphaTime) {
     objects.forEach((object) => {
+      const position = corridorPoint(object.x, object.y, object.z, alphaTime);
       if (object.type === "crystal") {
         drawMesh(meshes.crystal, {
-          position: [object.x, object.y, object.z],
+          position,
           rotation: [object.rotX, object.rotY + alphaTime * 0.8, object.rotZ],
           scale: [object.size, object.size, object.size],
           color: [0.48, 1, 1, 1],
@@ -3318,7 +3710,7 @@
         });
       } else if (object.type === "powerOrb") {
         drawMesh(meshes.crystal, {
-          position: [object.x, object.y, object.z],
+          position,
           rotation: [object.rotX, object.rotY + alphaTime * 1.1, object.rotZ],
           scale: [object.size * 1.1, object.size * 1.1, object.size * 1.1],
           color: [1, 0.78, 0.28, 1],
@@ -3329,7 +3721,7 @@
       } else if (object.type === "buffOrb") {
         const def = BUFF_DEFS[object.buffKind] || BUFF_DEFS.overcharge;
         drawMesh(meshes.crystal, {
-          position: [object.x, object.y, object.z],
+          position,
           rotation: [object.rotX, object.rotY + alphaTime * 1.35, object.rotZ],
           scale: [object.size * 1.15, object.size * 1.15, object.size * 1.15],
           color: def.color,
@@ -3340,7 +3732,7 @@
       } else if (object.type === "rangeTarget") {
         const hpRatio = Math.max(0.2, (object.hp || 2) / (object.maxHp || 2));
         drawMesh(meshes.cube, {
-          position: [object.x, object.y, object.z],
+          position,
           rotation: [object.rotX + alphaTime * 0.6, object.rotY + alphaTime * 0.9, object.rotZ],
           scale: [object.size * 1.4, object.size * 0.35, object.size * 1.4],
           color: [1, 0.45 + (1 - hpRatio) * 0.35, 0.12, 1],
@@ -3352,7 +3744,7 @@
       } else if (object.type === "boss") {
         const hpRatio = Math.max(0.25, (object.hp || 1) / (object.maxHp || 4));
         drawMesh(meshes.cube, {
-          position: [object.x, object.y, object.z],
+          position,
           rotation: [object.rotX + alphaTime * 0.4, object.rotY + alphaTime * 0.5, object.rotZ],
           scale: [object.size, object.size * 0.9, object.size * 0.95],
           color: [1, 0.32 + (1 - hpRatio) * 0.4, 0.92, 1],
@@ -3363,7 +3755,7 @@
         });
       } else {
         drawMesh(meshes.cube, {
-          position: [object.x, object.y, object.z],
+          position,
           rotation: [object.rotX, object.rotY, object.rotZ],
           scale: [object.size * 1.15, object.size * 0.9, object.size],
           color: [1, 0.24, 0.08, 1],
@@ -3383,7 +3775,7 @@
       }
       const pulse = 0.45 + Math.sin(alphaTime * 5 + object.x) * 0.18;
       drawMesh(meshes.crystal, {
-        position: [object.x, object.y, object.z],
+        position: corridorPoint(object.x, object.y, object.z, alphaTime),
         rotation: [object.rotX * 0.6, object.rotY + alphaTime, object.rotZ],
         scale: [object.size * 1.75, object.size * 1.75, object.size * 1.75],
         color: [0.25, 0.95, 1, 0.22],
@@ -3398,7 +3790,7 @@
     trailParticles.forEach((trail) => {
       const lifeRatio = Math.max(0, trail.life / trail.maxLife);
       drawMesh(meshes.cube, {
-        position: [trail.x, trail.y, trail.z],
+        position: corridorPoint(trail.x, trail.y, trail.z, alphaTime),
         rotation: [alphaTime * 2.4, alphaTime * 3.2, alphaTime * 1.7],
         scale: [trail.size * lifeRatio, trail.size * lifeRatio, trail.size * 1.8 * lifeRatio],
         color: [trail.color[0], trail.color[1], trail.color[2], trail.color[3] * lifeRatio],
@@ -3413,7 +3805,7 @@
     sparks.forEach((spark) => {
       const lifeRatio = Math.max(0, spark.life / spark.maxLife);
       drawMesh(meshes.cube, {
-        position: [spark.x, spark.y, spark.z],
+        position: corridorPoint(spark.x, spark.y, spark.z, alphaTime),
         rotation: [alphaTime * 3, alphaTime * 4, alphaTime * 2],
         scale: [spark.size * lifeRatio, spark.size * lifeRatio, spark.size * lifeRatio],
         color: [spark.color[0], spark.color[1], spark.color[2], spark.color[3] * lifeRatio],
